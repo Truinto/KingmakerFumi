@@ -5,19 +5,32 @@ using Kingmaker.Blueprints.Classes.Prerequisites;
 using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Items.Weapons;
+using Kingmaker.Designers.EventConditionActionSystem.Actions;
+using Kingmaker.Designers.Mechanics.Facts;
+using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
 using Kingmaker.Enums.Damage;
 using Kingmaker.Items;
 using Kingmaker.RuleSystem;
+using Kingmaker.UnitLogic;
+using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.Abilities.Components.Base;
 using Kingmaker.UnitLogic.Abilities.Components.CasterCheckers;
+using Kingmaker.UnitLogic.Buffs;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Class.Kineticist;
+using Kingmaker.UnitLogic.Class.Kineticist.ActivatableAbility;
+using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.UnitLogic.Mechanics;
+using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Properties;
 using Kingmaker.Utility;
+using Kingmaker.Visual.Animation.Kingmaker.Actions;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace FumisCodex
 {
@@ -31,28 +44,30 @@ namespace FumisCodex
 
         //base game stuff
         static public BlueprintCharacterClass kineticist_class = library.Get<BlueprintCharacterClass>("42a455d9ec1ad924d889272429eb8391");
-        static public BlueprintFeatureSelection infusion_selection = library.Get<BlueprintFeatureSelection>("58d6f8e9eea63f6418b107ce64f315ea");
+        static public BlueprintFeatureSelection infusion_selection = library.Get<BlueprintFeatureSelection>("58d6f8e9eea63f6418b107ce64f315ea");    //InfusionSelection
+        static public BlueprintFeatureSelection wildtalent_selection = library.Get<BlueprintFeatureSelection>("5c883ae0cd6d7d5448b7a420f51f8459");    //WildTalentSelection
         static public BlueprintAbility earth_base = library.Get<BlueprintAbility>("e53f34fb268a7964caf1566afb82dadd");   //EarthBlastBase
         static public BlueprintAbility cold_base = library.Get<BlueprintAbility>("7980e876b0749fc47ac49b9552e259c1");   //ColdBlastBase
         static public BlueprintAbility metal_base = library.Get<BlueprintAbility>("6276881783962284ea93298c1fe54c48");   //MetalBlastBase
         static public BlueprintAbility ice_base = library.Get<BlueprintAbility>("403bcf42f08ca70498432cf62abee434");   //IceBlastBase
-        static public BlueprintFeature kinetic_blast_feature = library.Get<BlueprintFeature>("93efbde2764b5504e98e6824cab3d27c");   //KineticBlastFeature
+        //static public BlueprintFeature kinetic_blast_feature = library.Get<BlueprintFeature>("93efbde2764b5504e98e6824cab3d27c");   //KineticBlastFeature
         static public BlueprintItemWeapon weapon_blast_physical = library.Get<BlueprintItemWeapon>("65951e1195848844b8ab8f46d942f6e8");   //KineticBlastPhysicalWeapon
         static public BlueprintItemWeapon weapon_blast_energy = library.Get<BlueprintItemWeapon>("4d3265a5b9302ee4cab9c07adddb253f");   //KineticBlastEnergyWeapon
-        static public BlueprintUnitProperty kineticist_primary_score = library.Get<BlueprintUnitProperty>("f897845bbbc008d4f9c1c4a03e22357a"); //KineticistMainStatProperty
         static public BlueprintFeatureSelection elemental_focus = library.Get<BlueprintFeatureSelection>("1f3a15a3ae8a5524ab8b97f469bf4e3d");   //ElementalFocusSelection
-        
+        static public List<BlueprintAbility> all_base = library.Get<BlueprintBuff>("f5f3aa17dd579ff49879923fb7bc2adb").GetComponent<AutoMetamagic>().Abilities;
+
         //new stuff
         static public BlueprintFeature infusion_impale_feature;
+        static public BlueprintBuff mobile_debuff;
 
         //helpers
         static public ContextDiceValue physical_dice = Helper.CreateContextDiceValue(DiceType.D6, diceType: ContextValueType.Rank, diceRank: AbilityRankType.DamageDice, bonusType: ContextValueType.Shared);
         static public ContextDiceValue energy_dice = Helper.CreateContextDiceValue(DiceType.D6, diceType: ContextValueType.Rank, diceRank: AbilityRankType.DamageDice, bonusType: ContextValueType.Rank, bonusRank: AbilityRankType.DamageDice);
 
-        // kown issues:
+        // known issues:
         // - composite blasts consisting of two elements (ice) count as two attacks and will roll concealment/mirror-image individually. also true for crit and crit confirm
-        // - "Miss" text doesn't show, if attackroll on consecutive hits was too high compared to initial roll
-        // - "Miss" text shows up, if attackroll on consecutive hits was too low compared to initial roll
+        // - "Miss" text doesn't show, if attack roll on consecutive hits was too high compared to initial roll
+        // - "Miss" text shows up, if attack roll on consecutive hits was too low compared to initial roll
         static public void createImpaleInfusion()
         {
             var earth_blast = library.Get<BlueprintFeature>("7f5f82c1108b961459c9884a0fa0f5c4");    //EarthBlastFeature
@@ -78,7 +93,7 @@ namespace FumisCodex
                     Helpers.PrerequisiteFeature(elemental_focus)
                 );
             infusion_impale_feature.IsClassFeature = true;
-            infusion_selection.AllFeatures = infusion_selection.AllFeatures.AddToArray(infusion_impale_feature);
+            Helper.AppendAndReplace(ref infusion_selection.AllFeatures, infusion_impale_feature);
 
             #region create impale ability - earth
             // - clone from water torrent
@@ -93,14 +108,11 @@ namespace FumisCodex
             earth_impale_ability.LocalizedSavingThrow = Helpers.savingThrowNone;
             earth_impale_ability.Parent = earth_base;
 
-            var earth_actions = Helpers.Create<AbilityEffectRunAction>();
             //var damage_roll = Helpers.CreateActionDealDamage(PhysicalDamageForm.Piercing, damage_dice, isAoE: false, halfIfSaved: false, IgnoreCritical: false);
             var earth_damage_roll = NewComponents.ContextActionDealDamage2.CreateNew(PhysicalDamageForm.Piercing, physical_dice, isAoE: true, halfIfSaved: false, IgnoreCritical: false);
             earth_damage_roll.Half = false;
             earth_damage_roll.WeaponOverride = new ItemEntityWeapon(weapon_blast_physical);
-            earth_actions.Actions = new Kingmaker.ElementsSystem.ActionList();
-            earth_actions.SavingThrowType = SavingThrowType.Unknown;
-            earth_actions.Actions.Actions = new Kingmaker.ElementsSystem.GameAction[] { earth_damage_roll };
+            var earth_actions = Helper.CreateAbilityEffectRunAction(0, earth_damage_roll);
             earth_impale_ability.ReplaceComponent<AbilityEffectRunAction>(earth_actions);
 
             earth_impale_ability.ReplaceComponent<AbilityDeliverProjectile>(a =>
@@ -116,7 +128,7 @@ namespace FumisCodex
             earth_impale_ability.ReplaceComponent<AbilityKineticist>(a =>
             {
                 a.InfusionBurnCost = 2;
-                a.BlastBurnCost = 1;
+                a.BlastBurnCost = 0;
                 a.Amount = 1;
                 a.CachedDamageInfo = earth_blast_ab.GetComponent<AbilityKineticist>().CachedDamageInfo;
             });
@@ -158,7 +170,6 @@ namespace FumisCodex
             ice_impale_ability.LocalizedSavingThrow = Helpers.savingThrowNone;
             ice_impale_ability.Parent = ice_base;
 
-            var ice_actions = Helpers.Create<AbilityEffectRunAction>();
             //var damage_roll = Helpers.CreateActionDealDamage(PhysicalDamageForm.Piercing, damage_dice, isAoE: false, halfIfSaved: false, IgnoreCritical: false);
             var ice_damage_roll = NewComponents.ContextActionDealDamage2.CreateNew(PhysicalDamageForm.Piercing, physical_dice, isAoE: true, halfIfSaved: false, IgnoreCritical: false);
             ice_damage_roll.Half = false;
@@ -168,10 +179,7 @@ namespace FumisCodex
             ice_damage_roll2.WeaponOverride = new ItemEntityWeapon(weapon_blast_physical);  //this is correct, because the bonus damage is the same as physical
             //ice_damage_roll2.ReadPreRolledFromSharedValue = true;
             //ice_damage_roll2.PreRolledSharedValue = AbilitySharedValue.Duration;
-            ice_actions.Actions = new Kingmaker.ElementsSystem.ActionList();
-            ice_actions.SavingThrowType = SavingThrowType.Unknown;
-            ice_actions.Actions.Actions = new Kingmaker.ElementsSystem.GameAction[] { ice_damage_roll, ice_damage_roll2 };
-            ice_impale_ability.ReplaceComponent<AbilityEffectRunAction>(ice_actions);
+            ice_impale_ability.ReplaceComponent<AbilityEffectRunAction>(Helper.CreateAbilityEffectRunAction(0, ice_damage_roll, ice_damage_roll2));
 
             // AbilityDeliverProjectile can be kept, because the fx and form/range is the same as blizzard-torrent
 
@@ -241,7 +249,7 @@ namespace FumisCodex
             cold_spray_ability.ReplaceComponent<AbilityKineticist>(a =>
             {
                 a.InfusionBurnCost = 3;
-                a.BlastBurnCost = 1;
+                a.BlastBurnCost = 0;
                 a.Amount = 1;
                 a.CachedDamageInfo = cold_blast_ab.GetComponent<AbilityKineticist>().CachedDamageInfo;
             });
@@ -255,7 +263,7 @@ namespace FumisCodex
             Helper.AppendAndReplace(ref cold_base.GetComponent<AbilityVariants>().Variants, cold_spray_ability);
         }
 
-        static public void createExtraWildTalent()
+        static public void createExtraWildTalentFeat(bool enabled = true)
         {
             var extra_wild_talent_selection = Helpers.CreateFeatureSelection(
                 "ExtraWildTalentFeat",
@@ -266,13 +274,121 @@ namespace FumisCodex
                 FeatureGroup.Feat,
                 kineticist_class.PrerequisiteClassLevel(1, true)
             );
-            extra_wild_talent_selection.AllFeatures = library.Get<BlueprintFeatureSelection>("58d6f8e9eea63f6418b107ce64f315ea").AllFeatures.AppendRange(    //InfusionSelection
-                library.Get<BlueprintFeatureSelection>("5c883ae0cd6d7d5448b7a420f51f8459").AllFeatures );   //+WildTalentSelection
+            extra_wild_talent_selection.AllFeatures = infusion_selection.AllFeatures.AppendRange(   //InfusionSelection
+                                                      wildtalent_selection.AllFeatures);            //+WildTalentSelection
 
             BlueprintFeature extra_wild_talent_feat = extra_wild_talent_selection;
             extra_wild_talent_feat.Ranks = 10;
             extra_wild_talent_feat.Groups = new FeatureGroup[] { FeatureGroup.Feat };
-            library.AddFeats(extra_wild_talent_feat);
+
+            if (enabled)
+                library.AddFeats(extra_wild_talent_feat);
+        }
+
+        static public void createPreciseBlastTalent(bool enabled = true)
+        {
+            var metamagic_comp = ScriptableObject.CreateInstance<AutoMetamagic>();
+            Harmony12.AccessTools.Field(typeof(AutoMetamagic), "m_AllowedAbilities").SetValue(metamagic_comp, 2); //enum AllowedType.KineticistBlast
+            metamagic_comp.Metamagic = (Metamagic)CallOfTheWild.MetamagicFeats.MetamagicExtender.Selective;
+            metamagic_comp.Abilities = all_base;
+
+            var precise_blast_feature = ScriptableObject.CreateInstance<BlueprintFeature>();
+            precise_blast_feature.name = "PreciseBlast";
+            precise_blast_feature.SetNameDescriptionIcon("Precise Blast", "You have fine control over your kinetic blast. Your allies are excluded from the effects of your blasts.", MetamagicFeats.selective_metamagic.Icon);
+            precise_blast_feature.Groups = FeatureGroup.KineticWildTalent.ToArray();
+            precise_blast_feature.Ranks = 1;
+            precise_blast_feature.IsClassFeature = true;
+            precise_blast_feature.SetComponents(metamagic_comp, Helpers.PrerequisiteNoFeature(precise_blast_feature));
+            library.AddAsset(precise_blast_feature, "5beb96c3591a4506bf65e2b4e5aff883");
+
+            if (enabled)
+                Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, precise_blast_feature);
+        }
+
+        // known issue:
+        // - with turn-based-mod using 3x gather and then using mobile gathering at the end of your first turn will cheat out 1 extra level of power, effectively granting minor speed boost
+        // - does not restrict your move action to be used for moving
+        static public void createMobileGatheringFeat()
+        {
+            // --- base game stuff ---
+            var buff1 = library.Get<BlueprintBuff>("e6b8b31e1f8c524458dc62e8a763cfb1");   //GatherPowerBuffI
+            var buff2 = library.Get<BlueprintBuff>("3a2bfdc8bf74c5c4aafb97591f6e4282");   //GatherPowerBuffII
+            var buff3 = library.Get<BlueprintBuff>("82eb0c274eddd8849bb89a8e6dbc65f8");   //GatherPowerBuffIII
+            var gather_original_ab = library.Get<BlueprintAbility>("6dcbffb8012ba2a4cb4ac374a33e2d9a");    //GatherPower
+            // -----------------------
+
+            // new buff that halves movement speed, disallows normal gathering, penalty on concentration?
+            mobile_debuff = ScriptableObject.CreateInstance<BlueprintBuff>();
+            mobile_debuff.name = "MobileGatheringDebuff";
+            mobile_debuff.SetNameDescriptionIcon("Mobile Gathering Debuff", "Your movement speed is halved after gathering power.", gather_original_ab.Icon);
+            //Harmony12.AccessTools.Field(typeof(BlueprintBuff), "m_Flags").SetValue(mobile_debuff, 2); //HiddenInUi
+            mobile_debuff.IsClassFeature = true;
+            mobile_debuff.SetComponents(UnitCondition.Slowed.CreateAddCondition());
+            library.AddAsset(mobile_debuff, "ffd79fee05bf4e6dad7156e895f3cf27");
+            var can_gather = Helper.CreateAbilityRequirementHasBuff(true, mobile_debuff);
+
+            // cannot use usual gathering after used mobile gathering
+            gather_original_ab.AddComponent(can_gather);
+
+            // ability as free action that applies buff and 1 level of gatherpower
+            // - is free action
+            // - increases gather power by 1 level, similiar to GatherPower:6dcbffb8012ba2a4cb4ac374a33e2d9a
+            // - applies debuff
+            // - get same restriction as usual gathering
+            var mobile_gathering_short_ab = Helpers.CreateAbility(
+                "MobileGatheringShort",
+                "Mobile Gathering (Move Action)",
+                "You may move up to half your normal speed while gathering power.",
+                "a482da35c21a4a0e801849610e03df87",
+                Helper.Image2Sprite.Create("GatherMobileLow.png"),
+                AbilityType.Special,
+                UnitCommand.CommandType.Free,
+                AbilityRange.Personal,
+                "",
+                ""
+            );
+            mobile_gathering_short_ab.CanTargetSelf = true;
+            mobile_gathering_short_ab.Animation = UnitAnimationActionCastSpell.CastAnimationStyle.Self;//UnitAnimationActionCastSpell.CastAnimationStyle.Kineticist;
+            mobile_gathering_short_ab.HasFastAnimation = true;
+            var three2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff3, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
+            var two2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff2), new GameAction[] { Helper.CreateActionRemoveBuff(buff2), Helper.CreateActionApplyBuff(buff3, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
+            var one2two = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff1), new GameAction[] { Helper.CreateActionRemoveBuff(buff1), Helper.CreateActionApplyBuff(buff2, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
+            var zero2one = Helpers.CreateConditional(Helper.CreateConditionHasNoBuff(buff1, buff2, buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff1, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
+            mobile_gathering_short_ab.SetComponents(can_gather, Helper.CreateAbilityEffectRunAction(0, three2three, two2three, one2two, zero2one));
+            
+            // same as above but standard action and 2 levels of gatherpower
+            var mobile_gathering_long_ab = Helpers.CreateAbility(
+                "MobileGatheringLong",
+                "Mobile Gathering (Full Round)",
+                "You may move up to half your normal speed while gathering power.",
+                "e7cd3a8200f04c8fae099d5d2f4afa0b",
+                Helper.Image2Sprite.Create("GatherMobileMedium.png"),
+                AbilityType.Special,
+                UnitCommand.CommandType.Standard,
+                AbilityRange.Personal,
+                "",
+                ""
+            );
+            mobile_gathering_long_ab.CanTargetSelf = true;
+            mobile_gathering_long_ab.Animation = UnitAnimationActionCastSpell.CastAnimationStyle.Self;
+            mobile_gathering_long_ab.HasFastAnimation = true;
+            var one2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff1), new GameAction[] { Helper.CreateActionRemoveBuff(buff1), Helper.CreateActionApplyBuff(buff3, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
+            var zero2two = Helpers.CreateConditional(Helper.CreateConditionHasNoBuff(buff1, buff2, buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff2, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
+            mobile_gathering_long_ab.SetComponents(can_gather, Helper.CreateAbilityEffectRunAction(0, three2three, two2three, one2three, zero2two));
+            
+            var mobile_gathering_feat = Helpers.CreateFeature(
+                "MobileGatheringFeat",
+                "Mobile Gathering",
+                "While gathering power, you can move up to half your normal speed. This movement provokes attacks of opportunity as normal.",
+                "60edffeba6d74e0f831c00692e5fc621",
+                Helper.Image2Sprite.Create("GatherMobileHigh.png"),
+                FeatureGroup.Feat,
+                kineticist_class.PrerequisiteClassLevel(7, true),
+                Helpers.CreateAddFacts(mobile_gathering_short_ab, mobile_gathering_long_ab)
+            );
+            mobile_gathering_feat.Ranks = 1;
+            mobile_gathering_feat.IsClassFeature = true;
+            library.AddFeats(mobile_gathering_feat);
         }
 
         // work on hold! does not work as intended; composite blasts are not granted, simple blasts are not granted, or other issues

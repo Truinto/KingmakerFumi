@@ -1,4 +1,6 @@
-﻿using Kingmaker.Blueprints;
+﻿using CallOfTheWild;
+using FumisCodex.NewComponents;
+using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Prerequisites;
 using Kingmaker.ElementsSystem;
@@ -8,7 +10,10 @@ using Kingmaker.RuleSystem;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.Abilities.Components.Base;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Mechanics;
+using Kingmaker.UnitLogic.Mechanics.Actions;
+using Kingmaker.UnitLogic.Mechanics.Conditions;
 using System;
 using System.IO;
 using UnityEngine;
@@ -138,6 +143,52 @@ namespace FumisCodex
             for (j = 0; i < result.Length; i++)
                 result[i] = objs[j++];
             orig = result;
+            return result;
+        }
+
+        public static AbilityEffectRunAction CreateAbilityEffectRunAction(SavingThrowType save = SavingThrowType.Unknown, params GameAction[] actions)
+        {
+            if (actions != null && actions[0] == null) throw new ArgumentNullException();
+            var result = ScriptableObject.CreateInstance<AbilityEffectRunAction>();
+            result.SavingThrowType = save;
+            result.Actions = new ActionList() { Actions = actions };
+            return result;
+        }
+
+        public static ContextActionApplyBuff CreateActionApplyBuff(BlueprintBuff buff, int duration, DurationRate rate = DurationRate.Rounds)
+        {
+            return Helpers.CreateApplyBuff(buff, Helpers.CreateContextDuration(bonus: new ContextValue() { Value = duration }, rate: rate), false, false);
+        }
+
+        public static ContextActionRemoveBuff CreateActionRemoveBuff(BlueprintBuff buff, bool toCaster = false)
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionRemoveBuff>();
+            result.Buff = buff;
+            result.ToCaster = toCaster;
+            return result;
+        }
+
+        public static ContextCondition[] CreateConditionHasNoBuff(params BlueprintBuff[] buffs)
+        {
+            if (buffs == null || buffs[0] == null) throw new ArgumentNullException();
+            var result = new ContextCondition[buffs.Length];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                var buff = ScriptableObject.CreateInstance<ContextConditionHasBuff>();
+                buff.Buff = buffs[i];
+                buff.Not = true;
+                result[i] = buff;
+            }
+
+            return result;
+        }
+
+        public static AbilityRequirementHasBuff CreateAbilityRequirementHasBuff(bool Not, params BlueprintBuff[] Buffs)
+        {
+            var result = ScriptableObject.CreateInstance<AbilityRequirementHasBuff>();
+            result.Not = Not;
+            result.Buffs = Buffs;
             return result;
         }
 

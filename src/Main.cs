@@ -71,9 +71,18 @@ namespace FumisCodex
         /// <summary>Draws the GUI</summary>
         static void OnGUI(UnityModManager.ModEntry modEntry)
         {
+            GUILayout.Label("Disclaimer: Remember that playing with mods makes them mandatory for your save game! If you want to uninstall anyway, then you need to remove all references to said mod. In my case respec all your characters, that should do the trick.");
+
             Checkbox(ref Settings.StateManager.State.slumberHDrestriction, "CotW - remove slumber HD restriction");
+            Checkbox(ref Settings.StateManager.State.extendSprayInfusion, "Kineticist - Spray infusion may be used with cold blast");
+            Checkbox(ref Settings.StateManager.State.extraWildTalentFeat, "Kineticist [F] - Feat for extra wild talents");
+            Checkbox(ref Settings.StateManager.State.preciseBlastTalent, "Kineticist [F] - Utility talent for precise blasts (similiar to alchemist discovery, but for blasts)");
+
+            GUILayout.Label("Stuff in the options are homebrew. For a full list read the mods description.\n"
+                + "Legend: [F] This adds a talent. You still need to pick feats/talents for these effects. If you already picked these features, then they stay in effect regardless of the option above.");
+
             GUILayout.Space(5);
-            if (GUILayout.Button("Save settings. Most changes require a restart to take effect!"))
+            if (GUILayout.Button("Save settings. All changes require a restart to take effect!"))
             {
                 Settings.StateManager.TrySaveConfigurationState();
             }
@@ -149,7 +158,7 @@ namespace FumisCodex
                 Main.library = __instance;
                 try
                 {
-                    Main.DebugLogAlways("Pre-loading Fumi's Codex");
+                    Main.DebugLog("Pre-loading Fumi's Codex");
                 }
                 catch (Exception ex)
                 {
@@ -176,7 +185,9 @@ namespace FumisCodex
                     Hexcrafter.createExtraArcanaFeat();
                     Kineticist.createImpaleInfusion();
                     Kineticist.extendSprayInfusion();
-                    Kineticist.createExtraWildTalent();
+                    Kineticist.createExtraWildTalentFeat();
+                    Kineticist.createPreciseBlastTalent();
+                    Kineticist.createMobileGatheringFeat();
                     //Kineticist.createExpandElementalFocus();
                     if (Settings.StateManager.State.slumberHDrestriction) CotW.modSlumber();
                 }

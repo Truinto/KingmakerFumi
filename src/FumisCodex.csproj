@@ -30,15 +30,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Install Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony12">
       <HintPath>D:\Programme\UnityModManager\0Harmony12.dll</HintPath>
@@ -116,6 +107,7 @@
     <Compile Include="Hexcrafter.cs" />
     <Compile Include="Kineticist.cs" />
     <Compile Include="Main.cs" />
+    <Compile Include="NewComponents\AbilityRequirementBuff.cs" />
     <Compile Include="NewComponents\ContextActionDealDamage2.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\ConfigManager.cs" />
