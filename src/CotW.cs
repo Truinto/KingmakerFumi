@@ -35,6 +35,12 @@ namespace FumisCodex
             Main.DebugLogAlways("Removed level cap of slumber.");
         }
         
+        public static void modFrostbite()
+        {
+            //CallOfTheWild.NewSpells.frost_bite
+            // remove level cap of frostbite
+        }
+
         //[Harmony12.HarmonyPatch(typeof(CallOfTheWild.Rebalance), "fixMagicVestmentArmor")]
         class fixMagicVestmentArmorPatch
         {

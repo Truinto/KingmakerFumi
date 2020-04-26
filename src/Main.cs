@@ -77,15 +77,17 @@ namespace FumisCodex
             Checkbox(ref Settings.StateManager.State.extendSprayInfusion, "Kineticist - Spray infusion may be used with cold blast");
             Checkbox(ref Settings.StateManager.State.extraWildTalentFeat, "Kineticist [F] - Feat for extra wild talents");
             Checkbox(ref Settings.StateManager.State.preciseBlastTalent, "Kineticist [F] - Utility talent for precise blasts (similiar to alchemist discovery, but for blasts)");
-
+            Checkbox(ref Settings.StateManager.State.mindShieldTalent, "Kineticist [F] - Mind Shield: Utility talent to reduce Mind Burn's effect on Psychokineticist");
             GUILayout.Label("Stuff in the options are homebrew. For a full list read the mods description.\n"
                 + "Legend: [F] This adds a talent. You still need to pick feats/talents for these effects. If you already picked these features, then they stay in effect regardless of the option above.");
-
-            GUILayout.Space(5);
             if (GUILayout.Button("Save settings. All changes require a restart to take effect!"))
             {
                 Settings.StateManager.TrySaveConfigurationState();
             }
+
+            GUILayout.Space(5);
+            GUILayout.Label("Options below are effective immediately without restart.");
+            Checkbox(ref Settings.StateManager.State.cheatCombineParametrizedFeats, "Cheat - picking Weapon Focus (Greater etc.) will grant all in the same group");
         }
         private static void Checkbox(ref bool value, string label)
         {
@@ -184,10 +186,12 @@ namespace FumisCodex
                     //Hexcrafter.createHexcrafter();
                     Hexcrafter.createExtraArcanaFeat();
                     Kineticist.createImpaleInfusion();
-                    Kineticist.extendSprayInfusion();
-                    Kineticist.createExtraWildTalentFeat();
-                    Kineticist.createPreciseBlastTalent();
+                    Kineticist.extendSprayInfusion(Settings.StateManager.State.extendSprayInfusion);
+                    Kineticist.createPreciseBlastTalent(Settings.StateManager.State.preciseBlastTalent);
                     Kineticist.createMobileGatheringFeat();
+                    Kineticist.createHurricaneQueen();
+                    Kineticist.createMindShield(Settings.StateManager.State.mindShieldTalent);
+                    Kineticist.createExtraWildTalentFeat(Settings.StateManager.State.extraWildTalentFeat);
                     //Kineticist.createExpandElementalFocus();
                     if (Settings.StateManager.State.slumberHDrestriction) CotW.modSlumber();
                 }

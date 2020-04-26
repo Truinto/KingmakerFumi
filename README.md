@@ -26,4 +26,4 @@ Content
 
 Notes
 -----------
-Homebrew and changes to CotW (Call of the Wild) is optional and can be deactivated in the manager.
+Homebrew and changes to CotW (Call of the Wild) are optional and can be deactivated in the manager.

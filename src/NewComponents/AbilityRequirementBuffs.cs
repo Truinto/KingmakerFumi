@@ -1,17 +1,14 @@
 ﻿using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Root;
-using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components.Base;
-using Kingmaker.UnitLogic.Buffs;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
-using System.Linq;
 
 namespace FumisCodex.NewComponents
 {
     [AllowedOn(typeof(BlueprintAbility))]
-    public class AbilityRequirementHasBuff : BlueprintComponent, IAbilityAvailabilityProvider
+    public class AbilityRequirementHasBuffs : BlueprintComponent, IAbilityAvailabilityProvider
     {
         public bool Not;
         public BlueprintBuff[] Buffs;

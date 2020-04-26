@@ -3,6 +3,7 @@ using FumisCodex.NewComponents;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Prerequisites;
+using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
@@ -11,6 +12,9 @@ using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.Abilities.Components.Base;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
+using Kingmaker.UnitLogic.Class.Kineticist;
+using Kingmaker.UnitLogic.Commands.Base;
+using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
@@ -146,18 +150,40 @@ namespace FumisCodex
             return result;
         }
 
+        public static AddKineticistBurnValueChangedTrigger CreateAddKineticistBurnValueChangedTrigger(params GameAction[] actions)
+        {
+            var result = ScriptableObject.CreateInstance<AddKineticistBurnValueChangedTrigger>();
+            result.Action = new ActionList() { Actions = actions };
+            return result;
+        }
+
         public static AbilityEffectRunAction CreateAbilityEffectRunAction(SavingThrowType save = SavingThrowType.Unknown, params GameAction[] actions)
         {
-            if (actions != null && actions[0] == null) throw new ArgumentNullException();
+            if (actions == null || actions[0] == null) throw new ArgumentNullException();
             var result = ScriptableObject.CreateInstance<AbilityEffectRunAction>();
             result.SavingThrowType = save;
             result.Actions = new ActionList() { Actions = actions };
             return result;
         }
 
-        public static ContextActionApplyBuff CreateActionApplyBuff(BlueprintBuff buff, int duration, DurationRate rate = DurationRate.Rounds)
+        public static ContextActionApplyBuff CreateActionApplyBuff(BlueprintBuff buff, int duration = 0, DurationRate rate = DurationRate.Rounds, bool dispellable = false, bool permanent = false)
         {
-            return Helpers.CreateApplyBuff(buff, Helpers.CreateContextDuration(bonus: new ContextValue() { Value = duration }, rate: rate), false, false);
+            return Helpers.CreateApplyBuff(buff, Helpers.CreateContextDuration(bonus: new ContextValue() { Value = duration }, rate: rate), fromSpell: false, dispellable: dispellable, permanent: permanent);
+        }
+
+        public static BuffSubstitutionOnApply CreateBuffSubstitutionOnApply(BlueprintBuff GainedFact, BlueprintBuff SubstituteBuff)
+        {
+            var result = ScriptableObject.CreateInstance<BuffSubstitutionOnApply>();
+            result.GainedFact = GainedFact;
+            result.SubstituteBuff = SubstituteBuff;
+            return result;
+        }
+
+        public static SpecificBuffImmunity CreateSpecificBuffImmunity(BlueprintBuff buff)
+        {
+            var result = ScriptableObject.CreateInstance<SpecificBuffImmunity>();
+            result.Buff = buff;
+            return result;
         }
 
         public static ContextActionRemoveBuff CreateActionRemoveBuff(BlueprintBuff buff, bool toCaster = false)
@@ -184,11 +210,28 @@ namespace FumisCodex
             return result;
         }
 
-        public static AbilityRequirementHasBuff CreateAbilityRequirementHasBuff(bool Not, params BlueprintBuff[] Buffs)
+        public static AbilityRequirementActionAvailable CreateRequirementActionAvailable(bool Not, ActionType Action)
         {
-            var result = ScriptableObject.CreateInstance<AbilityRequirementHasBuff>();
+            var result = ScriptableObject.CreateInstance<AbilityRequirementActionAvailable>();
+            result.Not = Not;
+            result.Action = Action;
+            return result;
+        }
+
+        public static AbilityRequirementHasBuffs CreateAbilityRequirementHasBuffs(bool Not, params BlueprintBuff[] Buffs)
+        {
+            var result = ScriptableObject.CreateInstance<AbilityRequirementHasBuffs>();
             result.Not = Not;
             result.Buffs = Buffs;
+            return result;
+        }
+
+        public static AbilityRequirementHasBuffTimed CreateAbilidtyRequirementHasBuffTimed(CompareType Compare, TimeSpan TimeLeft, params BlueprintBuff[] Buffs)
+        {
+            var result = ScriptableObject.CreateInstance<AbilityRequirementHasBuffTimed>();
+            result.Compare = Compare;
+            result.Buffs = Buffs;
+            result.TimeLeft = TimeLeft;
             return result;
         }
 

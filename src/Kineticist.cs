@@ -12,7 +12,9 @@ using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
 using Kingmaker.Enums.Damage;
 using Kingmaker.Items;
+using Kingmaker.Localization;
 using Kingmaker.RuleSystem;
+using Kingmaker.RuleSystem.Rules;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
@@ -29,6 +31,7 @@ using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Properties;
 using Kingmaker.Utility;
 using Kingmaker.Visual.Animation.Kingmaker.Actions;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -59,6 +62,7 @@ namespace FumisCodex
         //new stuff
         static public BlueprintFeature infusion_impale_feature;
         static public BlueprintBuff mobile_debuff;
+        static public BlueprintFeature hurricane_queen_feat;
 
         //helpers
         static public ContextDiceValue physical_dice = Helper.CreateContextDiceValue(DiceType.D6, diceType: ContextValueType.Rank, diceRank: AbilityRankType.DamageDice, bonusType: ContextValueType.Shared);
@@ -68,6 +72,7 @@ namespace FumisCodex
         // - composite blasts consisting of two elements (ice) count as two attacks and will roll concealment/mirror-image individually. also true for crit and crit confirm
         // - "Miss" text doesn't show, if attack roll on consecutive hits was too high compared to initial roll
         // - "Miss" text shows up, if attack roll on consecutive hits was too low compared to initial roll
+        // ! found "RuleAttackRoll ruleAttackRoll = Rulebook.CurrentContext.LastEvent<RuleAttackRoll>();" which might be useful for improvement!
         static public void createImpaleInfusion()
         {
             var earth_blast = library.Get<BlueprintFeature>("7f5f82c1108b961459c9884a0fa0f5c4");    //EarthBlastFeature
@@ -201,7 +206,7 @@ namespace FumisCodex
             Helper.AppendAndReplace(ref ice_base.GetComponent<AbilityVariants>().Variants, ice_impale_ability);
         }
 
-        static public void extendSprayInfusion()
+        static public void extendSprayInfusion(bool enabled = true)
         {
             // references from base game
             // - cold_base
@@ -212,9 +217,12 @@ namespace FumisCodex
             // - rename spray infusion to reflect new element
             // - add cold as valid prerequisite
             var spray_infusion_feature = library.Get<BlueprintFeature>("b5852e8287f12d34ca6f84fcc7019f07");
-            spray_infusion_feature.SetNameDescription("Spray", "Element: water\nType: form infusion\nLevel: 4\nBurn: 3\nAssociated Blasts: charged water, water, cold\n"
-                + "You diffuse your kinetic blast to spray out wildly. All creatures and objects in a 30-foot cone take half your normal amount of blast damage (or full damage for energy blasts). The saving throw DC is Dexterity-based.");
-            Helper.AppendAndReplace(ref spray_infusion_feature.GetComponent<PrerequisiteFeaturesFromList>().Features, cold_blast);
+            if (enabled)
+            {
+                spray_infusion_feature.SetNameDescription("Spray", "Element: water\nType: form infusion\nLevel: 4\nBurn: 3\nAssociated Blasts: charged water, water, cold\n"
+                    + "You diffuse your kinetic blast to spray out wildly. All creatures and objects in a 30-foot cone take half your normal amount of blast damage (or full damage for energy blasts). The saving throw DC is Dexterity-based.");
+                Helper.AppendAndReplace(ref spray_infusion_feature.GetComponent<PrerequisiteFeaturesFromList>().Features, cold_blast);
+            }
 
             // new features
             // - clone from any energy simple blast
@@ -260,7 +268,8 @@ namespace FumisCodex
             cold_spray_ability.ReplaceComponent<AbilityCasterHasFacts>(a => a.Facts = spray_infusion_feature.ToArray());
             cold_spray_ability.ReplaceComponent<AbilityShowIfCasterHasFact>(a => a.UnitFact = spray_infusion_feature);
 
-            Helper.AppendAndReplace(ref cold_base.GetComponent<AbilityVariants>().Variants, cold_spray_ability);
+            if (enabled)
+                Helper.AppendAndReplace(ref cold_base.GetComponent<AbilityVariants>().Variants, cold_spray_ability);
         }
 
         static public void createExtraWildTalentFeat(bool enabled = true)
@@ -294,7 +303,7 @@ namespace FumisCodex
 
             var precise_blast_feature = ScriptableObject.CreateInstance<BlueprintFeature>();
             precise_blast_feature.name = "PreciseBlast";
-            precise_blast_feature.SetNameDescriptionIcon("Precise Blast", "You have fine control over your kinetic blast. Your allies are excluded from the effects of your blasts.", MetamagicFeats.selective_metamagic.Icon);
+            precise_blast_feature.SetNameDescriptionIcon("Precise Blast", "You have fine control over your kinetic blast. Your allies are excluded from the effects of your blasts with a duration of instantaneous.\nDoes not affect Wall, Deadly Earth, Cloud, or other blasts that have a duration other than instantaneous.", MetamagicFeats.selective_metamagic.Icon);
             precise_blast_feature.Groups = FeatureGroup.KineticWildTalent.ToArray();
             precise_blast_feature.Ranks = 1;
             precise_blast_feature.IsClassFeature = true;
@@ -306,8 +315,9 @@ namespace FumisCodex
         }
 
         // known issue:
-        // - with turn-based-mod using 3x gather and then using mobile gathering at the end of your first turn will cheat out 1 extra level of power, effectively granting minor speed boost
-        // - does not restrict your move action to be used for moving
+        // - does not restrict your move action to be used for moving (won't fix)
+        // - gathering long should not slow you, since it already consumes a standard action (won't fix)
+        // - the slow effect is ignored, if applied while moving. the ability should interrupt movement shortly
         static public void createMobileGatheringFeat()
         {
             // --- base game stuff ---
@@ -315,20 +325,28 @@ namespace FumisCodex
             var buff2 = library.Get<BlueprintBuff>("3a2bfdc8bf74c5c4aafb97591f6e4282");   //GatherPowerBuffII
             var buff3 = library.Get<BlueprintBuff>("82eb0c274eddd8849bb89a8e6dbc65f8");   //GatherPowerBuffIII
             var gather_original_ab = library.Get<BlueprintAbility>("6dcbffb8012ba2a4cb4ac374a33e2d9a");    //GatherPower
+            //var slowed_debuff = library.Get<BlueprintBuff>("488e53ede2802ff4da9372c6a494fb66");    //Slowed
             // -----------------------
+
+            buff1.SetIcon(gather_original_ab.Icon);
+            buff1.SetName(buff1.Name + " Lv1");
+            buff2.SetIcon(gather_original_ab.Icon);
+            buff2.SetName(buff2.Name + " Lv2");
+            buff3.SetIcon(gather_original_ab.Icon);
+            buff3.SetName(buff3.Name + " Lv3");
 
             // new buff that halves movement speed, disallows normal gathering, penalty on concentration?
             mobile_debuff = ScriptableObject.CreateInstance<BlueprintBuff>();
             mobile_debuff.name = "MobileGatheringDebuff";
-            mobile_debuff.SetNameDescriptionIcon("Mobile Gathering Debuff", "Your movement speed is halved after gathering power.", gather_original_ab.Icon);
+            mobile_debuff.SetNameDescriptionIcon("Mobile Gathering Debuff", "Your movement speed is halved after gathering power.", Helper.Image2Sprite.Create("GatherMobileHigh.png"));
             //Harmony12.AccessTools.Field(typeof(BlueprintBuff), "m_Flags").SetValue(mobile_debuff, 2); //HiddenInUi
             mobile_debuff.IsClassFeature = true;
             mobile_debuff.SetComponents(UnitCondition.Slowed.CreateAddCondition());
             library.AddAsset(mobile_debuff, "ffd79fee05bf4e6dad7156e895f3cf27");
-            var can_gather = Helper.CreateAbilityRequirementHasBuff(true, mobile_debuff);
-
+            var can_gather = Helper.CreateAbilidtyRequirementHasBuffTimed(NewComponents.CompareType.LessOrEqual, 1.Rounds().Seconds, buff1, buff2, buff3);
+            
             // cannot use usual gathering after used mobile gathering
-            gather_original_ab.AddComponent(can_gather);
+            gather_original_ab.AddComponent(Helper.CreateAbilityRequirementHasBuffs(true, mobile_debuff));
 
             // ability as free action that applies buff and 1 level of gatherpower
             // - is free action
@@ -350,17 +368,20 @@ namespace FumisCodex
             mobile_gathering_short_ab.CanTargetSelf = true;
             mobile_gathering_short_ab.Animation = UnitAnimationActionCastSpell.CastAnimationStyle.Self;//UnitAnimationActionCastSpell.CastAnimationStyle.Kineticist;
             mobile_gathering_short_ab.HasFastAnimation = true;
-            var three2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff3, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
-            var two2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff2), new GameAction[] { Helper.CreateActionRemoveBuff(buff2), Helper.CreateActionApplyBuff(buff3, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
-            var one2two = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff1), new GameAction[] { Helper.CreateActionRemoveBuff(buff1), Helper.CreateActionApplyBuff(buff2, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
-            var zero2one = Helpers.CreateConditional(Helper.CreateConditionHasNoBuff(buff1, buff2, buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff1, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
-            mobile_gathering_short_ab.SetComponents(can_gather, Helper.CreateAbilityEffectRunAction(0, three2three, two2three, one2two, zero2one));
+            //Helpers.CreateApplyBuff(mobile_debuff, Helpers.CreateContextDuration(1), false, false, true);
+            var apply_debuff = Helper.CreateActionApplyBuff(mobile_debuff, 1);
+            var three2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff3, 2) });
+            var two2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff2), new GameAction[] { Helper.CreateActionRemoveBuff(buff2), Helper.CreateActionApplyBuff(buff3, 2) });
+            var one2two = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff1), new GameAction[] { Helper.CreateActionRemoveBuff(buff1), Helper.CreateActionApplyBuff(buff2, 2) });
+            var zero2one = Helpers.CreateConditional(Helper.CreateConditionHasNoBuff(buff1, buff2, buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff1, 2) });
+            var hasMoveAction = Helper.CreateRequirementActionAvailable(false, NewComponents.ActionType.Move);
+            mobile_gathering_short_ab.SetComponents(can_gather, hasMoveAction, Helper.CreateAbilityEffectRunAction(0, apply_debuff, three2three, two2three, one2two, zero2one));
             
             // same as above but standard action and 2 levels of gatherpower
             var mobile_gathering_long_ab = Helpers.CreateAbility(
                 "MobileGatheringLong",
                 "Mobile Gathering (Full Round)",
-                "You may move up to half your normal speed while gathering power.",
+                "You may move up to half your normal speed while gathering power.\nTip for Turn-Based Combat: Move before using this ability.",
                 "e7cd3a8200f04c8fae099d5d2f4afa0b",
                 Helper.Image2Sprite.Create("GatherMobileMedium.png"),
                 AbilityType.Special,
@@ -372,16 +393,16 @@ namespace FumisCodex
             mobile_gathering_long_ab.CanTargetSelf = true;
             mobile_gathering_long_ab.Animation = UnitAnimationActionCastSpell.CastAnimationStyle.Self;
             mobile_gathering_long_ab.HasFastAnimation = true;
-            var one2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff1), new GameAction[] { Helper.CreateActionRemoveBuff(buff1), Helper.CreateActionApplyBuff(buff3, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
-            var zero2two = Helpers.CreateConditional(Helper.CreateConditionHasNoBuff(buff1, buff2, buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff2, 2), Helper.CreateActionApplyBuff(mobile_debuff, 1) });
-            mobile_gathering_long_ab.SetComponents(can_gather, Helper.CreateAbilityEffectRunAction(0, three2three, two2three, one2three, zero2two));
+            var one2three = Helpers.CreateConditional(Helpers.CreateConditionHasBuff(buff1), new GameAction[] { Helper.CreateActionRemoveBuff(buff1), Helper.CreateActionApplyBuff(buff3, 2) });
+            var zero2two = Helpers.CreateConditional(Helper.CreateConditionHasNoBuff(buff1, buff2, buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff2, 2) });
+            mobile_gathering_long_ab.SetComponents(can_gather, Helper.CreateAbilityEffectRunAction(0, apply_debuff, three2three, two2three, one2three, zero2two));
             
             var mobile_gathering_feat = Helpers.CreateFeature(
                 "MobileGatheringFeat",
                 "Mobile Gathering",
                 "While gathering power, you can move up to half your normal speed. This movement provokes attacks of opportunity as normal.",
                 "60edffeba6d74e0f831c00692e5fc621",
-                Helper.Image2Sprite.Create("GatherMobileHigh.png"),
+                mobile_debuff.Icon,
                 FeatureGroup.Feat,
                 kineticist_class.PrerequisiteClassLevel(7, true),
                 Helpers.CreateAddFacts(mobile_gathering_short_ab, mobile_gathering_long_ab)
@@ -389,6 +410,105 @@ namespace FumisCodex
             mobile_gathering_feat.Ranks = 1;
             mobile_gathering_feat.IsClassFeature = true;
             library.AddFeats(mobile_gathering_feat);
+        }
+
+        // known issue: sleet storm still prevents bow attacks, however I don't think any level 18 kineticist will want to use a bow ever
+        static public void createHurricaneQueen()
+        {
+            //base stuff
+            var winds_feature = library.Get<BlueprintFeature>("bb0de2047c448bd46aff120be3b39b7a");  //EnvelopingWinds
+            var winds_stack = library.Get<BlueprintFeature>("bbba1600582cf8446bb515a33bd89af8");    //EnvelopingWindsEffectFeature
+            var weather_rain = library.Get<BlueprintBuff>("f37b708de9eeb2c4ab248d79bb5b5aa7");    //RainModerateBuff
+            var weather_storm = library.Get<BlueprintBuff>("7c260a8970e273d439f2a2e19b7196af");    //RainStormBuff
+            //845332298344c6447972dc9b131add08 SnowModerateBuff
+            
+            //stuff from other mods
+            var sleet_storm = library.Get<BlueprintBuff>("c1a3c2f5d8824f66b7adfa9800194547");    //SleetStormBuff - CotW
+
+            // - adds wild talent "HurricaneQueen"
+            // - Patch hooks into RuleAttackRole IncreaseMissChance(), checks for HurricaneQueen and increase max to 100
+            // - make unit ignore weather effects, components from CotW
+            hurricane_queen_feat = Helpers.CreateFeature(
+                "HurricaneQueenFeature",
+                "Hurricane Queen",
+                "You are one with the hurricane. Your enveloping winds defense wild talent has an additional 25% chance of deflecting non-magical ranged attacks, and your total deflection chance can exceed the usual cap of 75%. All wind and weather (including creatures using the whirlwind monster ability) don't affect you; for example, you could shoot arrows directly through a tornado without penalty.",
+                "5d5cbd74010e41f089fe4b96fd2fc50e",
+                cold_base.Icon,
+                FeatureGroup.KineticWildTalent,
+                Helpers.PrerequisiteClassLevel(kineticist_class, 18),
+                Helpers.PrerequisiteFeature(winds_feature),
+                Helpers.CreateAddFacts(winds_stack, winds_stack, winds_stack, winds_stack, winds_stack),
+                //Helper.CreateSpecificBuffImmunity(weather_rain),
+                //Helper.CreateSpecificBuffImmunity(weather_storm),
+                Helper.CreateSpecificBuffImmunity(sleet_storm),
+                Helpers.Create<CallOfTheWild.ConcealementMechanics.IgnoreFogConcelement>(),
+                Helpers.CreateAddFact(CallOfTheWild.NewSpells.immunity_to_wind)
+            );
+
+            Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, hurricane_queen_feat);
+        }
+        
+        static public void createMindShield(bool enabled = true)
+        {
+            var psychokineticist = library.Get<BlueprintArchetype>("f2847dd4b12fffd41beaa3d7120d27ad");//PsychokineticistArchetype
+            var burn_number = library.Get<BlueprintUnitProperty>("02c5943c77717974cb7fa1b7c0dc51f8");//BurnNumberProperty
+            var buff_daze = library.Get<BlueprintBuff>("9934fedff1b14994ea90205d189c8759");//DazeBuff
+            var buff_confusion = library.Get<BlueprintBuff>("886c7407dc629dc499b9f1465ff382df");//Confusion
+            var buff_cowering = library.Get<BlueprintBuff>("02924d88f80c5374eacbbccb499d5778");//CoweringCommonBuff
+            var buff_frightened = library.Get<BlueprintBuff>("f08a7239aa961f34c8301518e71d4cdf");//Frightened
+            var buff_dominateperson = library.Get<BlueprintBuff>("c0f4e1c24c9cd334ca988ed1bd9d201f");//DominatePersonBuff
+            //var buff_panicked = library.Get<BlueprintBuff>("");//
+
+            var custom_daze = library.CopyAndAdd(buff_daze, "Dazed", "4b35a9e429fb472aaf45585d7d82e3e1");
+            custom_daze.AddComponent( buff_dominateperson.ComponentsArray[2] );
+            
+            // - simply gives counter bonus to skill penalties
+            // - also replaces most common will based debuffs with daze (idea being that daze is better than being mind-controlled or running in circles)
+            // - also give new saving throw like DominatePersonBuff
+            BlueprintBuff mind_shield_buff = Helpers.CreateBuff(
+                "MindShieldBuff",
+                "Mind Shield",
+                "You ignore the penalties of Mind Burn to Wisdom-based skill checks. Additionally if you fail a Will saving throw against a mind-affecting spell, you are instead dazed for the duration of the spell, but you may re-try the saving throw each round.",
+                "0ba3718f568a4c9097307a7af57c8f88",
+                null,
+                null
+            );
+            Harmony12.AccessTools.Field(typeof(BlueprintBuff), "m_Flags").SetValue(mind_shield_buff, 2);//HiddenInUi
+            var b_comp1 = Helpers.CreateAddContextStatBonus(StatType.SkillPerception, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier:2);
+            b_comp1.Value.CustomProperty = burn_number;
+            var b_comp2 = Helpers.CreateAddContextStatBonus(StatType.SkillLoreNature, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 2);
+            b_comp2.Value.CustomProperty = burn_number;
+            var b_comp3 = Helpers.CreateAddContextStatBonus(StatType.SkillLoreReligion, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 2);
+            b_comp3.Value.CustomProperty = burn_number;
+            mind_shield_buff.SetComponents(b_comp1, b_comp2, b_comp3,
+                Helper.CreateBuffSubstitutionOnApply(buff_confusion, custom_daze),
+                Helper.CreateBuffSubstitutionOnApply(buff_cowering, custom_daze),
+                Helper.CreateBuffSubstitutionOnApply(buff_frightened, custom_daze),
+                Helper.CreateBuffSubstitutionOnApply(buff_dominateperson, custom_daze)
+            );
+            
+            var mind_shield_feature = Helpers.CreateFeature(
+                "MindShieldFeature",
+                mind_shield_buff.Name,
+                mind_shield_buff.Description,
+                "eeab6701ee7447d3b62996a62e315bd7",
+                cold_base.Icon,
+                FeatureGroup.KineticWildTalent
+            );
+            var f_comp1 = psychokineticist.CreatePrerequisite(6);
+            var f_comp2 = Helper.CreateAddKineticistBurnValueChangedTrigger(Helper.CreateActionApplyBuff(mind_shield_buff, permanent: true));
+            var f_comp3 = Helpers.PrerequisiteNoFeature(mind_shield_feature);
+            var f_comp4 = Helpers.CreateAddFact(mind_shield_buff);
+            mind_shield_feature.SetComponents(f_comp1, f_comp2, f_comp3, f_comp4);
+
+            if (enabled)
+                Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, mind_shield_feature);
+        }
+
+        // future
+        static public void fixExpandElement()
+        {
+
         }
 
         // work on hold! does not work as intended; composite blasts are not granted, simple blasts are not granted, or other issues
@@ -424,5 +544,43 @@ namespace FumisCodex
             expand_element_feat.Groups = new FeatureGroup[] { FeatureGroup.Feat };
             library.AddFeats(expand_element_feat);
         }
+
+        #region Patches
+
+        [Harmony12.HarmonyPatch(typeof(RuleAttackRoll), "IncreaseMissChance")]
+        class RemoveMissChanceLimitPatch
+        {
+            static bool Prefix(RuleAttackRoll __instance, int value)
+            {
+                if (value > 0
+                    && __instance.Target.IsPlayerFaction
+                    && Kineticist.hurricane_queen_feat != null
+                    && __instance.Target.Descriptor.Progression.Features.HasFact(Kineticist.hurricane_queen_feat))
+                {
+                    Harmony12.AccessTools.Property(typeof(RuleAttackRoll), "MissChance").SetValue(__instance, Math.Min(value, 100));
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        [Harmony12.HarmonyPatch(typeof(BuffSubstitutionOnApply), "OnEventAboutToTrigger")]
+        class FixBuffSubstitutionDCLossPatch
+        {
+            static bool Prefix(BuffSubstitutionOnApply __instance, RuleApplyBuff evt)
+            {
+                if (evt.Blueprint == __instance.GainedFact)
+                {
+                    evt.CanApply = false;
+                    //__instance.Owner.AddBuff(__instance.SubstituteBuff, evt.Initiator, evt.Duration, null);
+                    __instance.Owner.AddBuff(__instance.SubstituteBuff, evt.Context, evt.Duration); // this fixed the lost context parameters, which in turn made it much easier to dispel the replacement buff
+                }
+
+                return false;
+            }
+        }
+
+        #endregion
+        
     }
 }
