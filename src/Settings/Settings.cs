@@ -6,9 +6,14 @@ namespace FumisCodex
     public class Settings
     {
         [JsonProperty]
-        public int version = 2;
+        public int version = 3;
         [JsonProperty]
         public bool slumberHDrestriction = false;
+        [JsonProperty]
+        public bool auraOfDoomFx = true;
+        [JsonProperty]
+        public bool dazeIsNotStun = true;
+
         [JsonProperty]
         public bool extendSprayInfusion = true;
         [JsonProperty]
@@ -17,7 +22,9 @@ namespace FumisCodex
         public bool preciseBlastTalent = true;
         [JsonProperty]
         public bool mindShieldTalent = true;
-
+        [JsonProperty]
+        public bool fixShamblingMoundGrapple = false;
+        
         [JsonProperty]
         public bool cheatCombineParametrizedFeats = false;
 

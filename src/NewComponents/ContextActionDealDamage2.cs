@@ -138,6 +138,7 @@ namespace FumisCodex.NewComponents
                     if (WeaponOverride != null)
                     {
                         attackRoll = new RuleAttackRoll(Context.MaybeCaster, this.Target.Unit, WeaponOverride, 0);
+
                         if (this.Context[AbilitySharedValue.Heal] == 0)   // if this is the first attack this context
                         {
                             this.Context.TriggerRule(attackRoll);

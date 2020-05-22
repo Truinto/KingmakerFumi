@@ -3,14 +3,20 @@ using FumisCodex.NewComponents;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Prerequisites;
+using Kingmaker.Blueprints.Facts;
+using Kingmaker.Designers.EventConditionActionSystem.Actions;
+using Kingmaker.Designers.EventConditionActionSystem.Conditions;
 using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
+using Kingmaker.ResourceLinks;
 using Kingmaker.RuleSystem;
+using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.Abilities.Components.Base;
+using Kingmaker.UnitLogic.ActivatableAbilities;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Class.Kineticist;
 using Kingmaker.UnitLogic.Commands.Base;
@@ -19,6 +25,7 @@ using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -26,6 +33,11 @@ namespace FumisCodex
 {
     public static class Extensions
     {
+        public static T CloneUnity<T>(this T obj) where T : UnityEngine.Object
+        {
+            return ScriptableObject.Instantiate<T>(obj);
+        }
+
         public static PrerequisiteArchetypeLevel CreatePrerequisite(this BlueprintArchetype @class, int level, bool any = true)
         {
             var result = CallOfTheWild.Helpers.Create<PrerequisiteArchetypeLevel>();
@@ -37,7 +49,7 @@ namespace FumisCodex
         }
         
         /// <returns>Action on index 0</returns>
-        public static GameAction getAction(this BlueprintAbility @ability)
+        public static GameAction getAction(this BlueprintAbility ability)
         {
             return ability.GetComponent<AbilityEffectRunAction>().Actions.Actions[0];
         }
@@ -135,8 +147,21 @@ namespace FumisCodex
         //}
     }
 
+    public static class Contexts
+    {
+        public static ContextValue DefaultRank = new ContextValue() { ValueType = ContextValueType.Rank, ValueRank = AbilityRankType.Default };
+        public static ContextValue DefaultShared = new ContextValue() { ValueType = ContextValueType.Shared, ValueShared = AbilitySharedValue.Damage };
+
+        public static PrefabLink NullPrefabLink = new PrefabLink();
+    }
+
     public class Helper
     {
+        public static T[] ToArray<T>(params T[] objs)
+        {
+            return objs;
+        }
+		
         /// <summary>Appends objects on array and overwrites the original.</summary>
         public static T[] AppendAndReplace<T>(ref T[] orig, params T[] objs)
         {
@@ -150,10 +175,67 @@ namespace FumisCodex
             return result;
         }
 
+        public static GameAction[] RecursiveReplace<T>(GameAction[] actions, Action<T> lambda) where T : GameAction
+        {
+            var result = new List<GameAction>();
+
+            foreach (var action in actions)
+            {
+                var conditional = action as Conditional;
+                var repl = action as T;
+                if (conditional)
+                {
+                    conditional = conditional.CreateCopy();
+                    conditional.IfTrue.Actions = RecursiveReplace(conditional.IfTrue.Actions, lambda);
+                    conditional.IfFalse.Actions = RecursiveReplace(conditional.IfFalse.Actions, lambda);
+                    result.Add(conditional);
+                }
+                else if (repl)
+                {
+                    result.Add(repl.CreateCopy(lambda));
+                }
+                else
+                {
+                    result.Add(action);
+                }
+            }
+
+            return result.ToArray();
+        }
+
+        public static void RecursiveAction<T>(GameAction[] actions, Action<T> lambda) where T : GameAction
+        {
+            foreach (var action in actions)
+            {
+                var repl = action as T;
+                if (repl)
+                {
+                    lambda(repl);
+                }
+
+                var conditional = action as Conditional;
+                if (conditional)
+                {
+                    RecursiveAction(conditional.IfTrue.Actions, lambda);
+                    RecursiveAction(conditional.IfFalse.Actions, lambda);
+                }
+            }
+        }
+
         public static AddKineticistBurnValueChangedTrigger CreateAddKineticistBurnValueChangedTrigger(params GameAction[] actions)
         {
             var result = ScriptableObject.CreateInstance<AddKineticistBurnValueChangedTrigger>();
             result.Action = new ActionList() { Actions = actions };
+            return result;
+        }
+
+        public static PrerequisiteFeaturesFromList CreatePrerequisiteFeaturesFromList(bool any, int amount, params BlueprintFeature[] features)
+        {
+            if (features == null || features[0] == null) throw new ArgumentNullException();
+            var result = ScriptableObject.CreateInstance<PrerequisiteFeaturesFromList>();
+            result.Features = features;
+            result.Amount = amount;
+            result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
             return result;
         }
 
@@ -254,6 +336,25 @@ namespace FumisCodex
             return result;
         }
 
+        public static AddContextStatBonusMinMax CreateAddContextStatBonusMin(ContextValue value, int multiplier, StatType stat, params ModifierDescriptor[] descriptor)
+        {
+            var result = ScriptableObject.CreateInstance<AddContextStatBonusMinMax>();
+            result.Multiplier = multiplier;
+            result.Value = value;
+            result.Stat = stat;
+            result.Descriptor = descriptor;
+            result.MinValue = 0;
+            return result;
+        }
+
+        public static HasFact CreateHasFact(BlueprintUnitFact fact, UnitEvaluator unit = null)
+        {
+            var result = ScriptableObject.CreateInstance<HasFact>();
+            result.Fact = fact;
+            result.Unit = unit;
+            return result;
+        }
+
         public static AbilitySpawnFx CreateAbilitySpawnFx(string AssetId, AbilitySpawnFxTime spawnTime, AbilitySpawnFxAnchor position, AbilitySpawnFxAnchor orientation)
         {
             var spawnFx = ScriptableObject.CreateInstance<AbilitySpawnFx>();
@@ -264,8 +365,40 @@ namespace FumisCodex
             spawnFx.OrientationAnchor = orientation;
             return spawnFx;
         }
+		
+		public static PrefabLink Resource(string AssetId)
+		{
+			var result = new Kingmaker.ResourceLinks.PrefabLink();
+			result.AssetId = AssetId;
+			return result;
+		}
 
-        public class Image2Sprite
+        public static ContextActionSpawnMonsterLeveled CreateContextActionSpawnMonsterLeveled(int[] LevelThreshold, BlueprintUnit[] BlueprintPool)
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionSpawnMonsterLeveled>();
+            result.LevelThreshold = LevelThreshold;
+            result.BlueprintPool = BlueprintPool;
+            return result;
+        }
+
+        public static ContextActionToggleActivatable CreateContextActionToggleActivatable(bool TurnOn, BlueprintActivatableAbility Activatable, params GameAction[] OnFailure)
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionToggleActivatable>();
+            result.TurnOn = TurnOn;
+            result.Activatable = Activatable;
+			result.OnFailure = Helpers.CreateActionList(OnFailure);
+            return result;
+        }
+
+        public static ContextActionKillSummons CreateContextActionKillSummons(BlueprintSummonPool SummonPool, params BlueprintBuff[] Buffs)
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionKillSummons>();
+            result.SummonPool = SummonPool;
+            result.Buffs = Buffs;
+            return result;
+        }
+        
+        public static class Image2Sprite
         {
             public static Sprite Create(string filename)
             {

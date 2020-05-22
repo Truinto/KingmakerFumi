@@ -28,7 +28,7 @@ namespace FumisCodex
         /// <summary>True if mod is enabled.</summary>
         internal static bool Enabled { get; set; } = true;
         /// <summary>Path of current mod.</summary>
-        internal static string ModPath { get; set; }
+        public static string ModPath { get; set; }
 
         #region logging
 
@@ -55,53 +55,53 @@ namespace FumisCodex
         
         #region GUI
 
-        /// <summary>
-        /// Called when the mod is turned to on/off.
-        /// With this function you control an operation of the mod and inform users whether it is enabled or not.
-        /// </summary>
+        /// <summary>Called when the mod is turned to on/off.
+        /// With this function you control an operation of the mod and inform users whether it is enabled or not.</summary>
         /// <param name="value">true = mod to be turned on; false = mod to be turned off</param>
         /// <returns>Returns true, if state can be changed.</returns>
-        internal static bool OnToggle(UnityModManager.ModEntry modEntry, bool value)
+        private static bool OnToggle(UnityModManager.ModEntry modEntry, bool value)
         {
             Main.Enabled = value;
             return true;
         }
-        
-        public static string text1 = "Example Text.";
+
         /// <summary>Draws the GUI</summary>
-        static void OnGUI(UnityModManager.ModEntry modEntry)
+        private static void OnGUI(UnityModManager.ModEntry modEntry)
         {
             GUILayout.Label("Disclaimer: Remember that playing with mods makes them mandatory for your save game! If you want to uninstall anyway, then you need to remove all references to said mod. In my case respec all your characters, that should do the trick.");
 
             Checkbox(ref Settings.StateManager.State.slumberHDrestriction, "CotW - remove slumber HD restriction");
+            Checkbox(ref Settings.StateManager.State.auraOfDoomFx, "CotW [*] - Aura of Doom visible area effect", CotW.modAuraOfDoomToogle);
+            Checkbox(ref Settings.StateManager.State.dazeIsNotStun, "CotW [*] - Dazing Spell does not count as MindAffecting or Compulsion", CotW.modDazeToogle);
             Checkbox(ref Settings.StateManager.State.extendSprayInfusion, "Kineticist - Spray infusion may be used with cold blast");
             Checkbox(ref Settings.StateManager.State.extraWildTalentFeat, "Kineticist [F] - Feat for extra wild talents");
             Checkbox(ref Settings.StateManager.State.preciseBlastTalent, "Kineticist [F] - Utility talent for precise blasts (similiar to alchemist discovery, but for blasts)");
             Checkbox(ref Settings.StateManager.State.mindShieldTalent, "Kineticist [F] - Mind Shield: Utility talent to reduce Mind Burn's effect on Psychokineticist");
-            GUILayout.Label("Stuff in the options are homebrew. For a full list read the mods description.\n"
-                + "Legend: [F] This adds a talent. You still need to pick feats/talents for these effects. If you already picked these features, then they stay in effect regardless of the option above.");
-            if (GUILayout.Button("Save settings. All changes require a restart to take effect!"))
+            Checkbox(ref Settings.StateManager.State.fixShamblingMoundGrapple, "Fix - Shambling Mound can act while grappling");
+            Checkbox(ref Settings.StateManager.State.cheatCombineParametrizedFeats, "Cheat [*] - picking Weapon Focus (Greater etc.) will grant all in the same group");
+            GUILayout.Label("Stuff in the options are either homebrew or. For a full list read the mods description."
+                + "\nLegend: [F] This adds a feat. You still need to pick feats/talents for these effects. If you already picked these features, then they stay in effect regardless of the option above."
+                + "\n[*] Option is active immediately.");
+            if (GUILayout.Button("Save settings!"))
             {
                 Settings.StateManager.TrySaveConfigurationState();
             }
-
-            GUILayout.Space(5);
-            GUILayout.Label("Options below are effective immediately without restart.");
-            Checkbox(ref Settings.StateManager.State.cheatCombineParametrizedFeats, "Cheat - picking Weapon Focus (Greater etc.) will grant all in the same group");
+            
         }
-        private static void Checkbox(ref bool value, string label)
+        private static void Checkbox(ref bool value, string label, Action<bool> action = null)
         {
             GUILayout.BeginHorizontal();
             if (GUILayout.Button($"{(value ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} {label}", GUILayout.ExpandWidth(false)))
             {
                 value = !value;
+                action?.Invoke(value);
             }
 
             GUILayout.EndHorizontal();
         }
 
         /// <summary>Unused example.</summary>
-        static void OnUpdate(UnityModManager.ModEntry modEntry, float dt)
+        private static void OnUpdate(UnityModManager.ModEntry modEntry, float dt)
         {
             if (Input.GetKeyDown(KeyCode.F1)) { }
         }
@@ -149,7 +149,6 @@ namespace FumisCodex
         #region Load_Patch
 
         [Harmony12.HarmonyBefore(new string[] { "CallOfTheWild" })]
-        [Harmony12.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary")]
         [Harmony12.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
         static class LibraryScriptableObject_LoadDictionary_Patch_Before
         {
@@ -170,7 +169,6 @@ namespace FumisCodex
         }
 
         [Harmony12.HarmonyAfter(new string[] { "CallOfTheWild" })]
-        [Harmony12.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary")]
         [Harmony12.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
         static class LibraryScriptableObject_LoadDictionary_Patch_After
         {
@@ -185,15 +183,38 @@ namespace FumisCodex
 
                     //Hexcrafter.createHexcrafter();
                     Hexcrafter.createExtraArcanaFeat();
+
+                    Rogue.createFlensingStrike();
+
+                    Kineticist.init();
                     Kineticist.createImpaleInfusion();
                     Kineticist.extendSprayInfusion(Settings.StateManager.State.extendSprayInfusion);
                     Kineticist.createPreciseBlastTalent(Settings.StateManager.State.preciseBlastTalent);
                     Kineticist.createMobileGatheringFeat();
                     Kineticist.createHurricaneQueen();
                     Kineticist.createMindShield(Settings.StateManager.State.mindShieldTalent);
-                    Kineticist.createExtraWildTalentFeat(Settings.StateManager.State.extraWildTalentFeat);
                     //Kineticist.createExpandElementalFocus();
+                    Kineticist.createFlight();
+                    Kineticist.createShiftEarth();
+                    Kineticist.createSparkofLife();
+                    Kineticist.fixWallInfusion();//before MobileBlast
+                    Kineticist.createMobileBlast();
+                    Kineticist.createExtraWildTalentFeat(Settings.StateManager.State.extraWildTalentFeat);//must be after new talents
+                    Kineticist.fixExpandElement();//must be after ExtraWildTalentFeat
+
+                    Fixes.fixShamblingMoundGrapple();
+
                     if (Settings.StateManager.State.slumberHDrestriction) CotW.modSlumber();
+                    CotW.modAuraOfDoomToogle(Settings.StateManager.State.auraOfDoomFx);
+                    CotW.modDazeToogle(Settings.StateManager.State.dazeIsNotStun);
+                    
+#if DEBUG
+                    Main.DebugLog("Running in debug.");
+                    Debug.Log("Normal log");
+                    Debug.LogWarning("Warning log");
+                    Debug.LogError("Error log");
+                    GuidManager.i.WriteAll();
+#endif
                 }
                 catch (Exception ex)
                 {

@@ -37,55 +37,55 @@ namespace FumisCodex
     class Hexcrafter
     {
         static LibraryScriptableObject library => Main.library;
-        static public BlueprintCharacterClass magus = library.Get<BlueprintCharacterClass>("45a4607686d96a1498891b3286121780"); //magus class
-        static public BlueprintFeatureSelection magus_arcana_selection = library.Get<BlueprintFeatureSelection>("e9dc4dfc73eaaf94aae27e0ed6cc9ada");
+        public static BlueprintCharacterClass magus = library.Get<BlueprintCharacterClass>("45a4607686d96a1498891b3286121780"); //magus class
+        public static BlueprintFeatureSelection magus_arcana_selection = library.Get<BlueprintFeatureSelection>("e9dc4dfc73eaaf94aae27e0ed6cc9ada");
 
-        static public HexEngine hex_engine;
-        static public BlueprintArchetype archetype;
-        static public BlueprintFeature hexcrafter_spells;
-        static public BlueprintFeature arcana_hexes;
-        static public BlueprintFeatureSelection hex_arcana_selection;
-        static public BlueprintFeatureSelection extra_hex;
+        public static HexEngine hex_engine;
+        public static BlueprintArchetype archetype;
+        public static BlueprintFeature hexcrafter_spells;
+        public static BlueprintFeature arcana_hexes;
+        public static BlueprintFeatureSelection hex_arcana_selection;
+        public static BlueprintFeatureSelection extra_hex;
 
         //feats
-        static public BlueprintFeature extra_arcana_feat;
+        public static BlueprintFeature extra_arcana_feat;
 
         //magus hex
-        static public BlueprintFeature accursed_strike;
+        public static BlueprintFeature accursed_strike;
         //hexes
-        static public BlueprintFeature healing;
-        static public BlueprintFeature beast_of_ill_omen;
-        static public BlueprintFeature slumber_hex;
-        static public BlueprintFeature misfortune_hex;
-        static public BlueprintFeature fortune_hex;
-        static public BlueprintFeature flight_hex;
-        static public BlueprintFeature iceplant_hex;
-        static public BlueprintFeature murksight_hex;
-        static public BlueprintFeature ameliorating;
-        static public BlueprintFeature evil_eye;
-        static public BlueprintFeature summer_heat;
-        static public BlueprintFeature cackle;
-        static public BlueprintFeature ward;
-        static public BlueprintFeature swamps_grasp;
+        public static BlueprintFeature healing;
+        public static BlueprintFeature beast_of_ill_omen;
+        public static BlueprintFeature slumber_hex;
+        public static BlueprintFeature misfortune_hex;
+        public static BlueprintFeature fortune_hex;
+        public static BlueprintFeature flight_hex;
+        public static BlueprintFeature iceplant_hex;
+        public static BlueprintFeature murksight_hex;
+        public static BlueprintFeature ameliorating;
+        public static BlueprintFeature evil_eye;
+        public static BlueprintFeature summer_heat;
+        public static BlueprintFeature cackle;
+        public static BlueprintFeature ward;
+        public static BlueprintFeature swamps_grasp;
         //major hexes
-        static public BlueprintFeature major_ameliorating;
-        static public BlueprintFeature major_healing;
-        static public BlueprintFeature animal_skin;
-        static public BlueprintFeature agony;
-        static public BlueprintFeature beast_gift;
-        static public BlueprintFeature harrowing_curse;
-        static public BlueprintFeature ice_tomb;
-        static public BlueprintFeature regenerative_sinew;
-        static public BlueprintFeature retribution;
-        static public BlueprintFeature restless_slumber;
+        public static BlueprintFeature major_ameliorating;
+        public static BlueprintFeature major_healing;
+        public static BlueprintFeature animal_skin;
+        public static BlueprintFeature agony;
+        public static BlueprintFeature beast_gift;
+        public static BlueprintFeature harrowing_curse;
+        public static BlueprintFeature ice_tomb;
+        public static BlueprintFeature regenerative_sinew;
+        public static BlueprintFeature retribution;
+        public static BlueprintFeature restless_slumber;
         // grand hexes
-        static public BlueprintFeature animal_servant;
-        static public BlueprintFeature death_curse;
-        static public BlueprintFeature lay_to_rest;
-        static public BlueprintFeature life_giver;
-        static public BlueprintFeature eternal_slumber;
+        public static BlueprintFeature animal_servant;
+        public static BlueprintFeature death_curse;
+        public static BlueprintFeature lay_to_rest;
+        public static BlueprintFeature life_giver;
+        public static BlueprintFeature eternal_slumber;
 
-        static public void createHexcrafter()
+        public static void createHexcrafter()
         {
             archetype = Helpers.Create<BlueprintArchetype>(a =>
             {
@@ -313,7 +313,7 @@ namespace FumisCodex
         
         // --- general feats ---
 
-        static public void createExtraArcanaFeat()
+        public static void createExtraArcanaFeat()
         {
             var extra_arcana_feat_selection = Helpers.CreateFeatureSelection(
                 "ExtraArcanaFeat",
