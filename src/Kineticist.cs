@@ -41,6 +41,7 @@ using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.Blueprints.Facts;
 using Guid = FumisCodex.GuidManager;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
+using Kingmaker.View.Animation;
 
 namespace FumisCodex
 {
@@ -711,9 +712,21 @@ namespace FumisCodex
         public static void createShiftEarth()
         {
             var spiked_pit = library.Get<BlueprintAbility>("46097f610219ac445b4d6403fc596b9f");
+            var pit_effect = library.Get<BlueprintAbilityAreaEffect>("beccc33f543b1f8469c018982c23ac06").GetComponent<AreaEffectPit>();
 
-            var shift_earth_ab = Helpers.CreateAbility("ShiftEarthAbility", "Shift Earth",
-                "Element: earth\nType: utility\nBurn: 0\nSaving Throw: Reflex negates\nSpell Resistance: no\nYou can move earth and stone to create a spiked pit within 30 feet of you.\nOriginal text: As a standard action, you can push or pull a 5-foot cube of earth or unworked stone within 30 feet, moving the cube 5 feet in any direction. You can create raised platforms, stairs up a cliff, holes, or other useful features. This doesn’t cause the earth to float in the air, although in areas with plenty of earth, you can move a cube upward, creating a short pillar. If you move the earth beneath a creature’s feet, it can attempt a DC 20 Reflex save to leap elsewhere and avoid moving along with the earth.",
+            //fix spiked pit not dealing damage every round
+            pit_effect.EveryRoundAction = Helpers.CreateActionList( Helpers.CreateActionDealDamage(PhysicalDamageForm.Piercing, Helpers.CreateContextDiceValue(DiceType.D6, 1), false, false, true) );
+
+            var shifting_earth_feat = Helpers.CreateFeature("ShiftEarthFeature", "Shift Earth",
+                "Element: earth\nType: utility\nBurn: 0\nSaving Throw: Reflex negates\nSpell Resistance: no\nYou can move earth and stone to create one spiked pit within 30 feet of you.\nOriginal text: As a standard action, you can push or pull a 5-foot cube of earth or unworked stone within 30 feet, moving the cube 5 feet in any direction. You can create raised platforms, stairs up a cliff, holes, or other useful features. This doesn’t cause the earth to float in the air, although in areas with plenty of earth, you can move a cube upward, creating a short pillar. If you move the earth beneath a creature’s feet, it can attempt a DC 20 Reflex save to leap elsewhere and avoid moving along with the earth.",
+                "fd7a363d1fa54c1ba25a5817acde2c1f",
+                spiked_pit.Icon,
+                FeatureGroup.None,
+                Helpers.PrerequisiteClassLevel(kineticist_class, 8),
+                prerequisite_earth
+            );
+
+            var shift_earth_ab = Helpers.CreateAbility("ShiftEarthAbility", shifting_earth_feat.Name, shifting_earth_feat.Description,
                 "4dbe165d5a074579b78ba285b1a98770",
                 spiked_pit.Icon,
                 AbilityType.SpellLike,
@@ -724,6 +737,7 @@ namespace FumisCodex
                 spiked_pit.GetComponent<AbilityEffectRunAction>(),
                 spiked_pit.GetComponent<ContextRankConfig>(),
                 spiked_pit.GetComponent<AbilityAoERadius>(),
+                //Helpers.Create<UniqueAreaEffect>(a => a.Feature = shifting_earth_feat),
                 Helpers.Create<AbilityKineticist>(a => {
                     a.CachedDamageSource = (spiked_pit.GetComponent<AbilityEffectRunAction>().Actions.Actions[0] as ContextActionSpawnAreaEffect)?.AreaEffect;
                 }),
@@ -733,16 +747,9 @@ namespace FumisCodex
                     a.CharacterClass = kineticist_class;
                 })
             );
+            shift_earth_ab.setMiscAbilityParametersRangedDirectional(animation_style: CastAnimationStyle.CastActionOmni);
 
-            var shifting_earth_feat = Helpers.CreateFeature("ShiftEarthFeature", shift_earth_ab.Name, shift_earth_ab.Description,
-                "fd7a363d1fa54c1ba25a5817acde2c1f",
-                shift_earth_ab.Icon,
-                FeatureGroup.None,
-                Helpers.CreateAddFact(shift_earth_ab),
-                Helpers.PrerequisiteClassLevel(kineticist_class, 8),
-                prerequisite_earth
-            );
-
+            shifting_earth_feat.AddComponent(Helpers.CreateAddFact(shift_earth_ab));
             Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, shifting_earth_feat);
         }
 		
@@ -863,8 +870,6 @@ namespace FumisCodex
                 
                 // applies to variants list
                 Helper.AppendAndReplace(ref e.Value.Variants, mobileblast_ab);
-
-                //break; // TODO: fix blueflame
 			}
         }
 
