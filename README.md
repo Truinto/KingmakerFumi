@@ -17,12 +17,24 @@ Installation
 Content
 -----------
 * Extra Arcana Feat [Link](https://www.d20pfsrd.com/feats/general-feats/extra-arcana/)
+* Flensing Strike [Link](https://www.d20pfsrd.com/feats/monster-feats/flensing-strike/)
 * Impale Infusion [Link](https://www.d20pfsrd.com/alternative-rule-systems/occult-adventures/occult-classes/kineticist/infusion-wild-talents/)
+* Mobile Blast [Link](https://www.d20pfsrd.com/alternative-rule-systems/occult-adventures/occult-classes/kineticist/infusion-wild-talents/)
+* Spark of Life [Link](https://www.d20pfsrd.com/alternative-rule-systems/occult-adventures/occult-classes/kineticist/utility-wild-talents/) (optimized for Turn-Based-Mod)
+* Shift Earth [Link](https://www.d20pfsrd.com/alternative-rule-systems/occult-adventures/occult-classes/kineticist/utility-wild-talents/) (only creates pits)
 * Mobile Gathering [Link](https://www.d20pfsrd.com/feats/general-feats/mobile-gathering/)
+* various Flight Wild Talents (Wings of Air, Greater Flame Jet, Ice Path)
 * Spray Infusion 'passive' (Homebrew: Spray Infusion can be used for cold blast)
 * Extra Wild Talent Feat (Homebrew: Like [this](https://www.d20pfsrd.com/feats/general-feats/extra-wild-talent/), but without the ridiculous level increase)
+* Mind Shield (Homebrew: Ignore some penalties to WIS damage from Psychokineticist)
 * Precise Blast Wild Talent (Homebrew: No friendly fire blasts.)
 * CotW: remove HD cap on slumber hexes.
+
+Bug Fixes
+-----------
+* Wall Infusion does now deal its damage each turn instead of just once
+* Expanded Element will now grant bonuses when you pick your primary element again
+* Spiked Pit actually deals damage every round
 
 Notes
 -----------
