@@ -29,6 +29,15 @@ Content
 * Mind Shield (Homebrew: Ignore some penalties to WIS damage from Psychokineticist)
 * Precise Blast Wild Talent (Homebrew: No friendly fire blasts.)
 * CotW: remove HD cap on slumber hexes.
+* Hexcrafter (Magus archetype)
+* Hex Strike Feat
+* Master of Many Styles (Monk archetype)
+* Combat Style Master
+* Snake Style chain
+* Boar Style chain
+* Wolf Style chain
+* Ki-Leech Qinggong Power
+* One-Touch Ki Power
 
 Bug Fixes
 -----------
