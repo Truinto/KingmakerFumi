@@ -3,19 +3,26 @@ using FumisCodex.NewComponents;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Prerequisites;
+using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Facts;
+using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
 using Kingmaker.Designers.EventConditionActionSystem.Conditions;
+using Kingmaker.Designers.Mechanics.Buffs;
 using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
+using Kingmaker.Enums.Damage;
 using Kingmaker.ResourceLinks;
 using Kingmaker.RuleSystem;
+using Kingmaker.RuleSystem.Rules;
+using Kingmaker.RuleSystem.Rules.Damage;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.Abilities.Components.Base;
+using Kingmaker.UnitLogic.Abilities.Components.CasterCheckers;
 using Kingmaker.UnitLogic.ActivatableAbilities;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Class.Kineticist;
@@ -23,20 +30,45 @@ using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
+using Kingmaker.UnitLogic.Mechanics.Components;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
+using Kingmaker.UnitLogic.Parts;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using UnityEngine;
 
 namespace FumisCodex
 {
     public static class Extensions
     {
+        private static readonly FastSetter setBaseValueType = Helpers.CreateFieldSetter<ContextRankConfig>("m_BaseValueType");
+        private static readonly FastGetter getBaseValueType = Helpers.CreateFieldGetter<ContextRankConfig>("m_BaseValueType");
+        public static ContextRankBaseValueType m_BaseValueType(this ContextRankConfig config)
+        {
+            return (ContextRankBaseValueType)getBaseValueType(config);
+        }
+        public static void m_BaseValueType(this ContextRankConfig config, ContextRankBaseValueType value)
+        {
+            setBaseValueType(config, value);
+        }
+
+        //private static HarmonyLib.SetterHandler<BlueprintBuff, object> getm_Flags = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintBuff, object>(HarmonyLib.AccessTools.Field(typeof(BlueprintBuff), "m_Flags"));
+        public static void m_Flags(this BlueprintBuff obj, bool IsFromSpell = false, bool HiddenInUi = false, bool StayOnDeath = false, bool RemoveOnRest = false, bool RemoveOnResurrect = false, bool Harmful = false)
+        {
+            int value = (IsFromSpell?1:0) | (StayOnDeath?8:0) | (RemoveOnRest?16:0) | (RemoveOnResurrect?32:0) | (Harmful?64:0);
+#if !DEBUG
+            value |= (HiddenInUi?2:0);
+#endif
+            HarmonyLib.AccessTools.Field(typeof(BlueprintBuff), "m_Flags").SetValue(obj, value);
+        }
+
         public static T CloneUnity<T>(this T obj) where T : UnityEngine.Object
         {
-            return ScriptableObject.Instantiate<T>(obj);
+            return UnityEngine.Object.Instantiate<T>(obj);
         }
+
 
         public static PrerequisiteArchetypeLevel CreatePrerequisite(this BlueprintArchetype @class, int level, bool any = true)
         {
@@ -149,10 +181,30 @@ namespace FumisCodex
 
     public static class Contexts
     {
-        public static ContextValue DefaultRank = new ContextValue() { ValueType = ContextValueType.Rank, ValueRank = AbilityRankType.Default };
-        public static ContextValue DefaultShared = new ContextValue() { ValueType = ContextValueType.Shared, ValueShared = AbilitySharedValue.Damage };
-
         public static PrefabLink NullPrefabLink = new PrefabLink();
+
+        public static ContextValue ValueRank = new ContextValue() { ValueType = ContextValueType.Rank, ValueRank = AbilityRankType.Default };
+        public static ContextValue ValueShared = new ContextValue() { ValueType = ContextValueType.Shared, ValueShared = AbilitySharedValue.Damage };
+        public static ContextValue ValueZero = new ContextValue() { ValueType = ContextValueType.Simple, Value = 0 };
+        public static ContextValue ValueOne = new ContextValue() { ValueType = ContextValueType.Simple, Value = 1 };
+        public static ContextValue ValueTwo = new ContextValue() { ValueType = ContextValueType.Simple, Value = 2 };
+        public static ContextValue ValueFour = new ContextValue() { ValueType = ContextValueType.Simple, Value = 4 };
+
+        public static ContextDiceValue DiceZero = Helpers.CreateContextDiceValue(DiceType.Zero, ValueZero);
+        public static ContextDiceValue DiceOne = Helpers.CreateContextDiceValue(DiceType.One, ValueOne);
+        public static ContextDiceValue Dice1d3 = Helpers.CreateContextDiceValue(DiceType.D3, ValueOne);
+        public static ContextDiceValue Dice1d4 = Helpers.CreateContextDiceValue(DiceType.D4, ValueOne);
+        public static ContextDiceValue Dice1d6 = Helpers.CreateContextDiceValue(DiceType.D6, ValueOne);
+        public static ContextDiceValue Dice1d8 = Helpers.CreateContextDiceValue(DiceType.D8, ValueOne);
+
+        public static ContextDurationValue DurationZero = Helpers.CreateContextDuration(0);
+        public static ContextDurationValue Duration1Round = Helpers.CreateContextDuration(1);
+        public static ContextDurationValue DurationRankInRounds = Helpers.CreateContextDuration(Contexts.ValueRank, DurationRate.Rounds);
+        public static ContextDurationValue DurationRankInMinutes = Helpers.CreateContextDuration(Contexts.ValueRank, DurationRate.Minutes);
+        public static ContextDurationValue Duration24Hours = Helpers.CreateContextDuration(1, DurationRate.Days);
+
+        public static BlueprintSummonPool SummonPool = Main.library.Get<BlueprintSummonPool>("d94c93e7240f10e41ae41db4c83d1cbe");
+        public static ActionList AfterSpawnAction = Helper.CreateActionList(Helpers.CreateApplyBuff(Main.library.Get<BlueprintBuff>("0dff842f06edace43baf8a2f44207045"), DurationZero, false, false, false, false, true));
     }
 
     public class Helper
@@ -165,6 +217,8 @@ namespace FumisCodex
         /// <summary>Appends objects on array and overwrites the original.</summary>
         public static T[] AppendAndReplace<T>(ref T[] orig, params T[] objs)
         {
+            if (orig == null) orig = new T[0];
+
             int i, j;
             T[] result = new T[orig.Length + objs.Length];
             for (i = 0; i < orig.Length; i++)
@@ -373,6 +427,29 @@ namespace FumisCodex
 			return result;
 		}
 
+        public static ContextActionSpawnMonster CreateContextActionSpawnMonster(BlueprintUnit unit, ContextDiceValue amount = null, ContextDurationValue duration = null, BlueprintSummonPool pool = null)
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionSpawnMonster>();
+            result.Blueprint = unit;
+            result.SummonPool = pool ?? Contexts.SummonPool;
+            result.DurationValue = duration ?? Contexts.DurationRankInRounds;
+            result.CountValue = amount ?? Contexts.DiceOne;
+            result.AfterSpawn = Contexts.AfterSpawnAction;
+            return result;
+        }
+
+        public static ContextActionSpawnMonsterUnique CreateContextActionSpawnMonsterUnique(BlueprintUnit unit, BlueprintSummonPool pool, ContextDiceValue amount = null, ContextDurationValue duration = null)
+        {
+            if (pool == null) throw new ArgumentNullException();
+            var result = ScriptableObject.CreateInstance<ContextActionSpawnMonsterUnique>();
+            result.Blueprint = unit;
+            result.SummonPool = pool;
+            result.DurationValue = duration ?? Contexts.DurationRankInRounds;
+            result.CountValue = amount ?? Contexts.DiceOne;
+            result.AfterSpawn = Contexts.AfterSpawnAction;
+            return result;
+        }
+
         public static ContextActionSpawnMonsterLeveled CreateContextActionSpawnMonsterLeveled(int[] LevelThreshold, BlueprintUnit[] BlueprintPool)
         {
             var result = ScriptableObject.CreateInstance<ContextActionSpawnMonsterLeveled>();
@@ -386,7 +463,7 @@ namespace FumisCodex
             var result = ScriptableObject.CreateInstance<ContextActionToggleActivatable>();
             result.TurnOn = TurnOn;
             result.Activatable = Activatable;
-			result.OnFailure = Helpers.CreateActionList(OnFailure);
+			result.OnFailure = CreateActionList(OnFailure);
             return result;
         }
 
@@ -397,15 +474,198 @@ namespace FumisCodex
             result.Buffs = Buffs;
             return result;
         }
+
+        public static AbilityShowIfCasterHasAnyFacts CreateAbilityShowIfCasterHasAnyFacts(params BlueprintUnitFact[] facts)
+        {
+            var result = ScriptableObject.CreateInstance<AbilityShowIfCasterHasAnyFacts>();
+            result.UnitFacts = facts;
+            return result;
+        }
+
+        public static AbilityCasterHasNoFacts CreateAbilityCasterHasNoFacts(params BlueprintUnitFact[] facts)
+        {
+            var result = ScriptableObject.CreateInstance<AbilityCasterHasNoFacts>();
+            result.Facts = facts;
+            return result;
+        }
+
+        public static ContextActionCastSpell CreateContextActionCastSpell(BlueprintAbility spell, ContextValue dc = null, ContextValue spellLevel = null)
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionCastSpell>();
+            result.Spell = spell;
+            result.OverrideDC = dc != null;
+            result.OverrideSpellLevel = spellLevel != null;
+            result.DC = dc;
+            result.SpellLevel = spellLevel;
+            return result;
+        }
+
+        public static AddSpellImmunity CreateAddSpellImmunity(int immunityType, SpellDescriptor descriptor, params BlueprintAbility[] exceptions)
+        {
+            var result = ScriptableObject.CreateInstance<AddSpellImmunity>();
+            result.SpellDescriptor = new SpellDescriptorWrapper(descriptor);
+            result.Type = (SpellImmunityType)immunityType;
+            if (exceptions != null) result.Exceptions = exceptions;
+            return result;
+        }
+
+        public static AddKineticistBurnModifier CreateAddKineticistBurnModifier(int Value, KineticistBurnType BurnType = KineticistBurnType.Infusion, ContextValue BurnValue = null, params BlueprintAbility[] AppliableTo)
+        {
+            var result = ScriptableObject.CreateInstance<AddKineticistBurnModifier>();
+            result.Value = Value;
+            result.BurnType = BurnType;
+            result.BurnValue = BurnValue;
+            result.UseContextValue = BurnValue != null;
+            result.RemoveBuffOnAcceptBurn = false;
+            result.AppliableTo = AppliableTo ?? new BlueprintAbility[0];
+            return result;
+        }
+
+        public static ContextActionRemoveSelf CreateContextActionRemoveSelf()
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionRemoveSelf>();
+            return result;
+        }
+
+        public static BuffMovementSpeed CreateBuffMovementSpeed(int Value, ModifierDescriptor Descriptor = ModifierDescriptor.None, int MinimumCap = 0, float MultiplierCap = 0f)
+        {
+            var result = ScriptableObject.CreateInstance<BuffMovementSpeed>();
+            result.Value = Value;
+            result.Descriptor = Descriptor;
+            result.CappedOnMultiplier = (MultiplierCap != 0f);
+            result.MultiplierCap = MultiplierCap;
+            result.CappedMinimum = (MinimumCap > 0);
+            result.MinimumCap = MinimumCap;
+            return result;
+        }
+
+        public static CriticalConfirmationWeaponType CreateCriticalConfirmationWeaponType(ContextValue Value, WeaponCategory Type)
+        {
+            var result = ScriptableObject.CreateInstance<CriticalConfirmationWeaponType>();
+            result.Value = Value;
+            result.Type = Type;
+            return result;
+        }
+
+        public static AddContextStatBonus CreateAddContextStatBonus(StatType Stat, ContextValue Value, ModifierDescriptor Descriptor = ModifierDescriptor.UntypedStackable)
+        {
+            var result = ScriptableObject.CreateInstance<AddContextStatBonus>();
+            result.Stat = Stat;
+            result.Value = Value;
+            result.Descriptor = Descriptor;
+            return result;
+        }
+
+        ///<summary>SubFeature is the second or third feat of the style chain.</summary>
+        public static AddFactContextActions CombatStyleHelper(BlueprintFeature SubFeature, BlueprintBuff Buff)
+        {
+            var applyBuff = ScriptableObject.CreateInstance<ContextActionApplyBuff>();
+            applyBuff.Buff = Buff;
+            applyBuff.DurationValue = Contexts.DurationZero;
+            applyBuff.IsFromSpell = false;
+            applyBuff.IsNotDispelable = false;
+            applyBuff.Permanent = true;
+
+            var has = ScriptableObject.CreateInstance<ContextConditionHasFact>();
+            has.Fact = SubFeature;
+
+            var c = ScriptableObject.CreateInstance<Conditional>();
+            c.ConditionsChecker = new ConditionsChecker() { Conditions = new Condition[] { has }, Operation = Operation.And };
+            c.IfTrue = CreateActionList(applyBuff);
+            c.IfFalse = CreateActionList();
+
+            var result = ScriptableObject.CreateInstance<AddFactContextActions>();
+            result.Activated = CreateActionList(c);
+            result.Deactivated = CreateActionList();
+            result.NewRound = CreateActionList();
+
+            return result;
+        }
+
+        public static ContextActionRestoreResource CreateContextActionRestoreResource(BlueprintAbilityResource Resource, ContextValue Amount, bool ToCaster = false)
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionRestoreResource>();
+            result.Resource = Resource;
+            result.Amount = Amount;
+            result.ToCaster = ToCaster;
+            return result;
+        }
+
+        public static RendSpecial CreateRendSpecial(DiceFormula RendDamage, DamageTypeDescription RendType = null, WeaponCategory? Category = null, bool TargetSelf = false, params GameAction[] Actions)
+        {
+            var result = ScriptableObject.CreateInstance<RendSpecial>();
+            result.RendType = RendType ?? CreateDamageTypeDescription();
+            result.RendDamage = RendDamage;
+            result.TargetSelf = TargetSelf;
+            result.CheckWeaponCategory = Category != null;
+            result.WeaponCategory = Category.GetValueOrDefault();
+            result.Actions = CreateActionList(Actions);
+            return result;
+        }
+
+        public static DamageTypeDescription CreateDamageTypeDescription(DamageType type = DamageType.Physical)
+        {
+            var result = new DamageTypeDescription()
+            {
+                Type = type,
+                Common = new DamageTypeDescription.CommomData(),
+                Physical = new DamageTypeDescription.PhysicalData() { Form = (PhysicalDamageForm)7 }
+            };
+            return result;
+        }
+
+        public static AddOutgoingPhysicalDamageProperty CreateAddOutgoingPhysicalDamageProperty(
+            BlueprintWeaponType WeaponType = null, bool CheckRange = false, bool IsRanged = false, bool AddMagic = false,
+            PhysicalDamageMaterial? Material = null, PhysicalDamageForm? Form = null, DamageAlignment? Alignment = null,
+            bool MyAlignment = false, DamageRealityType? Reality = null)
+        {
+            var result = ScriptableObject.CreateInstance<AddOutgoingPhysicalDamageProperty>();
+            result.CheckWeaponType = WeaponType != null;
+            result.WeaponType = WeaponType;
+            result.CheckRange = CheckRange;
+            result.IsRanged = IsRanged;
+            result.AddMagic = AddMagic;
+            result.AddMaterial = Material != null;
+            result.Material = Material.GetValueOrDefault();
+            result.AddForm = Form != null;
+            result.Form = Form.GetValueOrDefault();
+            result.AddAlignment = Alignment != null || MyAlignment;
+            result.Alignment = Alignment.GetValueOrDefault();
+            result.AddReality = Reality != null;
+            result.Reality = Reality.GetValueOrDefault();
+            return result;
+        }
+
+        public static ContextActionCombatManeuver CreateContextActionCombatManeuver(CombatManeuver Type, params GameAction[] OnSuccess)
+        {
+            var result = ScriptableObject.CreateInstance<ContextActionCombatManeuver>();
+            result.Type = Type;
+            result.OnSuccess = CreateActionList(OnSuccess);
+            return result;
+        }
+
+        public static ActionList CreateActionList(params GameAction[] actions)
+        {
+            if (actions == null || actions.Length == 1 && actions[0] == null) actions = Array.Empty<GameAction>();
+            return new ActionList() { Actions = actions };
+        }
         
         public static class Image2Sprite
         {
             public static Sprite Create(string filename)
             {
-                var bytes = File.ReadAllBytes(Path.Combine(Main.ModPath, "Icons", filename));
-                var texture = new Texture2D(64, 64);
-                texture.LoadImage(bytes);
-                return Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0, 0));
+                try
+                {
+                    var bytes = File.ReadAllBytes(Path.Combine(Main.ModPath, "Icons", filename));
+                    var texture = new Texture2D(64, 64);
+                    texture.LoadImage(bytes);
+                    return Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0, 0));
+                }
+                catch (Exception e)
+                {
+                    Main.DebugLogAlways(e.Message);
+                    return null;
+                }
             }
         }
     }

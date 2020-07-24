@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace FumisCodex
 {
-    //[Harmony12.HarmonyPatch(typeof(LevelUpController), "CanLevelUp")]
+    //[HarmonyLib.HarmonyPatch(typeof(LevelUpController), "CanLevelUp")]
     class Tests
     {
         static void Test1(ContextCalculateSharedValue __instance, MechanicsContext context)
@@ -31,14 +31,14 @@ namespace FumisCodex
 
         }
 
-        [Harmony12.HarmonyPostfix()]
+        [HarmonyLib.HarmonyPostfix()]
         static void InfiniteLevelUp(UnitDescriptor unit, ref bool __result)
         {
             __result = true;
         }
     }
 
-    //[Harmony12.HarmonyPatch(typeof(LevelUpController), "AddLevel")]
+    //[HarmonyLib.HarmonyPatch(typeof(LevelUpController), "AddLevel")]
     class Tests2
     {
         static void Prefix()
@@ -52,7 +52,7 @@ namespace FumisCodex
         }
     }
 
-    //[Harmony12.HarmonyPatch(typeof(AddFactContextActions), nameof(AddFactContextActions.OnFactDeactivate))]
+    //[HarmonyLib.HarmonyPatch(typeof(AddFactContextActions), nameof(AddFactContextActions.OnFactDeactivate))]
     public static class TickTestOnFactDeactivate
     {
         static void Prefix(AddFactContextActions __instance)
@@ -62,8 +62,8 @@ namespace FumisCodex
     }
 
 
-    //[Harmony12.HarmonyPatch(typeof(UnitTicksController), "TickOnUnit")]
-    //[Harmony12.HarmonyPriority(0)]
+    //[HarmonyLib.HarmonyPatch(typeof(UnitTicksController), "TickOnUnit")]
+    //[HarmonyLib.HarmonyPriority(0)]
     public static class TickPatch
     {
         static void xPrefix(UnitEntityData unit, UnitTicksController __instance)

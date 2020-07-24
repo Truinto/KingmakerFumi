@@ -22,8 +22,10 @@ namespace FumisCodex
         public static string[] guids = new string[] { "31f0fa4235ad435e95ebc89d8549c2ce", "b03f4347c1974e38acff99a2af092461", "15d3a2eef8ac43dd886d2bae83be35eb",
             "c04cde18e91e4f84898de92a372bc1e0", "6535cf6ab2c143079468edb7e1cd2b86", "e845d92965544e2ba9ca7ab5b1b246ca", "656b4f5990f14f29b0e2c262a39d274f" };
 
-        public static void modSlumber()
+        public static void modSlumber(bool enabled = true)
         {
+            if (!enabled) return;
+
             try {
                 foreach (string guid in guids)
                 {

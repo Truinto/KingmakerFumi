@@ -19,7 +19,7 @@ using Kingmaker.UnitLogic.Class.LevelUp;
 
 namespace FumisCodex
 {
-    [Harmony12.HarmonyPatch(typeof(LevelUpController), "Commit")]
+    [HarmonyLib.HarmonyPatch(typeof(LevelUpController), "Commit")]
     public static class WeaponFocusGroupsPatch
     {
         static void Postfix(LevelUpController __instance)

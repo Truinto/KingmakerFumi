@@ -40,8 +40,8 @@ using Kingmaker.UnitLogic.Abilities.Components.AreaEffects;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.Blueprints.Facts;
 using Guid = FumisCodex.GuidManager;
-using Kingmaker.Designers.EventConditionActionSystem.Actions;
 using Kingmaker.View.Animation;
+using Kingmaker.UnitLogic.Parts;
 
 namespace FumisCodex
 {
@@ -126,7 +126,7 @@ namespace FumisCodex
                     "Impale",
                     "Element: earth\nType: form infusion\nLevel: 3\nBurn: 2\nAssociated Blasts: earth, metal, ice\n"
                         + "You extend a long, sharp spike of elemental matter along a line, impaling multiple foes. Make a single attack roll against each creature or object in a 30-foot line.",
-                    "f942f82c01c34c7da5f1131f5484e8b4",
+                    Guid.i.Reg("f942f82c01c34c7da5f1131f5484e8b4"),
                     icon,
                     FeatureGroup.KineticBlastInfusion,
                     Helpers.PrerequisiteFeaturesFromList(new BlueprintFeature[] { earth_blast, metal_blast, ice_blast }, true),
@@ -144,7 +144,7 @@ namespace FumisCodex
             // - replace spawnFx
             // - replace requirement to need the impale feature
             // - add as variant to parent blast
-            var earth_impale_ability = library.CopyAndAdd<BlueprintAbility>("93cc42235edc6824fa7d54b83ed4e1fe", "EarthImpaleBlastAbility", "adcf52d3bc874d9a94250053b7ebf6e4"); // TorrentWaterBlastAbility
+            var earth_impale_ability = library.CopyAndAdd<BlueprintAbility>("93cc42235edc6824fa7d54b83ed4e1fe", "EarthImpaleBlastAbility", Guid.i.Reg("adcf52d3bc874d9a94250053b7ebf6e4")); // TorrentWaterBlastAbility
             earth_impale_ability.SetNameDescriptionIcon(infusion_impale_feature);
             earth_impale_ability.LocalizedSavingThrow = Helpers.savingThrowNone;
             earth_impale_ability.Parent = earth_base;
@@ -182,7 +182,7 @@ namespace FumisCodex
             
 
             #region create impale ability - metal
-            var metal_impale_ability = library.CopyAndAdd<BlueprintAbility>("82db79a0b4e91dc4ea2938192e6fc7af", "MetalImpaleBlastAbility", "c25c7c8f05284317984ddcbcba69f53c");  //TorrentSandstormBlastAbility
+            var metal_impale_ability = library.CopyAndAdd<BlueprintAbility>("82db79a0b4e91dc4ea2938192e6fc7af", "MetalImpaleBlastAbility", Guid.i.Reg("c25c7c8f05284317984ddcbcba69f53c"));  //TorrentSandstormBlastAbility
             metal_impale_ability.SetNameDescriptionIcon(infusion_impale_feature);
             metal_impale_ability.LocalizedSavingThrow = Helpers.savingThrowNone;
             metal_impale_ability.Parent = metal_base;
@@ -206,7 +206,7 @@ namespace FumisCodex
             
             
             #region create impale ability - ice
-            var ice_impale_ability = library.CopyAndAdd<BlueprintAbility>("d02fba9ae78f12642b4111a4bbbdc023", "IceImpaleBlastAbility", "50486077f898441dba7c2922a3d251ed");  //TorrentBlizzardBlastAbility
+            var ice_impale_ability = library.CopyAndAdd<BlueprintAbility>("d02fba9ae78f12642b4111a4bbbdc023", "IceImpaleBlastAbility", Guid.i.Reg("50486077f898441dba7c2922a3d251ed"));  //TorrentBlizzardBlastAbility
             ice_impale_ability.SetNameDescriptionIcon(infusion_impale_feature);
             ice_impale_ability.LocalizedSavingThrow = Helpers.savingThrowNone;
             ice_impale_ability.Parent = ice_base;
@@ -270,7 +270,7 @@ namespace FumisCodex
             // - replace spawnFx
             // - replace requirement to need the spray feature
             // - add as variant to parent blast
-            var cold_spray_ability = library.CopyAndAdd<BlueprintAbility>("a240a6d61e1aee040bf7d132bfe1dc07", "SprayColdBlastAbility", "a8a06a9a236b4f6bbfe55c25d65067f3"); // FanOfFlamesFireBlastAbility
+            var cold_spray_ability = library.CopyAndAdd<BlueprintAbility>("a240a6d61e1aee040bf7d132bfe1dc07", "SprayColdBlastAbility", Guid.i.Reg("a8a06a9a236b4f6bbfe55c25d65067f3")); // FanOfFlamesFireBlastAbility
             cold_spray_ability.SetNameDescriptionIcon(spray_infusion_feature);
             cold_spray_ability.ResourceAssetIds = cold_blast_ab.ResourceAssetIds;
             cold_spray_ability.Parent = cold_base;
@@ -316,7 +316,7 @@ namespace FumisCodex
                 "ExtraWildTalentFeat",
                 "Extra Wild Talent",
                 "You gain a wild talent for which you meet the prerequisites. You can select an infusion or a non-infusion wild talent, but not a blast or defense wild talent.\nSpecial: You can take this feat multiple times. Each time, you must choose a different wild talent.",
-                "3714a8b82ec048e9bef62fa1cfc6c105",
+                Guid.i.Reg("3714a8b82ec048e9bef62fa1cfc6c105"),
                 library.Get<BlueprintFeature>("42f96fc8d6c80784194262e51b0a1d25").Icon, //ExtraArcanePool.Icon
                 FeatureGroup.Feat,
                 kineticist_class.PrerequisiteClassLevel(1, true)
@@ -335,7 +335,7 @@ namespace FumisCodex
         public static void createPreciseBlastTalent(bool enabled = true)
         {
             var metamagic_comp = ScriptableObject.CreateInstance<AutoMetamagic>();
-            Harmony12.AccessTools.Field(typeof(AutoMetamagic), "m_AllowedAbilities").SetValue(metamagic_comp, 2); //enum AllowedType.KineticistBlast
+            HarmonyLib.AccessTools.Field(typeof(AutoMetamagic), "m_AllowedAbilities").SetValue(metamagic_comp, 2); //enum AllowedType.KineticistBlast
             metamagic_comp.Metamagic = (Metamagic)CallOfTheWild.MetamagicFeats.MetamagicExtender.Selective;
             metamagic_comp.Abilities = all_blasts;
 
@@ -346,7 +346,7 @@ namespace FumisCodex
             precise_blast_feature.Ranks = 1;
             precise_blast_feature.IsClassFeature = true;
             precise_blast_feature.SetComponents(metamagic_comp, Helpers.PrerequisiteNoFeature(precise_blast_feature));
-            library.AddAsset(precise_blast_feature, "5beb96c3591a4506bf65e2b4e5aff883");
+            library.AddAsset(precise_blast_feature, Guid.i.Reg("5beb96c3591a4506bf65e2b4e5aff883"));
 
             if (enabled)
                 Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, precise_blast_feature);
@@ -378,10 +378,9 @@ namespace FumisCodex
             mobile_debuff = ScriptableObject.CreateInstance<BlueprintBuff>();
             mobile_debuff.name = "MobileGatheringDebuff";
             mobile_debuff.SetNameDescriptionIcon("Mobile Gathering Debuff", "Your movement speed is halved after gathering power.", Helper.Image2Sprite.Create("GatherMobileHigh.png"));
-            //Harmony12.AccessTools.Field(typeof(BlueprintBuff), "m_Flags").SetValue(mobile_debuff, 2); //HiddenInUi
             mobile_debuff.IsClassFeature = true;
             mobile_debuff.SetComponents(UnitCondition.Slowed.CreateAddCondition());
-            library.AddAsset(mobile_debuff, "ffd79fee05bf4e6dad7156e895f3cf27");
+            library.AddAsset(mobile_debuff, Guid.i.Reg("ffd79fee05bf4e6dad7156e895f3cf27"));
             var can_gather = Helper.CreateAbilidtyRequirementHasBuffTimed(CompareType.LessOrEqual, 1.Rounds().Seconds, buff1, buff2, buff3);
             
             // cannot use usual gathering after used mobile gathering
@@ -396,7 +395,7 @@ namespace FumisCodex
                 "MobileGatheringShort",
                 "Mobile Gathering (Move Action)",
                 "You may move up to half your normal speed while gathering power.",
-                "a482da35c21a4a0e801849610e03df87",
+                Guid.i.Reg("a482da35c21a4a0e801849610e03df87"),
                 Helper.Image2Sprite.Create("GatherMobileLow.png"),
                 AbilityType.Special,
                 UnitCommand.CommandType.Free,
@@ -421,7 +420,7 @@ namespace FumisCodex
                 "MobileGatheringLong",
                 "Mobile Gathering (Full Round)",
                 "You may move up to half your normal speed while gathering power.\nTip for Turn-Based Combat: Move before using this ability.",
-                "e7cd3a8200f04c8fae099d5d2f4afa0b",
+                Guid.i.Reg("e7cd3a8200f04c8fae099d5d2f4afa0b"),
                 Helper.Image2Sprite.Create("GatherMobileMedium.png"),
                 AbilityType.Special,
                 UnitCommand.CommandType.Standard,
@@ -440,7 +439,7 @@ namespace FumisCodex
                 "MobileGatheringFeat",
                 "Mobile Gathering",
                 "While gathering power, you can move up to half your normal speed. This movement provokes attacks of opportunity as normal.",
-                "60edffeba6d74e0f831c00692e5fc621",
+                Guid.i.Reg("60edffeba6d74e0f831c00692e5fc621"),
                 mobile_debuff.Icon,
                 FeatureGroup.Feat,
                 kineticist_class.PrerequisiteClassLevel(7, true),
@@ -473,7 +472,7 @@ namespace FumisCodex
                 "HurricaneQueenFeature",
                 "Hurricane Queen",
                 "You are one with the hurricane. Your enveloping winds defense wild talent has an additional 25% chance of deflecting non-magical ranged attacks, and your total deflection chance can exceed the usual cap of 75%. All wind and weather (including creatures using the whirlwind monster ability) don't affect you; for example, you could shoot arrows directly through a tornado without penalty.",
-                "5d5cbd74010e41f089fe4b96fd2fc50e",
+                Guid.i.Reg("5d5cbd74010e41f089fe4b96fd2fc50e"),
                 library.Get<BlueprintFeature>("f2fa7541f18b8af4896fbaf9f2a21dfe").Icon, //CycloneInfusion
                 FeatureGroup.KineticWildTalent,
                 Helpers.PrerequisiteClassLevel(kineticist_class, 18),
@@ -510,11 +509,11 @@ namespace FumisCodex
                 "MindShieldBuff",
                 "Mind Shield",
                 "You ignore the penalties of Mind Burn to Wisdom-based skill checks. Additionally if you fail a Will saving throw against a mind-affecting spell, you are instead dazed for the duration of the spell, but you may re-try the saving throw each round.",
-                "0ba3718f568a4c9097307a7af57c8f88",
+                Guid.i.Reg("0ba3718f568a4c9097307a7af57c8f88"),
                 null,
                 null
             );
-            Harmony12.AccessTools.Field(typeof(BlueprintBuff), "m_Flags").SetValue(mind_shield_buff, 2);//HiddenInUi
+            mind_shield_buff.m_Flags(HiddenInUi: true);
             var b_comp1 = Helpers.CreateAddContextStatBonus(StatType.SkillPerception, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier:2);
             b_comp1.Value.CustomProperty = burn_number;
             var b_comp2 = Helpers.CreateAddContextStatBonus(StatType.SkillLoreNature, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 2);
@@ -532,7 +531,7 @@ namespace FumisCodex
                 "MindShieldFeature",
                 mind_shield_buff.Name,
                 mind_shield_buff.Description,
-                "eeab6701ee7447d3b62996a62e315bd7",
+                Guid.i.Reg("eeab6701ee7447d3b62996a62e315bd7"),
                 library.Get<BlueprintFeature>("ed01d50910ae67b4dadc050f16d93bdf").Icon, //KineticRestorationFeature
                 FeatureGroup.KineticWildTalent
             );
@@ -568,7 +567,7 @@ namespace FumisCodex
             fire3.RemoveComponents<PrerequisiteNoFeature>();
             water3.RemoveComponents<PrerequisiteNoFeature>();
 
-            var mastery_1_2or3 = Helpers.CreateFeatureSelection("KineticistMastery12or3", "Element Mastery", "Kineticist focusing on their primary element gain a bonus wild talent.", "d112af8b633f42fab942a9aeab605000", null, FeatureGroup.None);
+            var mastery_1_2or3 = Helpers.CreateFeatureSelection("KineticistMastery12or3", "Element Mastery", "Kineticist focusing on their primary element gain a bonus wild talent.", Guid.i.Reg("d112af8b633f42fab942a9aeab605000"), null, FeatureGroup.None);
             mastery_1_2or3.SetComponents(
                 Helper.CreatePrerequisiteFeaturesFromList(true, 2, air1, air2, air3),
                 Helper.CreatePrerequisiteFeaturesFromList(true, 2, earth1, earth2, earth3),
@@ -579,7 +578,7 @@ namespace FumisCodex
             mastery_1_2or3.IsClassFeature = true;
             mastery_1_2or3.AllFeatures = extra_wild_talent_selection.AllFeatures;
 
-            var mastery_1_2_3 = Helpers.CreateFeatureSelection("KineticistMastery123", "Greater Element Mastery", mastery_1_2or3.Description, "e2a98be90b38454a8428b78ccfe56649", null, FeatureGroup.None,
+            var mastery_1_2_3 = Helpers.CreateFeatureSelection("KineticistMastery123", "Greater Element Mastery", mastery_1_2or3.Description, Guid.i.Reg("e2a98be90b38454a8428b78ccfe56649"), null, FeatureGroup.None,
                 Helper.CreatePrerequisiteFeaturesFromList(true, 3, air1, air2, air3),
                 Helper.CreatePrerequisiteFeaturesFromList(true, 3, earth1, earth2, earth3),
                 Helper.CreatePrerequisiteFeaturesFromList(true, 3, fire1, fire2, fire3),
@@ -596,7 +595,7 @@ namespace FumisCodex
             mastery_1_2_3.IsClassFeature = true;
             mastery_1_2_3.AllFeatures = extra_wild_talent_selection.AllFeatures;
 
-            var mastery_selection = Helpers.CreateFeatureSelection("KineticistMasterySelection", "Element Mastery", mastery_1_2or3.Description, "50cbc6cf64a94ae7b2f5a4dc45170efa", null, FeatureGroup.None);
+            var mastery_selection = Helpers.CreateFeatureSelection("KineticistMasterySelection", "Element Mastery", mastery_1_2or3.Description, Guid.i.Reg("50cbc6cf64a94ae7b2f5a4dc45170efa"), null, FeatureGroup.None);
             mastery_selection.SetComponents(Helpers.Create<PrerequisiteSelectionPossible>(a => a.ThisFeature = mastery_selection));
             mastery_selection.AllFeatures = new BlueprintFeature[] { mastery_1_2or3, mastery_1_2_3 };
             
@@ -611,7 +610,7 @@ namespace FumisCodex
                 "ExpandElementalFocus",
                 "Expand Elemental Focus",
                 "You learn to use another element. You can select any element and gain one of that element’s simple blast wild talents that you do not already possess.",
-                "0e2aa6b75b334b019fbfa7375ecaca85",
+                Guid.i.Reg("0e2aa6b75b334b019fbfa7375ecaca85"),
                 elemental_focus.Icon,   //ElementalFocusSelection.Icon
                 FeatureGroup.Feat,
                 kineticist_class.PrerequisiteClassLevel(1, true)
@@ -645,7 +644,7 @@ namespace FumisCodex
 
             var air_flight_ab = Helpers.CreateActivatableAbility("WingsOfAirActivatableAbility", "Wings of Air",
                 "The air bends to your will, allowing you to soar to great heights. You are constantly under the effects of fly. If this effect is dispelled, you can call it forth again as a standard action.",
-                "92f8f7652891406b97938f57dec47734",
+                Guid.i.Reg("92f8f7652891406b97938f57dec47734"),
                 NewSpells.fly.Icon,
                 buff,
                 AbilityActivationType.Immediately,
@@ -656,7 +655,7 @@ namespace FumisCodex
             air_flight_ab.ResourceAssetIds = "1091271ddadd4a34f8d012428252dd4d".ToArray();
 
             var air_flight_feat = Helpers.CreateFeature("WingsOfAirFeature", air_flight_ab.Name, air_flight_ab.Description,
-                "3a4d9d7fc4cc4073b41c011c1e8ae528",
+                Guid.i.Reg("3a4d9d7fc4cc4073b41c011c1e8ae528"),
                 air_flight_ab.Icon,
                 FeatureGroup.None,
                 Helpers.CreateAddFact(air_flight_ab),
@@ -667,7 +666,7 @@ namespace FumisCodex
 
             var fire_flight_ab = Helpers.CreateActivatableAbility("FlameJetGreaterActivatableAbility", "Greater Flame Jet",
                 "You shoot a burst of flame behind you as a move action, propelling you up to into the air. You also emanate a mild jet of flame, allowing you to hover without spending an action.",
-                "4eb438ef2bf64e1d82edcba3689e8d20",
+                Guid.i.Reg("4eb438ef2bf64e1d82edcba3689e8d20"),
                 NewSpells.fly.Icon,
                 buff,
                 AbilityActivationType.Immediately,
@@ -677,7 +676,7 @@ namespace FumisCodex
             fire_flight_ab.Group = ActivatableAbilityGroup.Wings;
 
             var fire_flight_feat = Helpers.CreateFeature("FlameJetGreaterFeature", fire_flight_ab.Name, fire_flight_ab.Description,
-                "f8c4287f5c8d4681a379fc974c223974",
+                Guid.i.Reg("f8c4287f5c8d4681a379fc974c223974"),
                 fire_flight_ab.Icon,
                 FeatureGroup.None,
                 Helpers.CreateAddFact(fire_flight_ab),
@@ -688,7 +687,7 @@ namespace FumisCodex
 
             var water_flight_ab = Helpers.CreateActivatableAbility("IcePathActivatableAbility", "Ice Path",
                 "You freeze water vapor in the air, allowing you to travel above the ground as air walk by walking along the ice, and leaving a path of ice behind you that lasts for 1 round before it melts.",
-                "d2deb8ad5507458b91c160ad8e6e186a",
+                Guid.i.Reg("d2deb8ad5507458b91c160ad8e6e186a"),
                 NewSpells.fly.Icon,
                 buff,
                 AbilityActivationType.Immediately,
@@ -698,7 +697,7 @@ namespace FumisCodex
             water_flight_ab.Group = ActivatableAbilityGroup.Wings;
 
             var water_flight_feat = Helpers.CreateFeature("IcePathFeature", water_flight_ab.Name, water_flight_ab.Description,
-                "901fc305b5b840f0913a78d749ca1e9f",
+                Guid.i.Reg("901fc305b5b840f0913a78d749ca1e9f"),
                 water_flight_ab.Icon,
                 FeatureGroup.None,
                 Helpers.CreateAddFact(water_flight_ab),
@@ -719,7 +718,7 @@ namespace FumisCodex
 
             var shifting_earth_feat = Helpers.CreateFeature("ShiftEarthFeature", "Shift Earth",
                 "Element: earth\nType: utility\nBurn: 0\nSaving Throw: Reflex negates\nSpell Resistance: no\nYou can move earth and stone to create one spiked pit within 30 feet of you.\nOriginal text: As a standard action, you can push or pull a 5-foot cube of earth or unworked stone within 30 feet, moving the cube 5 feet in any direction. You can create raised platforms, stairs up a cliff, holes, or other useful features. This doesn’t cause the earth to float in the air, although in areas with plenty of earth, you can move a cube upward, creating a short pillar. If you move the earth beneath a creature’s feet, it can attempt a DC 20 Reflex save to leap elsewhere and avoid moving along with the earth.",
-                "fd7a363d1fa54c1ba25a5817acde2c1f",
+                Guid.i.Reg("fd7a363d1fa54c1ba25a5817acde2c1f"),
                 spiked_pit.Icon,
                 FeatureGroup.None,
                 Helpers.PrerequisiteClassLevel(kineticist_class, 8),
@@ -727,7 +726,7 @@ namespace FumisCodex
             );
 
             var shift_earth_ab = Helpers.CreateAbility("ShiftEarthAbility", shifting_earth_feat.Name, shifting_earth_feat.Description,
-                "4dbe165d5a074579b78ba285b1a98770",
+                Guid.i.Reg("4dbe165d5a074579b78ba285b1a98770"),
                 spiked_pit.Icon,
                 AbilityType.SpellLike,
                 UnitCommand.CommandType.Standard,
@@ -789,7 +788,7 @@ namespace FumisCodex
 			var mobileblast_feature = Helpers.CreateFeature("MobileBlastFeature",
 				"Mobile Blast",
 				description,
-				"18765cbb34684878ac3ae9245e4049e4",
+				Guid.i.Reg("18765cbb34684878ac3ae9245e4049e4"),
 				icon,
 				FeatureGroup.None
 			);
@@ -799,7 +798,7 @@ namespace FumisCodex
             var move_ability = Helpers.CreateAbility("MobileBlastMoveAbility",
 				"Mobile Blast",
 				"Use this ability to move Mobile Blast's area.",
-				"dbf892456edb454a823d252c1e47927d",
+				Guid.i.Reg("dbf892456edb454a823d252c1e47927d"),
 				icon,
 				AbilityType.SpellLike,
 				UnitCommand.CommandType.Move,
@@ -835,7 +834,8 @@ namespace FumisCodex
                 {
                     if (area_effect == null)
                     {
-                        spawn_area.AreaEffect = library.CopyAndAdd(spawn_area.AreaEffect, e.Key + "MobileBlastArea", Guid.i.Get(e.Key + "MobileBlastArea"));
+                        string name = e.Key+"MobileBlastArea";
+                        spawn_area.AreaEffect = library.CopyAndAdd(spawn_area.AreaEffect, name, Guid.i.Get(name));
                         spawn_area.AreaEffect.Shape = AreaEffectShape.Cylinder;
                         spawn_area.AreaEffect.Size = 2.Feet();
                         spawn_area.AreaEffect.ReplaceComponent<UniqueAreaEffect>(area_unique);
@@ -858,7 +858,8 @@ namespace FumisCodex
                 // - corrects new damage source
                 // - reduces burn cost from 3 to 2
                 // - displays the target area (wall had no indicator)
-                var mobileblast_ab = library.CopyAndAdd(wall, e.Key+"MobileBlastAbility", Guid.i.Get(e.Key+"MobileBlastAbility"));
+                string name2 = e.Key+"MobileBlastAbility";
+                var mobileblast_ab = library.CopyAndAdd(wall, name2, Guid.i.Get(name2));
 				mobileblast_ab.SetNameDescriptionIcon("Mobile Blast", description, icon);
 				mobileblast_ab.Range = AbilityRange.Close;
 				mobileblast_ab.ReplaceComponent<AbilityEffectRunAction>(run_action);
@@ -886,7 +887,7 @@ namespace FumisCodex
 			// adds new ability that can be expanded
 			// - has actual abilities in its sub menu
             var spark_ab = Helpers.CreateAbility("SparkOfLifeAbility", "Spark of Life", description,
-                "f4f2e77c3c2841ce9ef7cd48e32fb7fc",
+                Guid.i.Reg("f4f2e77c3c2841ce9ef7cd48e32fb7fc"),
                 icon_ele,
                 AbilityType.SpellLike,
                 UnitCommand.CommandType.Standard,
@@ -937,21 +938,21 @@ namespace FumisCodex
 			
 			// new pool specifically for this ability
 			// - pool is shared between all creatures using this ability, but can be filtered by ID
-            var link_pool = Helpers.Create<BlueprintSummonPool>(a => a.name = "SummonLinkPool"); library.AddAsset(link_pool, "3bf4ef9db31b46b296c68cb922f292aa");
+            var link_pool = Helpers.Create<BlueprintSummonPool>(a => a.name = "SummonLinkPool"); library.AddAsset(link_pool, Guid.i.Reg("3bf4ef9db31b46b296c68cb922f292aa"));
 
 			// add two activatables and corresponding buffs
 			// - losing the buff will banish excess summons randomly (CreateContextActionKillSummons will check for amount of buffs and summons)
 			// - the buff will trigger concentration throws when damage is taken, failure will cause the activatable to deactivate
-            var link_buff = Helpers.CreateBuff("SummoningLinkBuff", "Concentrating on Spell", "You must concentrate to maintain the spell.", "f71379d31c2e4165bc2ca6837311e149", null, Contexts.NullPrefabLink);
+            var link_buff = Helpers.CreateBuff("SummoningLinkBuff", "Concentrating on Spell", "You must concentrate to maintain the spell.", Guid.i.Reg("f71379d31c2e4165bc2ca6837311e149"), null, Contexts.NullPrefabLink);
             //link_buff.Stacking = StackingType.Stack;
-			var link_buff2 = library.CopyAndAdd(link_buff, "SummoningLinkBuff2", "0bd6390b8b6d410eb28b6effca6b188d");
+			var link_buff2 = library.CopyAndAdd(link_buff, "SummoningLinkBuff2", Guid.i.Reg("0bd6390b8b6d410eb28b6effca6b188d"));
 			
             var link_activatable = Helpers.CreateActivatableAbility("SummoningLinkActivatable", "Concentration: Spark of Life", "Concentrating on Spark of Life is a move action. You may concentrate on up to two summons. Activates automatically, when you start concentrating. Deactivate manually, when you want to crease concentrating.",
-                "839ebda612774374a6ec05dda0a3d149", icon_con, link_buff, AbilityActivationType.Immediately, UnitCommand.CommandType.Free, null,
+                Guid.i.Reg("839ebda612774374a6ec05dda0a3d149"), icon_con, link_buff, AbilityActivationType.Immediately, UnitCommand.CommandType.Free, null,
                 Helpers.Create<ActivatableAbilityUnitCommand>(a => a.Type = UnitCommand.CommandType.Move));
             link_activatable.WeightInGroup = Patches_Activatable.ActionBar.NoManualOn;
             link_activatable.DeactivateIfOwnerUnconscious = true;
-			var link_activatable2 = library.CopyAndAdd(link_activatable, "SummoningLinkActivatable2", "7a863a9a1eec415c9552ba0d0ec5edfd");
+			var link_activatable2 = library.CopyAndAdd(link_activatable, "SummoningLinkActivatable2", Guid.i.Reg("7a863a9a1eec415c9552ba0d0ec5edfd"));
 			link_activatable2.Buff = link_buff2;
             
             var link_concentration = Helpers.Create<ContextActionConcentration>(a => { a.Ability = spark_ab; a.FailedAction = Helpers.CreateActionList(Helpers.Create<ContextActionToggleActivatable>(b => { b.Activatable = link_activatable; b.TurnOn = false; })); });
@@ -976,7 +977,7 @@ namespace FumisCodex
                 actionSpawn.Blueprint = library.Get<BlueprintUnit>(a_spawns[i * groupcount]);    //this is the default
                 actionSpawn.AfterSpawn = master.AfterSpawn;
                 actionSpawn.SummonPool = link_pool;//master.SummonPool;
-                actionSpawn.DurationValue = Helpers.CreateContextDuration(Contexts.DefaultRank, DurationRate.Hours);
+                actionSpawn.DurationValue = Helpers.CreateContextDuration(Contexts.ValueRank, DurationRate.Hours);
                 actionSpawn.CountValue = master.CountValue;
 				
                 var actionSpawn2 = actionSpawn.CreateCopy();
@@ -984,9 +985,10 @@ namespace FumisCodex
                 actionSpawn2.DurationValue = master.DurationValue;
 				
 				// add one ability per element to summon elemental of that element
+                string name = a_elements[i]+"FreeSparkOfLifeAbility";
                 sparks[i*2] = Helpers.CreateAbility(
-                    a_elements[i] + "FreeSparkOfLifeAbility", "Spark of Life: " + a_elements[i] + " Elemental", description,
-                    Guid.i.Get(a_elements[i] + "FreeSparkOfLifeAbility"),//a_newGUIDs[i*2],
+                    name, "Spark of Life: " + a_elements[i] + " Elemental", description,
+                    Guid.i.Get(name),//a_newGUIDs[i*2],
                     (blasts_byelement[a_elements[i]] as BlueprintAbility[])[0].Icon,
                     AbilityType.SpellLike,
                     UnitCommand.CommandType.Standard,
@@ -1004,9 +1006,10 @@ namespace FumisCodex
                 sparks[i*2].AvailableMetamagic = Metamagic.Quicken | Metamagic.Heighten | Metamagic.Reach;
 
 				// add another ability, this one with burn cost but without concentration
+                string name2 = a_elements[i]+"SparkOfLifeAbility";
                 sparks[i*2+1] = Helpers.CreateAbility(
-					a_elements[i] + "SparkOfLifeAbility", "Spark of Life: " + a_elements[i] + " Elemental", description,
-					Guid.i.Get(a_elements[i] + "SparkOfLifeAbility"),//a_newGUIDs[i*2+1],
+					name2, "Spark of Life: " + a_elements[i] + " Elemental", description,
+					Guid.i.Get(name2),//a_newGUIDs[i*2+1],
 					(blasts_byelement[a_elements[i]] as BlueprintAbility[])[0].Icon,
 					AbilityType.SpellLike,
 					UnitCommand.CommandType.Standard,
@@ -1017,7 +1020,7 @@ namespace FumisCodex
                     Helpers.Create<ContextRankConfig>(),
                     SpellSchool.Conjuration.CreateSpellComponent(),
                     Helpers.Create<AbilityKineticist>(a => { a.WildTalentBurnCost = 1; }),
-                    Helpers.Create<AbilityShowIfCasterHasAnyFacts>(a => a.UnitFacts = (BlueprintAbility[])blasts_byelement[a_elements[i]])
+                    Helper.CreateAbilityShowIfCasterHasAnyFacts((BlueprintAbility[])blasts_byelement[a_elements[i]])
                 );
                 sparks[i*2+1].CanTargetPoint = true;
                 sparks[i*2+1].CanTargetSelf = true;
@@ -1028,7 +1031,7 @@ namespace FumisCodex
 
 			// final feature that can be chosen in the talent selection
             var spark_feat = Helpers.CreateFeature("SparkOfLifeFeature", spark_ab.Name, description,
-                "4ba4c89d8393441c94bdbd52172a4b95",
+                Guid.i.Reg("4ba4c89d8393441c94bdbd52172a4b95"),
                 icon_ele,
                 FeatureGroup.None,
                 Helpers.CreateAddFacts(spark_ab, link_activatable, link_activatable2),
@@ -1063,7 +1066,6 @@ namespace FumisCodex
 			//AlchemistFireBomb00
 		}
 		
-		//future
 		public static void createWoodSoldiers()
 		{
 			//4 wood golems with the advanced template, only one active, first use no burn, then 1 burn
@@ -1075,9 +1077,10 @@ namespace FumisCodex
 			frost_heals.Duration = Helpers.CreateContextDuration(1);
 			frost_heals.Descriptor = new SpellDescriptorWrapper(SpellDescriptor.Cold);
 			var immunity_woodgolem = Helpers.CreateFeature("WoodGolemImmunity", "Immunity to Magic", "A creature immune to any spell or spell-like ability that allows spell resistance.", "94a75af21339418d951556f1f7d8171e", (Sprite)null, FeatureGroup.None,
-				Helpers.Create<AddBuffOnApplyingSpell>(a => a.Buffs = frost_heals.ToArray()));
+				Helpers.Create<AddBuffOnApplyingSpell>(a => a.Buffs = frost_heals.ToArray()),
+                Helper.CreateAddSpellImmunity((int)Patches_Spells.SpellImmunityTypeExt.AllExceptSpellDescriptor, SpellDescriptor.Fire));
 			
-			var unit_woodgolem = library.CopyAndAdd<BlueprintUnit>("dfd21dba15fe7dd4f95961ff27d91836", "WoodGolemSummoned", "8bfad949944e449a92f659021b34ea07");
+			var unit_woodgolem = library.CopyAndAdd<BlueprintUnit>("dfd21dba15fe7dd4f95961ff27d91836", "WoodGolemSummoned", Guid.i.Reg("8bfad949944e449a92f659021b34ea07"));
 			unit_woodgolem.LocalizedName = Helpers.Create<SharedStringAsset>(a=> a.String = Helpers.CreateString("216d9aef-c1f3-46a7-9d0c-d91f6f6eb83e", "Wood Golem"));
 			unit_woodgolem.Size = Size.Medium;
 			unit_woodgolem.Faction = library.Get<BlueprintFaction>("1b08d9ed04518ec46a9b3e4e23cb5105");//Summoned
@@ -1089,6 +1092,7 @@ namespace FumisCodex
 			unit_woodgolem.Charisma = 1+4;
 			unit_woodgolem.Speed = 30.Feet();
 			unit_woodgolem.AddFacts = new BlueprintUnitFact[] {
+                library.Get<BlueprintFeature>("8e934134fec60ab4c8972c85a7b62f89"),  //FireVulnerability
 				library.Get<BlueprintUnitFact>("b9342e2a6dc5165489ba3412c50ca3d1"),	//NaturalArmor8
 				library.Get<BlueprintFeature>("fb88b018013dc8e419150f86540c07f2"),	//DR5
 				immunity_woodgolem };	//StoneGolemImmunity:"2617c0ea094687643a14fd99c4529523"
@@ -1096,12 +1100,57 @@ namespace FumisCodex
 				a.CharacterClass = library.Get<BlueprintCharacterClass>("fd66bdea5c33e5f458e929022322e6bf");//ConstructClass
 				a.Levels = 6;} ));
 			
-			//Splintering (Su) As a free action once every 1d4+1 rounds, a wood golem can launch a barrage of razor-sharp wooden splinters from its body in a 20-foot-radius burst. All creatures caught within this area take 6d6 points of slashing damage (Reflex DC 14 halves). The save DC is Constitution-based.
+			//missing: Splintering (Su) As a free action once every 1d4+1 rounds, a wood golem can launch a barrage of razor-sharp wooden splinters from its body in a 20-foot-radius burst. All creatures caught within this area take 6d6 points of slashing damage (Reflex DC 14 halves). The save DC is Constitution-based.
 			
-			//buff self //holds ContextActionSpawn and increases burn by 1 for 24 hours
+			//buff self increases burn by 1 for 24 hours
 			//ability summon
 			//feature WoodSoldiers
+            BlueprintAbility ability = Helpers.CreateAbility(
+                "WoodSoldiersAbility",
+                "Wood Soldiers",
+                "Element: wood\nType: utility\nBurn: 1"
+                +"\nYour presence animates surrounding plant life and causes it to fight by your side. Each time you recover burn, you can use this ability once and ignore the burn cost. This functions as wooden phalanx, except you always animate four golems, and the duration lasts until the next time you recover burn."
+                +"\nWooden Phalanx: You create 1d4+2 wood golems with the advanced template. The golems willingly aid you in combat or battle, perform a specific mission, or serve as bodyguards. You can only have one wooden phalanx spell in effect at one time. If you cast this spell while another casting is still in effect, the previous casting is dispelled.",
+                Guid.i.Reg("03ca687cbbc44d7fb9c34908dc3b93ba"),
+                null,
+                AbilityType.SpellLike,
+                UnitCommand.CommandType.Standard,
+                AbilityRange.Medium,
+                Helpers.hourPerLevelDuration,
+                Helpers.savingThrowNone
+            );
+
+            var cost_inc_buff = Helpers.CreateBuff(
+                "WoodSoldiersBurnBuff",
+                "WoodSoldiersBurnBuff",
+                "",
+                Guid.i.Reg("638e0925d4974d4fbc570057c88bf15c"),
+                null,
+                Contexts.NullPrefabLink,
+                Helper.CreateAddKineticistBurnModifier(1, KineticistBurnType.WildTalent, null, ability)
+            );
+            //Helpers.SetField(cost_inc_buff, "m_Flags", 2 | 8 | 16); //HiddenInUi, StayOnDeath, RemoveOnRest
+            cost_inc_buff.m_Flags(HiddenInUi: true, StayOnDeath: true, RemoveOnRest: true);
+
+            var summonpool = Helpers.Create<BlueprintSummonPool>(a => a.name = "SummonWoodSoldiersPool"); library.AddAsset(summonpool, Guid.i.Reg("4b7b0b1cc82347eda11e994c86cb222b"));
+
+            ability.SetComponents(Helpers.CreateRunActions(
+                Helpers.CreateApplyBuff(cost_inc_buff, Contexts.Duration24Hours, false, false, true, false),
+                Helper.CreateContextActionSpawnMonsterUnique(unit_woodgolem, summonpool, Helpers.CreateContextDiceValue(DiceType.Zero, 0, 4))
+            ));
 			
+            var feature = Helpers.CreateFeature(
+                "WoodSoldiersFeature",
+                "Wood Soldiers",
+                ability.Description,
+                Guid.i.Reg("dcf263a5f5144cc1acec2e0177a8a4dd"),
+                null,
+                FeatureGroup.None,
+                Helpers.PrerequisiteClassLevel(kineticist_class, 16),
+                prerequisite_earth
+            );
+
+            Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, feature);
 		}
 		
 		//Wood
@@ -1120,7 +1169,7 @@ namespace FumisCodex
 
         #region Patches
 
-        [Harmony12.HarmonyPatch(typeof(RuleAttackRoll), "IncreaseMissChance")]
+        [HarmonyLib.HarmonyPatch(typeof(RuleAttackRoll), "IncreaseMissChance")]
         public class RemoveMissChanceLimitPatch
         {
             static bool Prefix(RuleAttackRoll __instance, int value)
@@ -1130,14 +1179,14 @@ namespace FumisCodex
                     && Kineticist.hurricane_queen_feat != null
                     && __instance.Target.Descriptor.Progression.Features.HasFact(Kineticist.hurricane_queen_feat))
                 {
-                    Harmony12.AccessTools.Property(typeof(RuleAttackRoll), "MissChance").SetValue(__instance, Math.Min(value, 100));
+                    HarmonyLib.AccessTools.Property(typeof(RuleAttackRoll), "MissChance").SetValue(__instance, Math.Min(value, 100));
                     return false;
                 }
                 return true;
             }
         }
 
-        [Harmony12.HarmonyPatch(typeof(BuffSubstitutionOnApply), "OnEventAboutToTrigger")]
+        [HarmonyLib.HarmonyPatch(typeof(BuffSubstitutionOnApply), "OnEventAboutToTrigger")]
         public class FixBuffSubstitutionDCLossPatch
         {
             static bool Prefix(BuffSubstitutionOnApply __instance, RuleApplyBuff evt)

@@ -1,12 +1,20 @@
-﻿using Kingmaker.Blueprints.Facts;
+﻿using Kingmaker.Blueprints.Classes;
+using Kingmaker.Blueprints.Classes.Spells;
+using Kingmaker.Blueprints.Facts;
 using Kingmaker.Controllers.Combat;
+using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.PubSubSystem;
+using Kingmaker.RuleSystem.Rules;
 using Kingmaker.UI.UnitSettings;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.ActivatableAbilities;
+using Kingmaker.UnitLogic.Class.LevelUp;
 using Kingmaker.UnitLogic.Commands;
 using Kingmaker.UnitLogic.Commands.Base;
+using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Parts;
+using Kingmaker.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,13 +22,14 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static Kingmaker.UnitLogic.Parts.UnitPartSpellResistance;
 
 namespace FumisCodex
 {
     public class Patches_Activatable
     {
         //uses up move action when triggered; deactivates activatable if no action left
-        [Harmony12.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.OnNewRound))]
+        [HarmonyLib.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.OnNewRound))]
         public static class ActivatableAbility_OnNewRoundPatch
         {
             static void Postfix(ActivatableAbility __instance, bool ___m_ShouldBeDeactivatedInNextRound, bool ___m_WasInCombat)
@@ -69,7 +78,7 @@ namespace FumisCodex
             return HasMoveCooldown(unit.CombatState);
         }
 
-        [Harmony12.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.HandleUnitRunCommand))]
+        [HarmonyLib.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.HandleUnitRunCommand))]
         public static class ActivatableAbility_HandleUnitRunCommandPatch
         {
             static bool Prefix(UnitCommand command, ActivatableAbility __instance)
@@ -102,7 +111,7 @@ namespace FumisCodex
         }
 
         //does not interest us because Blueprint.ActivateWithUnitCommand returns false anyway
-        //[Harmony12.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.HandleUnitCommandDidAct))]
+        //[HarmonyLib.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.HandleUnitCommandDidAct))]
         public static class ActivatableAbility_HandleUnitCommandDidActPatch
         {
             static bool Prefix(UnitCommand command, ActivatableAbility __instance, bool ___m_IsOn)
@@ -133,7 +142,7 @@ namespace FumisCodex
         }
 
         //does not interest us because Blueprint.ActivateWithUnitCommand returns false anyway
-        //[Harmony12.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.HandleUnitCommandDidEnd))]
+        //[HarmonyLib.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.HandleUnitCommandDidEnd))]
         public static class ActivatableAbility_HandleUnitCommandDidEndPatch
         {
             static bool Prefix(UnitCommand command, ActivatableAbility __instance)
@@ -149,14 +158,14 @@ namespace FumisCodex
         }
 
         //fixes activatable not being allowed to be active when they have the same action (like 2 move actions)
-        [Harmony12.HarmonyPatch(typeof(ActivatableAbility), "OnTurnOn")]
+        [HarmonyLib.HarmonyPatch(typeof(ActivatableAbility), "OnTurnOn")]
         public static class ActivatableAbility_OnTurnOnPatch
         {
-            static IEnumerable<Harmony12.CodeInstruction> Transpiler(IEnumerable<Harmony12.CodeInstruction> instr)
+            static IEnumerable<HarmonyLib.CodeInstruction> Transpiler(IEnumerable<HarmonyLib.CodeInstruction> instr)
             {
-                List<Harmony12.CodeInstruction> list = instr.ToList();
-                MethodInfo original = Harmony12.AccessTools.Method(typeof(Fact), nameof(Fact.Get), null, typeof(ActivatableAbilityUnitCommand).ToArray());
-                MethodInfo replacement = typeof(ActivatableAbility_OnTurnOnPatch).GetMethod(nameof(NullReplacement), BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); //Harmony12.AccessTools.Method(typeof(ActivatableAbility_OnTurnOnPatch), nameof(NullReplacement));
+                List<HarmonyLib.CodeInstruction> list = instr.ToList();
+                MethodInfo original = HarmonyLib.AccessTools.Method(typeof(Fact), nameof(Fact.Get), null, typeof(ActivatableAbilityUnitCommand).ToArray());
+                MethodInfo replacement = typeof(ActivatableAbility_OnTurnOnPatch).GetMethod(nameof(NullReplacement), BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); //HarmonyLib.AccessTools.Method(typeof(ActivatableAbility_OnTurnOnPatch), nameof(NullReplacement));
                 
                 for (int i = 0; i < list.Count; i++)
                 {
@@ -178,7 +187,7 @@ namespace FumisCodex
         }
 
         //removes validation
-        [Harmony12.HarmonyPatch(typeof(ActivatableAbilityUnitCommand), nameof(ActivatableAbilityUnitCommand.Validate))]
+        [HarmonyLib.HarmonyPatch(typeof(ActivatableAbilityUnitCommand), nameof(ActivatableAbilityUnitCommand.Validate))]
         public static class ActivatableAbilityUnitCommandPatch
         {
             static bool Prefix()
@@ -188,7 +197,7 @@ namespace FumisCodex
         }
 
         //fixes activatable not starting the second time, while being outside of combat
-        [Harmony12.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.TryStart))]
+        [HarmonyLib.HarmonyPatch(typeof(ActivatableAbility), nameof(ActivatableAbility.TryStart))]
         public static class ActivatableAbility_TryStartPatch
         {
             static void Prefix(ActivatableAbility __instance)
@@ -207,11 +216,12 @@ namespace FumisCodex
         }
 
         //fixes activatable can be activated manually
-        [Harmony12.HarmonyPatch(typeof(MechanicActionBarSlotActivableAbility), nameof(MechanicActionBarSlotActivableAbility.OnClick))]
+        [HarmonyLib.HarmonyPatch(typeof(MechanicActionBarSlotActivableAbility), nameof(MechanicActionBarSlotActivableAbility.OnClick))]
         public static class ActionBar
         {
             public static readonly int NoManualOn = 788704819;
             public static readonly int NoManualOff = 788704820;
+            public static readonly int NoManualAny = 788704821;
 
             static bool Prefix(MechanicActionBarSlotActivableAbility __instance)
             {
@@ -223,10 +233,74 @@ namespace FumisCodex
                 {
                     return false;
                 }
+                if (__instance.ActivatableAbility.Blueprint.WeightInGroup == NoManualAny)
+                {
+                    return false;
+                }
                 return true;
             }
         }
 
 
     }
+
+    public class Patches_Spells
+    {
+        public enum SpellImmunityTypeExt
+        {
+            AllExceptSpellDescriptor = 50
+        }
+
+        [HarmonyLib.HarmonyPatch(typeof(SpellImmunity), nameof(SpellImmunity.CanApply))]
+        public static class SpellImmunityPatch
+        {
+            public static bool Prefix(MechanicsContext context, SpellImmunity __instance, ref bool __result)
+            {
+                if (__instance.Type == (SpellImmunityType)SpellImmunityTypeExt.AllExceptSpellDescriptor)
+                {
+                    if (context == null)
+                        __result = false;
+                    else if (context.SourceAbility != null)
+                        __result = !context.SourceAbility.SpellDescriptor.HasAnyFlag(__instance.SpellDescriptor);
+                    else
+                        __result = !context.SpellDescriptor.HasAnyFlag(__instance.SpellDescriptor);
+                    
+                    return false;
+                }
+                return true;
+            }
+        }
+    }
+
+    public class Patches_LevelUp
+    {
+        [HarmonyLib.HarmonyPatch(typeof(LevelUpController), nameof(LevelUpController.Start))]
+        public static class LevelUpController_StartPatch
+        {
+            public static void Prefix(UnitDescriptor unit)
+            {
+                EventBus.RaiseEvent(unit.Unit, delegate (IUnitDisableFeaturesBeforeLevelUpHandler h)
+                {
+                    h.HandleUnitDisableFeaturesBeforeLevelUp();
+                });
+            }
+        }
+    }
+
+    public class Patches_TWF    // TODO: remove
+    {
+        //[HarmonyLib.HarmonyPatch(typeof(TwoWeaponFightingAttacks), nameof(TwoWeaponFightingAttacks.OnEventAboutToTrigger))]
+        public static class TwoWeaponFightingAttacks_OnEventAboutToTrigger_Patch
+        {
+            static bool Prefix(RuleCalculateAttacksCount evt)
+            {
+                if (evt.Initiator.Body.SecondaryHand.Weapon == evt.Initiator.Body.EmptyHandWeapon)
+                {
+                    
+                }
+                return true;
+            }
+        }
+    }
+
 }

@@ -17,15 +17,18 @@ using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.Designers.Mechanics.Buffs;
 using Kingmaker.Blueprints.Items;
 using UnityEngine;
+using Guid = FumisCodex.GuidManager;
+using Kingmaker.Utility;
+using Kingmaker.UnitLogic.ActivatableAbilities;
 
 namespace FumisCodex
 {
     internal class Main
     {
-        internal static Harmony12.HarmonyInstance harmony;
+        internal static HarmonyLib.Harmony harmony;
         internal static LibraryScriptableObject library;
 
-        /// <summary>True if mod is enabled.</summary>
+        /// <summary>True if mod is enabled. Doesn't do anything right now.</summary>
         internal static bool Enabled { get; set; } = true;
         /// <summary>Path of current mod.</summary>
         public static string ModPath { get; set; }
@@ -131,25 +134,29 @@ namespace FumisCodex
 
             try
             {
-                harmony = Harmony12.HarmonyInstance.Create(modEntry.Info.Id);
+                harmony = new HarmonyLib.Harmony(modEntry.Info.Id);
                 harmony.PatchAll(typeof(Main).Assembly);
+                Main.harmony.Patch(HarmonyLib.AccessTools.Method(typeof(EnumUtils), nameof(EnumUtils.GetMaxValue), null, new Type[] { typeof(ActivatableAbilityGroup) }),
+                    postfix: new HarmonyLib.HarmonyMethod(typeof(Patch_ActivatableAbilityGroup).GetMethod("Postfix")));
             }
             catch (Exception ex)
             {
                 DebugError(ex);
+#if DEBUG
                 throw ex;
+#endif
             }
 
 
             return true;
         }
 
-        #endregion
+#endregion
 
         #region Load_Patch
 
-        [Harmony12.HarmonyBefore(new string[] { "CallOfTheWild" })]
-        [Harmony12.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
+        [HarmonyLib.HarmonyBefore(new string[] { "CallOfTheWild" })]
+        [HarmonyLib.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
         static class LibraryScriptableObject_LoadDictionary_Patch_Before
         {
             static bool Run = false;
@@ -157,6 +164,7 @@ namespace FumisCodex
             {
                 if (Run) return; Run = true;
                 Main.library = __instance;
+                Guid.library = __instance;
                 try
                 {
                     Main.DebugLog("Pre-loading Fumi's Codex");
@@ -168,8 +176,8 @@ namespace FumisCodex
             }
         }
 
-        [Harmony12.HarmonyAfter(new string[] { "CallOfTheWild" })]
-        [Harmony12.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
+        [HarmonyLib.HarmonyAfter(new string[] { "CallOfTheWild" })]
+        [HarmonyLib.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
         static class LibraryScriptableObject_LoadDictionary_Patch_After
         {
             static bool Run = false;
@@ -177,49 +185,118 @@ namespace FumisCodex
             {
                 if (Run) return; Run = true;
                 if (Main.library == null) Main.library = __instance;
+                if (Guid.library == null) Guid.library = __instance;
                 try
                 {
                     Main.DebugLogAlways("Loading Fumi's Codex");
-
-                    //Hexcrafter.createHexcrafter();
-                    Hexcrafter.createExtraArcanaFeat();
-
-                    Rogue.createFlensingStrike();
-
-                    Kineticist.init();
-                    Kineticist.createImpaleInfusion();
-                    Kineticist.extendSprayInfusion(Settings.StateManager.State.extendSprayInfusion);
-                    Kineticist.createPreciseBlastTalent(Settings.StateManager.State.preciseBlastTalent);
-                    Kineticist.createMobileGatheringFeat();
-                    Kineticist.createHurricaneQueen();
-                    Kineticist.createMindShield(Settings.StateManager.State.mindShieldTalent);
-                    //Kineticist.createExpandElementalFocus();
-                    Kineticist.createFlight();
-                    Kineticist.createShiftEarth();
-                    Kineticist.createSparkofLife();
-                    Kineticist.fixWallInfusion();//before MobileBlast
-                    Kineticist.createMobileBlast();
-                    Kineticist.createExtraWildTalentFeat(Settings.StateManager.State.extraWildTalentFeat);//must be after new talents
-                    Kineticist.fixExpandElement();//must be after ExtraWildTalentFeat
-
-                    Fixes.fixShamblingMoundGrapple();
-
-                    if (Settings.StateManager.State.slumberHDrestriction) CotW.modSlumber();
-                    CotW.modAuraOfDoomToogle(Settings.StateManager.State.auraOfDoomFx);
-                    CotW.modDazeToogle(Settings.StateManager.State.dazeIsNotStun);
                     
+                    LoadSafe(Hexcrafter.createHexcrafter);
+                    LoadSafe(Hexcrafter.createExtraArcanaFeat);
+                    LoadSafe(Hexcrafter.createHexStrikeFeat);
+
+                    LoadSafe(Rogue.createFlensingStrike);
+
+                    LoadSafe(Kineticist.init);
+                    LoadSafe(Kineticist.createImpaleInfusion);
+                    LoadSafe(Kineticist.extendSprayInfusion, Settings.StateManager.State.extendSprayInfusion);
+                    LoadSafe(Kineticist.createPreciseBlastTalent, Settings.StateManager.State.preciseBlastTalent);
+                    LoadSafe(Kineticist.createMobileGatheringFeat);
+                    LoadSafe(Kineticist.createHurricaneQueen);
+                    LoadSafe(Kineticist.createMindShield, Settings.StateManager.State.mindShieldTalent);
+                    LoadSafe(Kineticist.createFlight);
+                    LoadSafe(Kineticist.createShiftEarth);
+                    LoadSafe(Kineticist.createSparkofLife);
+                    LoadSafe(Kineticist.fixWallInfusion);
+                    LoadSafe(Kineticist.createMobileBlast);
+                    LoadSafe(Kineticist.createWoodSoldiers);
+                    LoadSafe(Kineticist.createExtraWildTalentFeat, Settings.StateManager.State.extraWildTalentFeat);//must be after new talents
+                    LoadSafe(Kineticist.fixExpandElement);
+
+                    LoadSafe(Monk.allowTWFwithFists);
+                    LoadSafe(Monk.createMedusasWrath);
+                    LoadSafe(Monk.createStyleMaster, true);
+                    LoadSafe(Monk.createSnakeStyle);
+                    LoadSafe(Monk.createBoarStyle);
+                    LoadSafe(Monk.createWolfStyle);
+                    LoadSafe(Monk.modKiPowers, true);
+                    LoadSafe(Monk.createKiLeech);
+                    LoadSafe(Monk.createOneTouch);
+                    LoadSafe(Monk.createMasterOfManyStyles);//must be after new styles
+
+                    LoadSafe(Fixes.fixShamblingMoundGrapple);
+
+                    LoadSafe(CotW.modSlumber, Settings.StateManager.State.slumberHDrestriction);
+                    LoadSafe(CotW.modAuraOfDoomToogle, Settings.StateManager.State.auraOfDoomFx);
+                    LoadSafe(CotW.modDazeToogle, Settings.StateManager.State.dazeIsNotStun);
+
+                    //if (Settings.StateManager.State.debugEnsureGuids) Guid.i.Ensure(); does not work... too bad
 #if DEBUG
                     Main.DebugLog("Running in debug.");
-                    Debug.Log("Normal log");
-                    Debug.LogWarning("Warning log");
-                    Debug.LogError("Error log");
-                    GuidManager.i.WriteAll();
+                    Guid.i.WriteAll();
 #endif
                 }
                 catch (Exception ex)
                 {
                     Main.DebugError(ex);
                 }
+            }
+        }
+
+        #endregion
+
+        #region Helper
+
+        public static bool LoadSafe(Action action)
+        {
+            try
+            {
+                action();
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Main.DebugError(e);
+                return false;
+            }
+        }
+
+        public static bool LoadSafe(Action<bool> action, bool flag)
+        {
+            try
+            {
+                action(flag);
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Main.DebugError(e);
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Special Patches
+
+        //[HarmonyLib.HarmonyPatch(typeof(EnumUtils), nameof(EnumUtils.GetMaxValue))] since this is a generic method, we need to patch this manually, see Main.Load
+        public static class Patch_ActivatableAbilityGroup
+        {
+            public static int ExtraGroups = 0;
+            public static bool GameAlreadyRunning = false;
+
+            ///<summary>Calls this to register a new group. Returns your new enum.</summar>
+            public static ActivatableAbilityGroup GetNewGroup()
+            {
+                if (GameAlreadyRunning)
+                    return 0;
+                
+                ExtraGroups++;
+                return (ActivatableAbilityGroup) (Enum.GetValues(typeof(ActivatableAbilityGroup)).Cast<int>().Max() + 1 + ExtraGroups);
+            }
+
+            public static void Postfix(ref int __result)
+            {
+                __result += ExtraGroups;
             }
         }
 

@@ -156,7 +156,7 @@
 //    }
 //}
 
-////[Harmony12.HarmonyPatch(typeof(CallOfTheWild.Rebalance), "fixMagicVestmentArmor")]
+////[HarmonyLib.HarmonyPatch(typeof(CallOfTheWild.Rebalance), "fixMagicVestmentArmor")]
 //class fixMagicVestmentArmorPatch
 //{
 //    static bool Prefix()

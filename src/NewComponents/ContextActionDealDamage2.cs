@@ -80,7 +80,7 @@ namespace FumisCodex.NewComponents
             // ability damage
             ContextActionDealDamage2 c = CreateInstance<ContextActionDealDamage2>();
             c.M_Type = Type.AbilityDamage;
-            Harmony12.AccessTools.Field(typeof(ContextActionDealDamage), "m_type").SetValue(c, 1);   // ?? does this work?
+            HarmonyLib.AccessTools.Field(typeof(ContextActionDealDamage), "m_type").SetValue(c, 1);   // ?? does this work?
             c.Duration = new ContextDurationValue()
             {
                 BonusValue = 0,

@@ -38,7 +38,7 @@ namespace FumisCodex.NewComponents
             
             foreach (var fact in this.Context.MaybeOwner.ActivatableAbilities)
             {
-                if (fact.Blueprint == Activatable)
+                if (fact.Blueprint == this.Activatable)
                 {
                     if (this.Toggle)
                         fact.IsOn = !fact.IsOn;

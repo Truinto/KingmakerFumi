@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using CallOfTheWild;
 using UnityEngine;
+using Kingmaker.Blueprints.Facts;
 
 namespace FumisCodex
 {
     public class GuidManager
     {
         public static GuidManager i = new GuidManager();
+        public static LibraryScriptableObject library;
 
 #if DEBUG
         public bool allow_guid_generation = true;
@@ -60,21 +62,32 @@ namespace FumisCodex
         public void WriteAll()
         {
             if (!allow_guid_generation) return;
+            if (library == null) throw new InvalidOperationException("library must not be null when WriteAll is called");
             TryLoad();
 
             using (StreamWriter writer = new StreamWriter(filepath, append: false))
             {
                 foreach (KeyValuePair<string, string> pair in guid_list)
                 {
-                    var obj = Main.library.Get<BlueprintScriptableObject>(pair.Value);
-                    writer.WriteLine(pair.Key + '\t' + pair.Value + '\t' + obj.GetType().FullName);
-                    if (pair.Key != obj.name) Debug.LogError(pair.Key + " != " + obj.name);
+                    BlueprintScriptableObject obj = null;
+                    try { obj = library.Get<BlueprintScriptableObject>(pair.Value); } catch (Exception) { }
+                    if (obj != null)
+                    {
+                        writer.WriteLine(pair.Key + '\t' + pair.Value + '\t' + obj.GetType().FullName);
+                        if (pair.Key != obj.name) Debug.LogError(pair.Key + " != " + obj.name);
+                    }
+                    else
+                        Main.DebugLogAlways(pair.Value+" does not exist");
                 }
 
                 foreach (string guid in register)
                 {
-                    var obj = Main.library.Get<BlueprintScriptableObject>(guid);
-                    writer.WriteLine(obj.name + '\t' + guid + '\t' + obj.GetType().FullName);
+                    BlueprintScriptableObject obj = null;
+                    try { obj = library.Get<BlueprintScriptableObject>(guid); } catch (Exception) { }
+                    if (obj != null)
+                        writer.WriteLine(obj.name + '\t' + guid + '\t' + obj.GetType().FullName);
+                    else
+                        Main.DebugLogAlways(guid+" does not exist");
                 }
             }
         }
@@ -88,7 +101,7 @@ namespace FumisCodex
         }
 
         ///<summary>Gets or makes a new guid.</summary>
-        ///<="key">Blueprint.name</key>
+        ///<key="key">Blueprint.name</key>
         public string Get(string key)
         {
             TryLoad();
@@ -107,6 +120,40 @@ namespace FumisCodex
             }
 
             return result;
+        }
+
+        ///<summary>Generates dummy objects to ensure saves can be loaded.</summary>
+        public void Ensure()
+        {
+            if (!File.Exists(filepath)) return;
+            if (library == null) throw new InvalidOperationException("library must not be null when Ensure is called");
+
+            try
+            {
+                string[] lines = File.ReadAllLines(filepath);
+                foreach (string line in lines)
+                {
+                    string[] items = line.Split('\t');
+                    if (items.Length >= 3)
+                    {
+                        guid_list[items[0]] = items[1];
+
+                        BlueprintScriptableObject obj = null;
+                        try { obj = library.Get<BlueprintScriptableObject>(items[1]); } catch (Exception) { }
+                        if (obj == null)
+                        {
+                            Main.DebugLogAlways(items[1]+" not found");
+                            //obj = (BlueprintScriptableObject)ScriptableObject.CreateInstance(Type.GetType(items[3]) ?? typeof(BlueprintScriptableObject));
+                            obj = ScriptableObject.CreateInstance<BlueprintScriptableObject>();
+                            obj.name = items[0];
+                            library.AddAsset(obj, items[1]);
+                        }
+                        
+                    }
+                }
+            } catch (Exception e) {
+                Main.DebugLogAlways(e.ToString());
+            }
         }
 
     }

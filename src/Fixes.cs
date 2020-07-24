@@ -22,7 +22,7 @@ namespace FumisCodex
             grapple_self.SetComponents(Array.Empty<BlueprintComponent>());
         }
 
-        [Harmony12.HarmonyPatch(typeof(UnitPartGrappleInitiator), "Init")]
+        [HarmonyLib.HarmonyPatch(typeof(UnitPartGrappleInitiator), "Init")]
         public class UnitPartGrappleInitiatorPatch
         {
             static void Postfix(UnitPartGrappleInitiator __instance)
