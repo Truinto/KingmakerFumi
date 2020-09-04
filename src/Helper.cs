@@ -1,8 +1,8 @@
-﻿using CallOfTheWild;
-using FumisCodex.NewComponents;
+﻿using FumisCodex.NewComponents;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Prerequisites;
+using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Facts;
 using Kingmaker.Blueprints.Items.Weapons;
@@ -10,14 +10,17 @@ using Kingmaker.Designers.EventConditionActionSystem.Actions;
 using Kingmaker.Designers.EventConditionActionSystem.Conditions;
 using Kingmaker.Designers.Mechanics.Buffs;
 using Kingmaker.Designers.Mechanics.Facts;
+using Kingmaker.Designers.Mechanics.Prerequisites;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
 using Kingmaker.Enums.Damage;
+using Kingmaker.Localization;
 using Kingmaker.ResourceLinks;
 using Kingmaker.RuleSystem;
 using Kingmaker.RuleSystem.Rules;
 using Kingmaker.RuleSystem.Rules.Damage;
+using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
@@ -26,60 +29,45 @@ using Kingmaker.UnitLogic.Abilities.Components.CasterCheckers;
 using Kingmaker.UnitLogic.ActivatableAbilities;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Class.Kineticist;
-using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Components;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
+using Kingmaker.UnitLogic.Mechanics.Properties;
 using Kingmaker.UnitLogic.Parts;
+using Kingmaker.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
 
 namespace FumisCodex
 {
     public static class Extensions
     {
-        private static readonly FastSetter setBaseValueType = Helpers.CreateFieldSetter<ContextRankConfig>("m_BaseValueType");
-        private static readonly FastGetter getBaseValueType = Helpers.CreateFieldGetter<ContextRankConfig>("m_BaseValueType");
-        public static ContextRankBaseValueType m_BaseValueType(this ContextRankConfig config)
-        {
-            return (ContextRankBaseValueType)getBaseValueType(config);
-        }
-        public static void m_BaseValueType(this ContextRankConfig config, ContextRankBaseValueType value)
-        {
-            setBaseValueType(config, value);
-        }
-
-        //private static HarmonyLib.SetterHandler<BlueprintBuff, object> getm_Flags = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintBuff, object>(HarmonyLib.AccessTools.Field(typeof(BlueprintBuff), "m_Flags"));
         public static void m_Flags(this BlueprintBuff obj, bool IsFromSpell = false, bool HiddenInUi = false, bool StayOnDeath = false, bool RemoveOnRest = false, bool RemoveOnResurrect = false, bool Harmful = false)
         {
-            int value = (IsFromSpell?1:0) | (StayOnDeath?8:0) | (RemoveOnRest?16:0) | (RemoveOnResurrect?32:0) | (Harmful?64:0);
+            int value = (IsFromSpell ? 1 : 0) | (StayOnDeath ? 8 : 0) | (RemoveOnRest ? 16 : 0) | (RemoveOnResurrect ? 32 : 0) | (Harmful ? 64 : 0);
 #if !DEBUG
             value |= (HiddenInUi?2:0);
 #endif
             HarmonyLib.AccessTools.Field(typeof(BlueprintBuff), "m_Flags").SetValue(obj, value);
         }
 
-        public static T CloneUnity<T>(this T obj) where T : UnityEngine.Object
-        {
-            return UnityEngine.Object.Instantiate<T>(obj);
-        }
-
-
         public static PrerequisiteArchetypeLevel CreatePrerequisite(this BlueprintArchetype @class, int level, bool any = true)
         {
-            var result = CallOfTheWild.Helpers.Create<PrerequisiteArchetypeLevel>();
+            var result = Helper.Create<PrerequisiteArchetypeLevel>();
             result.CharacterClass = @class.GetParentClass();
             result.Archetype = @class;
             result.Level = level;
             result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
             return result;
         }
-        
+
         /// <returns>Action on index 0</returns>
         public static GameAction getAction(this BlueprintAbility ability)
         {
@@ -139,16 +127,16 @@ namespace FumisCodex
             result.SavingThrowType = orig.SavingThrowType;
             result.Actions = new ActionList();
             result.Actions.Actions = new GameAction[orig.Actions.Actions.Length];
-            
+
             for (int i = 0; i < orig.Actions.Actions.Length; i++)
-                result.Actions.Actions[i] = UnityEngine.Object.Instantiate(orig.Actions.Actions[i]);
+                result.Actions.Actions[i] = ScriptableObject.Instantiate(orig.Actions.Actions[i]);
 
             if (detach) ability.DetachComponents();
             ability.ReplaceDirty(result);
             return result;
         }
 
-        public static T[] ToArray<T>(this T obj)
+        public static T[] ObjToArray<T>(this T obj)
         {
             return new T[] { obj };
         }
@@ -179,6 +167,102 @@ namespace FumisCodex
         //}
     }
 
+    public class Access
+    {
+        public static void set_DescriptionStr(BlueprintUnitFact f, string str)
+        {
+            set_Description(f, HelperEA.CreateString(f.Name + ".Description", str));
+        }
+
+        public static readonly HarmonyLib.GetterHandler<BlueprintUnitFact, LocalizedString> get_DisplayName = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintUnitFact, LocalizedString>(typeof(BlueprintUnitFact).GetField("m_DisplayName", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<BlueprintUnitFact, LocalizedString> set_DisplayName = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintUnitFact, LocalizedString>(typeof(BlueprintUnitFact).GetField("m_DisplayName", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<BlueprintUnitFact, LocalizedString> get_Description = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintUnitFact, LocalizedString>(typeof(BlueprintUnitFact).GetField("m_Description", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<BlueprintUnitFact, LocalizedString> set_Description = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintUnitFact, LocalizedString>(typeof(BlueprintUnitFact).GetField("m_Description", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<BlueprintUnitFact, Sprite> get_Icon = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintUnitFact, Sprite>(typeof(BlueprintUnitFact).GetField("m_Icon", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<BlueprintUnitFact, Sprite> set_Icon = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintUnitFact, Sprite>(typeof(BlueprintUnitFact).GetField("m_Icon", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<LocalizedString, string> get_LocalizedString_Key = HarmonyLib.FastAccess.CreateGetterHandler<LocalizedString, string>(typeof(LocalizedString).GetField("m_Key", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<LocalizedString, string> set_LocalizedString_Key = HarmonyLib.FastAccess.CreateSetterHandler<LocalizedString, string>(typeof(LocalizedString).GetField("m_Key", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, ContextRankBaseValueType> get_BaseValueType = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, ContextRankBaseValueType>(typeof(ContextRankConfig).GetField("m_BaseValueType", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, ContextRankBaseValueType> set_BaseValueType = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, ContextRankBaseValueType>(typeof(ContextRankConfig).GetField("m_BaseValueType", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, AbilityRankType> get_Type = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, AbilityRankType>(typeof(ContextRankConfig).GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, AbilityRankType> set_Type = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, AbilityRankType>(typeof(ContextRankConfig).GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, ContextRankProgression> get_Progression = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, ContextRankProgression>(typeof(ContextRankConfig).GetField("m_Progression", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, ContextRankProgression> set_Progression = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, ContextRankProgression>(typeof(ContextRankConfig).GetField("m_Progression", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, bool> get_UseMin = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_UseMin", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, bool> set_UseMin = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_UseMin", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, int> get_Min = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_Min", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, int> set_Min = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_Min", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, bool> get_UseMax = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_UseMax", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, bool> set_UseMax = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_UseMax", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, int> get_Max = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_Max", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, int> set_Max = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_Max", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, int> get_StartLevel = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_StartLevel", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, int> set_StartLevel = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_StartLevel", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, int> get_StepLevel = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_StepLevel", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, int> set_StepLevel = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_StepLevel", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintFeature> get_Feature = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintFeature>(typeof(ContextRankConfig).GetField("m_Feature", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintFeature> set_Feature = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintFeature>(typeof(ContextRankConfig).GetField("m_Feature", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, bool> get_ExceptClasses = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_ExceptClasses", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, bool> set_ExceptClasses = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_ExceptClasses", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintUnitProperty> get_CustomProperty = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintUnitProperty>(typeof(ContextRankConfig).GetField("m_CustomProperty", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintUnitProperty> set_CustomProperty = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintUnitProperty>(typeof(ContextRankConfig).GetField("m_CustomProperty", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, StatType> get_Stat = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, StatType>(typeof(ContextRankConfig).GetField("m_Stat", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, StatType> set_Stat = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, StatType>(typeof(ContextRankConfig).GetField("m_Stat", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintCharacterClass[]> get_Class = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintCharacterClass[]>(typeof(ContextRankConfig).GetField("m_Class", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintCharacterClass[]> set_Class = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintCharacterClass[]>(typeof(ContextRankConfig).GetField("m_Class", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintArchetype> get_Archetype = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintArchetype>(typeof(ContextRankConfig).GetField("Archetype", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintArchetype> set_Archetype = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintArchetype>(typeof(ContextRankConfig).GetField("Archetype", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintFeature[]> get_FeatureList = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintFeature[]>(typeof(ContextRankConfig).GetField("m_FeatureList", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintFeature[]> set_FeatureList = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintFeature[]>(typeof(ContextRankConfig).GetField("m_FeatureList", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly Type typeof_CustomProgressionItem = typeof(ContextRankConfig).GetNestedType("CustomProgressionItem", BindingFlags.NonPublic);
+
+        public static readonly HarmonyLib.GetterHandler<object, int> get_BaseValue = HarmonyLib.FastAccess.CreateGetterHandler<object, int>(typeof_CustomProgressionItem.GetField("BaseValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<object, int> set_BaseValue = HarmonyLib.FastAccess.CreateSetterHandler<object, int>(typeof_CustomProgressionItem.GetField("BaseValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<object, int> get_ProgressionValue = HarmonyLib.FastAccess.CreateGetterHandler<object, int>(typeof_CustomProgressionItem.GetField("ProgressionValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<object, int> set_ProgressionValue = HarmonyLib.FastAccess.CreateSetterHandler<object, int>(typeof_CustomProgressionItem.GetField("ProgressionValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, object> get_CustomProgression = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, object>(typeof(ContextRankConfig).GetField("m_CustomProgression", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, object> set_CustomProgression = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, object>(typeof(ContextRankConfig).GetField("m_CustomProgression", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<BlueprintActivatableAbility, CommandType> get_ActivateWithUnitCommand = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintActivatableAbility, CommandType>(typeof(BlueprintActivatableAbility).GetField("m_ActivateWithUnitCommand", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<BlueprintActivatableAbility, CommandType> set_ActivateWithUnitCommand = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintActivatableAbility, CommandType>(typeof(BlueprintActivatableAbility).GetField("m_ActivateWithUnitCommand", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<BlueprintArchetype, BlueprintCharacterClass> get_ParentClass = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintArchetype, BlueprintCharacterClass>(typeof(BlueprintArchetype).GetField("m_ParentClass", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<BlueprintArchetype, BlueprintCharacterClass> set_ParentClass = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintArchetype, BlueprintCharacterClass>(typeof(BlueprintArchetype).GetField("m_ParentClass", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<ContextActionDealDamage, int> get_ContextActionDealDamage_Type = HarmonyLib.FastAccess.CreateGetterHandler<ContextActionDealDamage, int>(typeof(ContextActionDealDamage).GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<ContextActionDealDamage, int> set_ContextActionDealDamage_Type = HarmonyLib.FastAccess.CreateSetterHandler<ContextActionDealDamage, int>(typeof(ContextActionDealDamage).GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<AbilityAoERadius, Feet> get_Radius = HarmonyLib.FastAccess.CreateGetterHandler<AbilityAoERadius, Feet>(typeof(AbilityAoERadius).GetField("m_Radius", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<AbilityAoERadius, Feet> set_Radius = HarmonyLib.FastAccess.CreateSetterHandler<AbilityAoERadius, Feet>(typeof(AbilityAoERadius).GetField("m_Radius", BindingFlags.NonPublic | BindingFlags.Instance));
+
+        public static readonly HarmonyLib.GetterHandler<AbilityAoERadius, TargetType> get_TargetType = HarmonyLib.FastAccess.CreateGetterHandler<AbilityAoERadius, TargetType>(typeof(AbilityAoERadius).GetField("m_TargetType", BindingFlags.NonPublic | BindingFlags.Instance));
+        public static readonly HarmonyLib.SetterHandler<AbilityAoERadius, TargetType> set_TargetType = HarmonyLib.FastAccess.CreateSetterHandler<AbilityAoERadius, TargetType>(typeof(AbilityAoERadius).GetField("m_TargetType", BindingFlags.NonPublic | BindingFlags.Instance));
+
+
+    }
+
     public static class Contexts
     {
         public static PrefabLink NullPrefabLink = new PrefabLink();
@@ -190,30 +274,1011 @@ namespace FumisCodex
         public static ContextValue ValueTwo = new ContextValue() { ValueType = ContextValueType.Simple, Value = 2 };
         public static ContextValue ValueFour = new ContextValue() { ValueType = ContextValueType.Simple, Value = 4 };
 
-        public static ContextDiceValue DiceZero = Helpers.CreateContextDiceValue(DiceType.Zero, ValueZero);
-        public static ContextDiceValue DiceOne = Helpers.CreateContextDiceValue(DiceType.One, ValueOne);
-        public static ContextDiceValue Dice1d3 = Helpers.CreateContextDiceValue(DiceType.D3, ValueOne);
-        public static ContextDiceValue Dice1d4 = Helpers.CreateContextDiceValue(DiceType.D4, ValueOne);
-        public static ContextDiceValue Dice1d6 = Helpers.CreateContextDiceValue(DiceType.D6, ValueOne);
-        public static ContextDiceValue Dice1d8 = Helpers.CreateContextDiceValue(DiceType.D8, ValueOne);
+        public static ContextDiceValue DiceZero = HelperEA.CreateContextDiceValue(DiceType.Zero, ValueZero);
+        public static ContextDiceValue DiceOne = HelperEA.CreateContextDiceValue(DiceType.One, ValueOne);
+        public static ContextDiceValue Dice1d3 = HelperEA.CreateContextDiceValue(DiceType.D3, ValueOne);
+        public static ContextDiceValue Dice1d4 = HelperEA.CreateContextDiceValue(DiceType.D4, ValueOne);
+        public static ContextDiceValue Dice1d6 = HelperEA.CreateContextDiceValue(DiceType.D6, ValueOne);
+        public static ContextDiceValue Dice1d8 = HelperEA.CreateContextDiceValue(DiceType.D8, ValueOne);
 
-        public static ContextDurationValue DurationZero = Helpers.CreateContextDuration(0);
-        public static ContextDurationValue Duration1Round = Helpers.CreateContextDuration(1);
-        public static ContextDurationValue DurationRankInRounds = Helpers.CreateContextDuration(Contexts.ValueRank, DurationRate.Rounds);
-        public static ContextDurationValue DurationRankInMinutes = Helpers.CreateContextDuration(Contexts.ValueRank, DurationRate.Minutes);
-        public static ContextDurationValue Duration24Hours = Helpers.CreateContextDuration(1, DurationRate.Days);
+        public static ContextDurationValue DurationZero = HelperEA.CreateContextDuration(0);
+        public static ContextDurationValue Duration1Round = HelperEA.CreateContextDuration(1);
+        public static ContextDurationValue DurationRankInRounds = HelperEA.CreateContextDuration(Contexts.ValueRank, DurationRate.Rounds);
+        public static ContextDurationValue DurationRankInMinutes = HelperEA.CreateContextDuration(Contexts.ValueRank, DurationRate.Minutes);
+        public static ContextDurationValue Duration24Hours = HelperEA.CreateContextDuration(1, DurationRate.Days);
 
         public static BlueprintSummonPool SummonPool = Main.library.Get<BlueprintSummonPool>("d94c93e7240f10e41ae41db4c83d1cbe");
-        public static ActionList AfterSpawnAction = Helper.CreateActionList(Helpers.CreateApplyBuff(Main.library.Get<BlueprintBuff>("0dff842f06edace43baf8a2f44207045"), DurationZero, false, false, false, false, true));
+        public static ActionList AfterSpawnAction = Helper.CreateActionList(HelperEA.CreateApplyBuff(Main.library.Get<BlueprintBuff>("0dff842f06edace43baf8a2f44207045"), DurationZero, false, false, false, false, true));
+    }
+
+    public static class Strings
+    {
+        public static LocalizedString SavingThrowNone = Main.library.Get<BlueprintAbility>("b6010dda6333bcf4093ce20f0063cd41").LocalizedSavingThrow;
+        public static LocalizedString RoundsPerLevelDuration = Main.library.Get<BlueprintAbility>("486eaff58293f6441a5c2759c4872f98").LocalizedDuration;
+        public static LocalizedString HourPerLevelDuration = Main.library.Get<BlueprintAbility>("9e1ad5d6f87d19e4d8883d63a6e35568").LocalizedDuration;
+    }
+
+    public static class HelperEA
+    {
+        public static T Get<T>(this LibraryScriptableObject library, string assetId) where T : BlueprintScriptableObject
+        {
+            return (T)library.BlueprintsByAssetId[assetId];
+        }
+
+        public static T TryGet<T>(this LibraryScriptableObject library, String assetId) where T : BlueprintScriptableObject
+        {
+            BlueprintScriptableObject result;
+            if (library.BlueprintsByAssetId.TryGetValue(assetId, out result))
+            {
+                return (T)result;
+            }
+            return null;
+        }
+
+        public static void AddAsset(this LibraryScriptableObject library, BlueprintScriptableObject blueprint, string guid, bool overwrite = false)
+        {
+            int index = library.GetAllBlueprints().FindIndex(a => a.AssetGuid == guid);
+
+            if (index < 0)
+                library.GetAllBlueprints().Add(blueprint);
+            else if (overwrite)
+            {
+                Main.DebugLogAlways("Overwriting Asset: " + guid);
+                library.GetAllBlueprints()[index] = blueprint;
+            }
+            else
+                Main.DebugLogAlways("[Error] Duplicate Asset ID: " + guid);
+        }
+
+        public static ContextDiceValue CreateContextDiceValue(DiceType dice, ContextValue diceCount = null, ContextValue bonus = null)
+        {
+            return new ContextDiceValue()
+            {
+                DiceType = dice,
+                DiceCountValue = diceCount ?? CreateContextValueRank(),
+                BonusValue = bonus ?? 0
+            };
+        }
+
+        public static ContextValue CreateContextValueRank(AbilityRankType value = AbilityRankType.Default)
+        {
+            return CreateContextValue(value);
+        }
+
+        public static ContextValue CreateContextValue(AbilityRankType value)
+        {
+            return new ContextValue() { ValueType = ContextValueType.Rank, ValueRank = value };
+        }
+
+        public static ContextValue CreateContextValue(AbilitySharedValue value)
+        {
+            return new ContextValue() { ValueType = ContextValueType.Shared, ValueShared = value };
+        }
+
+        public static ContextDurationValue CreateContextDuration(ContextValue bonus = null, DurationRate rate = DurationRate.Rounds, DiceType diceType = DiceType.Zero, ContextValue diceCount = null)
+        {
+            return new ContextDurationValue()
+            {
+                BonusValue = bonus ?? CreateContextValueRank(),
+                Rate = rate,
+                DiceCountValue = diceCount ?? 0,
+                DiceType = diceType
+            };
+        }
+
+        public static ContextActionApplyBuff CreateApplyBuff(this BlueprintBuff buff, ContextDurationValue duration, bool fromSpell, bool dispellable = true, bool toCaster = false, bool asChild = false, bool permanent = false)
+        {
+            var result = Helper.Create<ContextActionApplyBuff>();
+            result.Buff = buff;
+            result.DurationValue = duration;
+            result.IsFromSpell = fromSpell;
+            result.IsNotDispelable = !dispellable;
+            result.ToCaster = toCaster;
+            result.AsChild = asChild;
+            result.Permanent = permanent;
+            return result;
+        }
+
+        public static BlueprintFeature CreateFeature(string name, string displayName, string description, string guid, Sprite icon,
+            FeatureGroup group, params BlueprintComponent[] components)
+        {
+            var feat = Helper.Create<BlueprintFeature>();
+            SetFeatureInfo(feat, name, displayName, description, guid, icon, group, components);
+            return feat;
+        }
+
+        public static void SetFeatureInfo(BlueprintFeature feat, string name, string displayName, string description, string guid, Sprite icon,
+            FeatureGroup group, params BlueprintComponent[] components)
+        {
+            feat.name = name;
+            feat.SetComponents(components);
+            feat.Groups = new FeatureGroup[] { group };
+            feat.SetNameDescriptionIcon(displayName, description, icon);
+            Main.library.AddAsset(feat, guid);
+        }
+
+        public static void SetComponents(this BlueprintScriptableObject obj, params BlueprintComponent[] components)
+        {
+            // Fix names of components. Generally this doesn't matter, but if they have serialization state,
+            // then their name needs to be unique.
+            var names = new HashSet<string>();
+            foreach (var c in components)
+            {
+                if (string.IsNullOrEmpty(c.name))
+                {
+                    c.name = $"${c.GetType().Name}";
+                }
+                if (!names.Add(c.name))
+                {
+                    //SaveCompatibility.CheckComponent(obj, c);
+                    string name;
+                    for (int i = 0; !names.Add(name = $"{c.name}${i}"); i++) ;
+                    c.name = name;
+                }
+                //Log.Validate(c, obj);
+            }
+
+            obj.ComponentsArray = components;
+        }
+
+        public static void SetComponents(this BlueprintScriptableObject obj, IEnumerable<BlueprintComponent> components)
+        {
+            SetComponents(obj, components.ToArray());
+        }
+
+        public static void AddComponent(this BlueprintScriptableObject obj, BlueprintComponent component)
+        {
+            obj.SetComponents(Helper.Append(obj.ComponentsArray, component));
+        }
+
+        public static void AddComponents(this BlueprintScriptableObject obj, params BlueprintComponent[] components)
+        {
+            var c = obj.ComponentsArray.ToList();
+            c.AddRange(components);
+            obj.SetComponents(c.ToArray());
+        }
+
+        public static void ReplaceComponent<T>(this BlueprintScriptableObject obj, BlueprintComponent replacement) where T : BlueprintComponent
+        {
+            ReplaceComponent(obj, obj.GetComponent<T>(), replacement);
+        }
+
+        public static void ReplaceComponent<T>(this BlueprintScriptableObject obj, Action<T> action) where T : BlueprintComponent
+        {
+            var replacement = Helper.Instantiate(obj.GetComponent<T>());
+            action(replacement);
+            ReplaceComponent(obj, obj.GetComponent<T>(), replacement);
+        }
+
+        public static void ReplaceComponent(this BlueprintScriptableObject obj, BlueprintComponent original, BlueprintComponent replacement)
+        {
+            // Note: make a copy so we don't mutate the original component
+            // (in case it's a clone of a game one).
+            var components = obj.ComponentsArray;
+            var newComponents = new BlueprintComponent[components.Length];
+            for (int i = 0; i < components.Length; i++)
+            {
+                var c = components[i];
+                newComponents[i] = c == original ? replacement : c;
+            }
+            obj.SetComponents(newComponents); // fix up names if needed
+        }
+
+        public static void RemoveComponents<T>(this BlueprintScriptableObject obj) where T : BlueprintComponent
+        {
+            var compnents_to_remove = obj.GetComponents<T>().ToArray();
+            foreach (var c in compnents_to_remove)
+            {
+                obj.SetComponents(obj.ComponentsArray.RemoveFromArray(c));
+            }
+        }
+
+        public static void RemoveComponents<T>(this BlueprintScriptableObject obj, Predicate<T> predicate) where T : BlueprintComponent
+        {
+            var compnents_to_remove = obj.GetComponents<T>().ToArray();
+            foreach (var c in compnents_to_remove)
+            {
+                if (predicate(c))
+                {
+                    obj.SetComponents(obj.ComponentsArray.RemoveFromArray(c));
+                }
+            }
+        }
+
+        public static T[] RemoveFromArray<T>(this T[] array, T value)
+        {
+            var list = array.ToList();
+            return list.Remove(value) ? list.ToArray() : array;
+        }
+
+        public static void SetNameDescriptionIcon(this BlueprintUnitFact feature, string displayName, string description, Sprite icon = null)
+        {
+            Access.set_DisplayName(feature, CreateString(feature.name + ".Name", displayName));
+            Access.set_Description(feature, CreateString(feature.name + ".Description", description));
+            if (icon != null)
+                Access.set_Icon(feature, icon);
+        }
+
+        public static void SetNameDescriptionIcon(this BlueprintUnitFact feature, BlueprintUnitFact feature2)
+        {
+            Access.set_DisplayName(feature, CreateString(feature.name + ".Name", feature2.Name));
+            Access.set_Description(feature, CreateString(feature.name + ".Description", feature2.Description));
+            Access.set_Icon(feature, feature.Icon);
+        }
+
+        public static LocalizedString CreateString(string key, string value)
+        {
+            // See if we used the text previously.
+            // (It's common for many features to use the same localized text.
+            // In that case, we reuse the old entry instead of making a new one.)
+            LocalizedString localized;
+            if (textToLocalizedString.TryGetValue(value, out localized))
+            {
+                return localized;
+            }
+            var strings = LocalizationManager.CurrentPack.Strings;
+            String oldValue;
+            if (strings.TryGetValue(key, out oldValue) && value != oldValue)
+            {
+#if DEBUG
+                Main.DebugLogAlways($"Info: duplicate localized string `{key}`, different text.");
+#endif
+            }
+            strings[key] = value;
+            localized = new LocalizedString();
+            Access.set_LocalizedString_Key(localized, key);
+            textToLocalizedString[value] = localized;
+            return localized;
+        }
+
+        // All localized strings created in this mod, mapped to their localized key. Populated by CreateString.
+        static Dictionary<String, LocalizedString> textToLocalizedString = new Dictionary<string, LocalizedString>();
+
+        public static PrerequisiteFeature PrerequisiteFeature(this BlueprintFeature feat, bool any = false)
+        {
+            var result = Helper.Create<PrerequisiteFeature>();
+            result.Feature = feat;
+            result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
+            return result;
+        }
+
+        public static PrerequisiteFullStatValue PrerequisiteFullStatValue(this StatType stat, int value, bool any = false)
+        {
+            var result = Helper.Create<PrerequisiteFullStatValue>();
+            result.Stat = stat;
+            result.Value = value;
+            result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
+            return result;
+        }
+
+        public static BlueprintBuff CreateBuff(String name, String displayName, String description, String guid, Sprite icon, PrefabLink fxOnStart, params BlueprintComponent[] components)
+        {
+            var buff = Helper.Create<BlueprintBuff>();
+            buff.name = name;
+            buff.FxOnStart = fxOnStart ?? new PrefabLink();
+            buff.FxOnRemove = new PrefabLink();
+            buff.SetComponents(components);
+            buff.SetNameDescriptionIcon(displayName, description, icon);
+            Main.library.AddAsset(buff, guid);
+            return buff;
+        }
+
+        public static BlueprintActivatableAbility CreateActivatableAbility(String name, String displayName, String description, string assetId, Sprite icon, BlueprintBuff buff, AbilityActivationType activationType, CommandType commandType, AnimationClip activateWithUnitAnimation, params BlueprintComponent[] components)
+        {
+            var ability = Helper.Create<BlueprintActivatableAbility>();
+            ability.name = name;
+            ability.SetNameDescriptionIcon(displayName, description, icon);
+            ability.Buff = buff;
+            ability.ResourceAssetIds = Array.Empty<string>();
+            ability.ActivationType = activationType;
+            Access.set_ActivateWithUnitCommand(ability, commandType);
+            ability.SetComponents(components);
+            ability.ActivateWithUnitAnimation = activateWithUnitAnimation;
+            Main.library.AddAsset(ability, assetId);
+            return ability;
+        }
+
+        public static ContextRankConfig CreateContextRankConfig(ContextRankBaseValueType baseValueType = ContextRankBaseValueType.CasterLevel, ContextRankProgression progression = ContextRankProgression.AsIs, AbilityRankType type = AbilityRankType.Default, int? min = null, int? max = null, int startLevel = 0, int stepLevel = 0, bool exceptClasses = false, StatType stat = StatType.Unknown, BlueprintUnitProperty customProperty = null, BlueprintCharacterClass[] classes = null, BlueprintArchetype archetype = null, BlueprintFeature feature = null, BlueprintFeature[] featureList = null/*, (int, int)[] customProgression = null*/)
+        {
+            var config = Helper.Create<ContextRankConfig>();
+            Access.set_Type(config, type);
+            Access.set_BaseValueType(config, baseValueType);
+            Access.set_Progression(config, progression);
+            Access.set_UseMin(config, min.HasValue);
+            Access.set_Min(config, min.GetValueOrDefault());
+            Access.set_UseMax(config, max.HasValue);
+            Access.set_Max(config, max.GetValueOrDefault());
+            Access.set_StartLevel(config, startLevel);
+            Access.set_StepLevel(config, stepLevel);
+            Access.set_Feature(config, feature);
+            Access.set_ExceptClasses(config, exceptClasses);
+            Access.set_CustomProperty(config, customProperty);
+            Access.set_Stat(config, stat);
+            Access.set_Class(config, classes ?? Array.Empty<BlueprintCharacterClass>());
+            Access.set_Archetype(config, archetype);
+            Access.set_FeatureList(config, featureList ?? Array.Empty<BlueprintFeature>());
+
+            //if (customProgression != null)
+            //{
+            //    var items = Array.CreateInstance(Access.typeof_CustomProgressionItem, customProgression.Length);
+            //    for (int i = 0; i < items.Length; i++)
+            //    {
+            //        var item = Activator.CreateInstance(Access.typeof_CustomProgressionItem);
+            //        var p = customProgression[i];
+            //        Access.set_BaseValue(item, p.Item1);
+            //        Access.set_ProgressionValue(item, p.Item2);
+            //        items.SetValue(item, i);
+            //    }
+            //    Access.set_CustomProgression(config, items);
+            //}
+
+            return config;
+        }
+
+        public static SpellDescriptorComponent CreateSpellDescriptor(SpellDescriptor? descriptor = null)
+        {
+            var s = Helper.Create<SpellDescriptorComponent>();
+            s.Descriptor = descriptor ?? SpellDescriptor.None;
+            return s;
+        }
+
+        public static AddCondition CreateAddCondition(UnitCondition condition)
+        {
+            var a = Helper.Create<AddCondition>();
+            a.Condition = condition;
+            return a;
+        }
+
+        public static ContextConditionCasterHasFact CreateConditionCasterHasFact(BlueprintUnitFact fact, bool not = false)
+        {
+            var c = Helper.Create<ContextConditionCasterHasFact>();
+            c.Fact = fact;
+            c.Not = not;
+            return c;
+        }
+
+        public static Conditional CreateConditional(Condition condition, GameAction ifTrue, GameAction ifFalse = null, bool OperationAnd = true)
+        {
+            var c = Helper.Create<Conditional>();
+            c.ConditionsChecker = new ConditionsChecker() { Conditions = condition.ObjToArray(), Operation = OperationAnd ? Operation.And : Operation.Or };
+            c.IfTrue = Helper.CreateActionList(ifTrue);
+            c.IfFalse = Helper.CreateActionList(ifFalse);
+            return c;
+        }
+
+        public static Conditional CreateConditional(Condition[] condition, GameAction[] ifTrue, GameAction[] ifFalse = null, bool OperationAnd = true)
+        {
+            var c = Helper.Create<Conditional>();
+            c.ConditionsChecker = new ConditionsChecker() { Conditions = condition, Operation = OperationAnd ? Operation.And : Operation.Or };
+            c.IfTrue = Helper.CreateActionList(ifTrue);
+            c.IfFalse = Helper.CreateActionList(ifFalse);
+            return c;
+        }
+
+        public static Kingmaker.UnitLogic.Mechanics.Actions.ContextActionApplyBuff CreateContextActionApplyBuff(BlueprintBuff buff, ContextDurationValue duration, bool is_from_spell = false, bool is_child = false, bool is_permanent = false, bool dispellable = true, int duration_seconds = 0)
+        {
+            var apply_buff = Helper.Create<ContextActionApplyBuff>();
+            apply_buff.IsFromSpell = is_from_spell;
+            apply_buff.Buff = buff;
+            apply_buff.Permanent = is_permanent;
+            apply_buff.DurationValue = duration;
+            apply_buff.IsNotDispelable = !dispellable;
+            apply_buff.UseDurationSeconds = duration_seconds > 0;
+            apply_buff.DurationSeconds = duration_seconds;
+            apply_buff.AsChild = is_child;
+            apply_buff.ToCaster = false;
+            return apply_buff;
+        }
+
+        public static void AddCombatFeats(LibraryScriptableObject library, params BlueprintFeature[] feats)
+        {
+            try
+            {
+                CallOfTheWild.Helpers.AddCombatFeats(library, feats);
+                return;
+            }
+            catch (System.Exception)
+            {
+            }
+
+            var featSelectionIds = new string[] {
+                "247a4068296e8be42890143f451b4b45", //basicFeatSelection
+                "66befe7b24c42dd458952e3c47c93563", //magusFeatSelection                
+                "41c8486641f7d6d4283ca9dae4147a9f", //FighterFeatSelection            
+                "da03141df23f3fe45b0c7c323a8e5a0e", //EldritchKnightFeatSelection                
+                "79c6421dbdb028c4fa0c31b8eea95f16", //WarDomainGreaterFeatSelection
+                "c5158a6622d0b694a99efb1d0025d2c1", //combat trick
+            };
+
+            foreach (var id in featSelectionIds)
+            {
+                if (id != null)
+                    AddFeats(library, id, feats);
+            }
+        }
+
+        public static void AddFeats(LibraryScriptableObject library, params BlueprintFeature[] feats)
+        {
+            Helper.AppendAndReplace(ref library.Get<BlueprintFeatureSelection>("247a4068296e8be42890143f451b4b45").AllFeatures, feats);
+        }
+
+        public static void AddFeats(LibraryScriptableObject library, string featSelectionId, params BlueprintFeature[] feats)
+        {
+            Helper.AppendAndReplace(ref library.Get<BlueprintFeatureSelection>(featSelectionId).AllFeatures, feats);
+        }
+
+        public static AddFacts CreateAddFact(BlueprintUnitFact fact)
+        {
+            var result = Helper.Create<AddFacts>();
+            result.name = $"AddFacts${fact.name}";
+            result.Facts = new BlueprintUnitFact[] { fact };
+            return result;
+        }
+
+        public static BlueprintFeature ActivatableAbilityToFeature(BlueprintActivatableAbility ability, bool hide = true, string guid = null)
+        {
+            //string name = ability.name.EndsWith("ActivatableAbility") ? ability.name.Substring(0, ability.name.Length - 18) : ability.name; name += "Feature";
+            string name = ability.name + "Feature";
+            var feature = HelperEA.CreateFeature(
+                name,
+                ability.Name,
+                ability.Description,
+                guid ?? GuidManager.i.Get(name),
+                ability.Icon,
+                FeatureGroup.None,
+                HelperEA.CreateAddFact(ability));
+
+            if (hide)
+            {
+                feature.HideInCharacterSheetAndLevelUp = true;
+                feature.HideInUI = true;
+            }
+            return feature;
+        }
+
+        public static IncreaseActivatableAbilityGroupSize CreateIncreaseActivatableAbilityGroupSize(ActivatableAbilityGroup group)
+        {
+            var i = Helper.Create<IncreaseActivatableAbilityGroupSize>();
+            i.Group = group;
+            return i;
+        }
+
+        public static PrerequisiteStatValue PrerequisiteStatValue(StatType stat, int value, bool any = false)
+        {
+            var result = Helper.Create<PrerequisiteStatValue>();
+            result.Stat = stat;
+            result.Value = value;
+            result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
+            return result;
+        }
+
+        public static PrerequisiteClassLevel PrerequisiteClassLevel(BlueprintCharacterClass @class, int level, bool any = false)
+        {
+            var result = Helper.Create<PrerequisiteClassLevel>();
+            result.CharacterClass = @class;
+            result.Level = level;
+            result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
+            return result;
+        }
+
+        public static ManeuverDefenceBonus CreateManeuverDefenseBonus(CombatManeuver maneuver_type, int bonus)
+        {
+            var m = Helper.Create<ManeuverDefenceBonus>();
+            m.Bonus = bonus;
+            m.Type = maneuver_type;
+            return m;
+        }
+
+        public static ManeuverBonus CreateManeuverBonus(CombatManeuver maneuver_type, int bonus)
+        {
+            var m = Helper.Create<ManeuverBonus>();
+            m.Bonus = bonus;
+            m.Type = maneuver_type;
+            return m;
+        }
+
+        public static T CopyAndAdd<T>(this LibraryScriptableObject library, String assetId, String newName, String newAssetId, String newAssetId2 = null) where T : BlueprintScriptableObject
+        {
+            return CopyAndAdd(library, Get<T>(library, assetId), newName, newAssetId, newAssetId2);
+        }
+
+        public static T CopyAndAdd<T>(this LibraryScriptableObject library, T original, String newName, String newAssetId, String newAssetId2 = null) where T : BlueprintScriptableObject
+        {
+            var clone = Helper.Instantiate(original);
+            clone.name = newName;
+            var id = newAssetId2 != null ? MergeIds(newAssetId, newAssetId2) : newAssetId;
+            AddAsset(library, clone, id);
+            return clone;
+        }
+
+        public static String MergeIds(String guid1, String guid2, String guid3 = null)
+        {
+            // Parse into low/high 64-bit numbers, and then xor the two halves.
+            ulong low = ParseGuidLow(guid1);
+            ulong high = ParseGuidHigh(guid1);
+
+            low ^= ParseGuidLow(guid2);
+            high ^= ParseGuidHigh(guid2);
+
+            if (guid3 != null)
+            {
+                low ^= ParseGuidLow(guid3);
+                high ^= ParseGuidHigh(guid3);
+            }
+            return high.ToString("x16") + low.ToString("x16");
+        }
+        static ulong ParseGuidLow(String id) => ulong.Parse(id.Substring(id.Length - 16), System.Globalization.NumberStyles.HexNumber);
+        static ulong ParseGuidHigh(String id) => ulong.Parse(id.Substring(0, id.Length - 16), System.Globalization.NumberStyles.HexNumber);
+
+        public static LevelEntry LevelEntry(int level, params BlueprintFeatureBase[] features)
+        {
+            var entry = new LevelEntry() { Level = level };
+            entry.Features.AddRange(features);
+            return entry;
+        }
+
+        public static AddFacts CreateAddFacts(params BlueprintUnitFact[] facts)
+        {
+            var result = Helper.Create<AddFacts>();
+            result.Facts = facts;
+            return result;
+        }
+
+        public static BlueprintFeatureSelection CreateFeatureSelection(String name, String displayName, String description, String guid, Sprite icon, FeatureGroup group, params BlueprintComponent[] components)
+        {
+            var feat = Helper.Create<BlueprintFeatureSelection>();
+            SetFeatureInfo(feat, name, displayName, description, guid, icon, group, components);
+            feat.Group = group;
+            return feat;
+        }
+
+        public static AddInitiatorAttackWithWeaponTrigger CreateAddInitiatorAttackWithWeaponTrigger(Kingmaker.ElementsSystem.ActionList action, bool only_hit = true, bool critical_hit = false, bool check_weapon_range_type = false, bool reduce_hp_to_zero = false, bool on_initiator = false, AttackTypeAttackBonus.WeaponRangeType range_type = AttackTypeAttackBonus.WeaponRangeType.Melee, bool wait_for_attack_to_resolve = false, bool only_first_hit = false)
+        {
+            var t = Helper.Create<AddInitiatorAttackWithWeaponTrigger>();
+            t.Action = action;
+            t.OnlyHit = only_hit;
+            t.CriticalHit = critical_hit;
+            t.CheckWeaponRangeType = check_weapon_range_type;
+            t.RangeType = range_type;
+            t.ReduceHPToZero = reduce_hp_to_zero;
+            t.ActionsOnInitiator = on_initiator;
+            t.WaitForAttackResolve = wait_for_attack_to_resolve;
+            t.OnlyOnFirstAttack = only_first_hit;
+            return t;
+        }
+
+        public static CopyOf.CallOfTheWild.NewMechanics.ContextWeaponTypeDamageBonus CreateContextWeaponTypeDamageBonus(ContextValue bonus, params BlueprintWeaponType[] weapon_types)
+        {
+            var c = Helper.Create<CopyOf.CallOfTheWild.NewMechanics.ContextWeaponTypeDamageBonus>();
+            c.Value = bonus;
+            c.weapon_types = weapon_types;
+            return c;
+        }
+
+        public static AbilityEffectRunAction CreateRunActions(params GameAction[] actions)
+        {
+            var result = Helper.Create<AbilityEffectRunAction>();
+            result.Actions = Helper.CreateActionList(actions);
+            return result;
+        }
+
+        public static BlueprintAbility CreateAbility(String name, String displayName, String description, String guid, Sprite icon, AbilityType type, CommandType actionType, AbilityRange range, String duration, String savingThrow, params BlueprintComponent[] components)
+        {
+            var ability = Helper.Create<BlueprintAbility>();
+            ability.name = name;
+            ability.SetComponents(components);
+            ability.SetNameDescriptionIcon(displayName, description, icon);
+            ability.ResourceAssetIds = Array.Empty<string>();
+
+            ability.Type = type;
+            ability.ActionType = actionType;
+            ability.Range = range;
+            ability.LocalizedDuration = CreateString($"{name}.Duration", duration);
+            ability.LocalizedSavingThrow = CreateString($"{name}.SavingThrow", savingThrow);
+
+            Main.library.AddAsset(ability, guid);
+            return ability;
+        }
+
+        public static void SetMiscAbilityParametersTouchHarmful(this BlueprintAbility ability, bool works_on_allies = true, Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCastSpell.CastAnimationStyle animation = Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCastSpell.CastAnimationStyle.Touch, Kingmaker.View.Animation.CastAnimationStyle animation_style = Kingmaker.View.Animation.CastAnimationStyle.CastActionTouch)
+        {
+            ability.CanTargetFriends = works_on_allies;
+            ability.CanTargetEnemies = true;
+            ability.CanTargetSelf = works_on_allies;
+            ability.CanTargetPoint = false;
+            ability.EffectOnEnemy = AbilityEffectOnUnit.Harmful;
+            ability.EffectOnAlly = works_on_allies ? AbilityEffectOnUnit.Harmful : AbilityEffectOnUnit.None;
+            ability.Animation = animation;
+            //ability.AnimationStyle = animation_style;
+        }
+
+        public static PrerequisiteFeaturesFromList PrerequisiteFeaturesFromList(BlueprintFeature[] features, bool any = false)
+        {
+            var result = Helper.Create<PrerequisiteFeaturesFromList>();
+            result.Features = features;
+            result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
+            result.Amount = 1;
+            return result;
+        }
+
+        public static ContextActionDealDamage CreateActionDealDamage(PhysicalDamageForm physical, ContextDiceValue damage, bool isAoE = false, bool halfIfSaved = false, bool IgnoreCritical = false)
+        {
+            // physical damage
+            var c = Helper.Create<ContextActionDealDamage>();
+            c.DamageType = new DamageTypeDescription()
+            {
+                Type = DamageType.Physical,
+                Common = new DamageTypeDescription.CommomData(),
+                Physical = new DamageTypeDescription.PhysicalData() { Form = physical }
+            };
+            c.Duration = CreateContextDuration(0);
+            c.Value = damage;
+            c.IsAoE = isAoE;
+            c.HalfIfSaved = halfIfSaved;
+            c.IgnoreCritical = IgnoreCritical;
+            return c;
+        }
+
+        public static ContextActionDealDamage CreateActionDealDamage(DamageEnergyType energy, ContextDiceValue damage, bool isAoE = false, bool halfIfSaved = false, bool IgnoreCritical = false)
+        {
+            // energy damage
+            var c = Helper.Create<ContextActionDealDamage>();
+            c.DamageType = new DamageTypeDescription()
+            {
+                Type = DamageType.Energy,
+                Energy = energy,
+                Common = new DamageTypeDescription.CommomData(),
+                Physical = new DamageTypeDescription.PhysicalData()
+            };
+            c.Duration = CreateContextDuration(0);
+            c.Value = damage;
+            c.IsAoE = isAoE;
+            c.HalfIfSaved = halfIfSaved;
+            c.IgnoreCritical = IgnoreCritical;
+            return c;
+        }
+
+        public static ContextActionDealDamage CreateActionDealDamage(StatType abilityType, ContextDiceValue damage, bool drain = false, bool isAoE = false, bool halfIfSaved = false, bool IgnoreCritical = false)
+        {
+            var c = Helper.Create<ContextActionDealDamage>();
+            Access.set_ContextActionDealDamage_Type(c, 1);  // AbilityDamage
+            c.Duration = HelperEA.CreateContextDuration(0);
+            c.AbilityType = abilityType;
+            c.Value = damage;
+            c.IsAoE = isAoE;
+            c.HalfIfSaved = halfIfSaved;
+            c.Drain = drain;
+            c.IgnoreCritical = IgnoreCritical;
+            return c;
+        }
+
+        public static PrerequisiteNoFeature PrerequisiteNoFeature(this BlueprintFeature feat, bool any = false)
+        {
+            var result = Helper.Create<PrerequisiteNoFeature>();
+            result.Feature = feat;
+            result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
+            return result;
+        }
+
+        public static ContextConditionHasBuff CreateConditionHasBuff(this BlueprintBuff buff)
+        {
+            var hasBuff = Helper.Create<ContextConditionHasBuff>();
+            hasBuff.Buff = buff;
+            return hasBuff;
+        }
+
+        public static AddContextStatBonus CreateAddContextStatBonus(StatType stat, ModifierDescriptor descriptor, ContextValueType type = ContextValueType.Rank, AbilityRankType rankType = AbilityRankType.Default, int multiplier = 1)
+        {
+            var addStat = Helper.Create<AddContextStatBonus>();
+            addStat.Stat = stat;
+            addStat.Value = new ContextValue() { ValueType = type };
+            addStat.Descriptor = descriptor;
+            addStat.Value.ValueRank = rankType;
+            addStat.Multiplier = multiplier;
+            return addStat;
+        }
+
+        public static AddFactContextActions CreateAddFactContextActions(GameAction activated = null, GameAction deactivated = null, GameAction newRound = null)
+        {
+            var a = Helper.Create<AddFactContextActions>();
+            a.Activated = Helper.CreateActionList(activated);
+            a.Deactivated = Helper.CreateActionList(deactivated);
+            a.NewRound = Helper.CreateActionList(newRound);
+            return a;
+        }
+
+        public static AddFactContextActions CreateAddFactContextActions(GameAction[] activated = null, GameAction[] deactivated = null, GameAction[] newRound = null)
+        {
+            var a = Helper.Create<AddFactContextActions>();
+            a.Activated = Helper.CreateActionList(activated);
+            a.Deactivated = Helper.CreateActionList(deactivated);
+            a.NewRound = Helper.CreateActionList(newRound);
+            return a;
+        }
+
+        public static bool AddToAbilityVariants(this BlueprintAbility parent, params BlueprintAbility[] variants)
+        {
+            var comp = parent.GetComponent<AbilityVariants>();
+
+            Helper.AppendAndReplace(ref comp.Variants, variants);
+
+            foreach (var v in variants)
+            {
+                v.Parent = parent;
+            }
+            return true;
+        }
+
+        public static AbilityVariants CreateAbilityVariants(BlueprintAbility parent, params BlueprintAbility[] variants)
+        {
+            var a = Helper.Create<AbilityVariants>();
+            a.Variants = variants;
+            foreach (var v in variants)
+            {
+                v.Parent = parent;
+            }
+            return a;
+        }
+
+        public static void SetMiscAbilityParametersRangedDirectional(this BlueprintAbility ability, bool works_on_units = true, AbilityEffectOnUnit effect_on_ally = AbilityEffectOnUnit.Harmful, AbilityEffectOnUnit effect_on_enemy = AbilityEffectOnUnit.Harmful, Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCastSpell.CastAnimationStyle animation = Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCastSpell.CastAnimationStyle.Directional, Kingmaker.View.Animation.CastAnimationStyle animation_style = Kingmaker.View.Animation.CastAnimationStyle.CastActionDirectional)
+        {
+            ability.CanTargetFriends = works_on_units;
+            ability.CanTargetEnemies = works_on_units;
+            ability.CanTargetSelf = works_on_units;
+            ability.CanTargetPoint = true;
+            ability.EffectOnEnemy = effect_on_enemy;
+            ability.EffectOnAlly = effect_on_ally;
+            ability.Animation = animation;
+            //ability.AnimationStyle = animation_style;
+        }
+
+        public static SpellComponent CreateSpellComponent(SpellSchool school)
+        {
+            var s = Helper.Create<SpellComponent>();
+            s.School = school;
+            return s;
+        }
+
+        public static AbilityAoERadius CreateAbilityAoERadius(Feet radius, TargetType target_type)
+        {
+            var a = Helper.Create<AbilityAoERadius>();
+
+            Access.set_Radius(a, radius);
+            Access.set_TargetType(a, target_type);
+            return a;
+        }
+
+        public static AddStatBonus CreateAddStatBonus(StatType stat, int value, ModifierDescriptor descriptor)
+        {
+            var addStat = Helper.Create<AddStatBonus>();
+            addStat.Stat = stat;
+            addStat.Value = value;
+            addStat.Descriptor = descriptor;
+            return addStat;
+        }
+
+        public static UIGroup CreateUIGroup(params BlueprintFeatureBase[] features)
+        {
+            var result = new UIGroup();
+            result.Features.AddRange(features);
+            return result;
+        }
+
+        public static AbilityDeliverTouch CreateDeliverTouch()
+        {
+            var a = Helper.Create<AbilityDeliverTouch>();
+            a.TouchWeapon = Main.library.Get<BlueprintItemWeapon>("bb337517547de1a4189518d404ec49d4");
+            return a;
+        }
+
+        public static AbilityEffectStickyTouch CreateStickyTouch(BlueprintAbility deliverAbility)
+        {
+            var a = Helper.Create<AbilityEffectStickyTouch>();
+            a.TouchDeliveryAbility = deliverAbility;
+            return a;
+        }
+
+        public static void AddToSpellList(this BlueprintAbility spell, BlueprintSpellList spellList, int level)
+        {
+            var feyspeaker_spell_list = ResourcesLibrary.TryGetBlueprint<BlueprintSpellList>("640b4c89527334e45b19d884dd82e500");//feyspeaker
+            var comp = Helper.Create<SpellListComponent>();
+            comp.SpellLevel = level;
+            comp.SpellList = spellList;
+            spell.AddComponent(comp);
+            spellList.SpellsByLevel[level].Spells.Add(spell);
+            if (spellList == Main.library.Get<BlueprintSpellList>("ba0401fdeb4062f40a7aa95b6f07fe89"))
+            {
+                var school = spell.School;
+                var specialistList = specialistSchoolList.Value[(int)school];
+                specialistList?.SpellsByLevel[level].Spells.Add(spell);
+
+                for (int i = 0; i < thassilonianSchoolList.Value.Length; i++)
+                {
+                    if (thassilonianOpposedSchools.Value[i] != null && !thassilonianOpposedSchools.Value[i].Contains(school))
+                    {
+                        thassilonianSchoolList.Value[i]?.SpellsByLevel[level].Spells.Add(spell);
+                    }
+                }
+
+                if (school == SpellSchool.Enchantment || school == SpellSchool.Illusion)
+                {
+                    feyspeaker_spell_list.SpellsByLevel[level].Spells.Add(spell);
+                }
+            }
+        }
+
+        static readonly Lazy<BlueprintSpellList[]> specialistSchoolList = new Lazy<BlueprintSpellList[]>(() =>
+        {
+            var result = new BlueprintSpellList[(int)SpellSchool.Universalist + 1];
+            var library = Main.library;
+            result[(int)SpellSchool.Abjuration] = library.Get<BlueprintSpellList>("c7a55e475659a944f9229d89c4dc3a8e");
+            result[(int)SpellSchool.Conjuration] = library.Get<BlueprintSpellList>("69a6eba12bc77ea4191f573d63c9df12");
+            result[(int)SpellSchool.Divination] = library.Get<BlueprintSpellList>("d234e68b3d34d124a9a2550fdc3de9eb");
+            result[(int)SpellSchool.Enchantment] = library.Get<BlueprintSpellList>("c72836bb669f0c04680c01d88d49bb0c");
+            result[(int)SpellSchool.Evocation] = library.Get<BlueprintSpellList>("79e731172a2dc1f4d92ba229c6216502");
+            result[(int)SpellSchool.Illusion] = library.Get<BlueprintSpellList>("d74e55204daa9b14993b2e51ae861501");
+            result[(int)SpellSchool.Necromancy] = library.Get<BlueprintSpellList>("5fe3acb6f439db9438db7d396f02c75c");
+            result[(int)SpellSchool.Transmutation] = library.Get<BlueprintSpellList>("becbcfeca9624b6469319209c2a6b7f1");
+            return result;
+        });
+
+        static readonly Lazy<BlueprintSpellList[]> thassilonianSchoolList = new Lazy<BlueprintSpellList[]>(() =>
+        {
+            var result = new BlueprintSpellList[(int)SpellSchool.Universalist + 1];
+            var library = Main.library;
+            result[(int)SpellSchool.Abjuration] = library.Get<BlueprintSpellList>("280dd5167ccafe449a33fbe93c7a875e");
+            result[(int)SpellSchool.Conjuration] = library.Get<BlueprintSpellList>("5b154578f228c174bac546b6c29886ce");
+            result[(int)SpellSchool.Enchantment] = library.Get<BlueprintSpellList>("ac551db78c1baa34eb8edca088be13cb");
+            result[(int)SpellSchool.Evocation] = library.Get<BlueprintSpellList>("17c0bfe5b7c8ac3449da655cdcaed4e7");
+            result[(int)SpellSchool.Illusion] = library.Get<BlueprintSpellList>("c311aed33deb7a346ab715baef4a0572");
+            result[(int)SpellSchool.Necromancy] = library.Get<BlueprintSpellList>("5c08349132cb6b04181797f58ccf38ae");
+            result[(int)SpellSchool.Transmutation] = library.Get<BlueprintSpellList>("f3a8f76b1d030a64084355ba3eea369a");
+            return result;
+        });
+
+        static readonly Lazy<SpellSchool[][]> thassilonianOpposedSchools = new Lazy<SpellSchool[][]>(() =>
+        {
+            var result = new SpellSchool[(int)SpellSchool.Universalist + 1][];
+
+            result[(int)SpellSchool.Abjuration] = new SpellSchool[] { SpellSchool.Evocation, SpellSchool.Necromancy };
+            result[(int)SpellSchool.Conjuration] = new SpellSchool[] { SpellSchool.Evocation, SpellSchool.Illusion };
+            result[(int)SpellSchool.Enchantment] = new SpellSchool[] { SpellSchool.Necromancy, SpellSchool.Transmutation };
+            result[(int)SpellSchool.Evocation] = new SpellSchool[] { SpellSchool.Abjuration, SpellSchool.Conjuration };
+            result[(int)SpellSchool.Illusion] = new SpellSchool[] { SpellSchool.Conjuration, SpellSchool.Transmutation };
+            result[(int)SpellSchool.Necromancy] = new SpellSchool[] { SpellSchool.Abjuration, SpellSchool.Enchantment };
+            result[(int)SpellSchool.Transmutation] = new SpellSchool[] { SpellSchool.Enchantment, SpellSchool.Illusion };
+            return result;
+        });
+
+        public static PrerequisiteArchetypeLevel CreatePrerequisiteArchetypeLevel(BlueprintCharacterClass character_class, BlueprintArchetype archetype, int level, bool any = false)
+        {
+            var p = Helper.Create<PrerequisiteArchetypeLevel>();
+            p.CharacterClass = character_class;
+            p.Archetype = archetype;
+            p.Level = level;
+            p.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
+            return p;
+        }
+
+        public static AddKnownSpell CreateAddKnownSpell(this BlueprintAbility spell, BlueprintCharacterClass @class, int level, BlueprintArchetype archetype = null)
+        {
+            var addSpell = Helper.Create<AddKnownSpell>();
+            addSpell.Spell = spell;
+            addSpell.SpellLevel = level;
+            addSpell.CharacterClass = @class;
+            return addSpell;
+        }
+
+        public static BlueprintAbility CreateTouchSpellCast(this BlueprintAbility spell, BlueprintAbilityResource resource = null)
+        {
+            var castSpell = Main.library.CopyAndAdd(spell, $"{spell.name}Cast",
+                MergeIds(spell.AssetGuid, "8de5133f37ff4cab8286f16c826651c1"));
+
+            var components = new List<BlueprintComponent>();
+            components.Add(CreateStickyTouch(spell));
+
+            var schoolComponent = spell.GetComponent<SpellComponent>();
+            if (schoolComponent != null) components.Add(schoolComponent);
+
+            var descriptorComponent = spell.GetComponent<SpellDescriptorComponent>();
+            if (descriptorComponent != null) components.Add(descriptorComponent);
+
+            if (resource != null) components.Add(resource.CreateResourceLogic());
+
+            if (spell.GetComponent<AbilityResourceLogic>() != null)
+            {
+                Main.DebugLogAlways($"Warning: resource logic should be passed to CreateTouchSpellCast instead of a component: {spell.name}");
+            }
+
+            castSpell.SetComponents(components);
+            return castSpell;
+        }
+
+        public static AbilityResourceLogic CreateResourceLogic(this BlueprintAbilityResource resource, bool spend = true, int amount = 1, bool cost_is_custom = false)
+        {
+            var a = Helper.Create<AbilityResourceLogic>();
+            a.IsSpendResource = spend;
+            a.RequiredResource = resource;
+            a.Amount = amount;
+            a.CostIsCustom = cost_is_custom;
+            return a;
+        }
+
+        public static AddInitiatorAttackWithWeaponTrigger CreateAddInitiatorAttackWithWeaponTriggerWithCategory(Kingmaker.ElementsSystem.ActionList action, bool only_hit = true, bool critical_hit = false, bool check_weapon_range_type = false, bool reduce_hp_to_zero = false, bool on_initiator = false, AttackTypeAttackBonus.WeaponRangeType range_type = AttackTypeAttackBonus.WeaponRangeType.Melee, bool wait_for_attack_to_resolve = false, bool only_first_hit = false, WeaponCategory weapon_category = WeaponCategory.UnarmedStrike)
+        {
+            var t = Helper.Create<AddInitiatorAttackWithWeaponTrigger>();
+            t.Action = action;
+            t.OnlyHit = only_hit;
+            t.CriticalHit = critical_hit;
+            t.CheckWeaponRangeType = check_weapon_range_type;
+            t.RangeType = range_type;
+            t.ReduceHPToZero = reduce_hp_to_zero;
+            t.ActionsOnInitiator = on_initiator;
+            t.WaitForAttackResolve = wait_for_attack_to_resolve;
+            t.OnlyOnFirstAttack = only_first_hit;
+            t.CheckWeaponCategory = true;
+            t.Category = weapon_category;
+            return t;
+        }
+
+
+
+
+
     }
 
     public class Helper
     {
+        public static T Create<T>(Action<T> action = null) where T : ScriptableObject
+        {
+            var result = ScriptableObject.CreateInstance<T>();
+            if (action != null)
+            {
+                action(result);
+            }
+            return result;
+        }
+
+        public static T Instantiate<T>(T obj, Action<T> action = null) where T : ScriptableObject
+        {
+            var result = ScriptableObject.Instantiate<T>(obj);
+            if (action != null)
+            {
+                action(result);
+            }
+            return result;
+        }
+
+        public static T CreateCopy<T>(T original, Action<T> action = null) where T : UnityEngine.Object
+        {
+            var clone = UnityEngine.Object.Instantiate(original);
+            if (action != null)
+            {
+                action(clone);
+            }
+            return clone;
+        }
+
         public static T[] ToArray<T>(params T[] objs)
         {
             return objs;
         }
-		
+
+
+        /// <summary>Appends objects on array.</summary>
+        public static T[] Append<T>(T[] orig, params T[] objs)
+        {
+            if (orig == null) orig = new T[0];
+
+            int i, j;
+            T[] result = new T[orig.Length + objs.Length];
+            for (i = 0; i < orig.Length; i++)
+                result[i] = orig[i];
+            for (j = 0; i < result.Length; i++)
+                result[i] = objs[j++];
+            return result;
+        }
+
         /// <summary>Appends objects on array and overwrites the original.</summary>
         public static T[] AppendAndReplace<T>(ref T[] orig, params T[] objs)
         {
@@ -239,14 +1304,14 @@ namespace FumisCodex
                 var repl = action as T;
                 if (conditional)
                 {
-                    conditional = conditional.CreateCopy();
+                    conditional = Instantiate(conditional);
                     conditional.IfTrue.Actions = RecursiveReplace(conditional.IfTrue.Actions, lambda);
                     conditional.IfFalse.Actions = RecursiveReplace(conditional.IfFalse.Actions, lambda);
                     result.Add(conditional);
                 }
                 else if (repl)
                 {
-                    result.Add(repl.CreateCopy(lambda));
+                    result.Add(Instantiate(repl, lambda));
                 }
                 else
                 {
@@ -278,7 +1343,7 @@ namespace FumisCodex
 
         public static AddKineticistBurnValueChangedTrigger CreateAddKineticistBurnValueChangedTrigger(params GameAction[] actions)
         {
-            var result = ScriptableObject.CreateInstance<AddKineticistBurnValueChangedTrigger>();
+            var result = Helper.Create<AddKineticistBurnValueChangedTrigger>();
             result.Action = new ActionList() { Actions = actions };
             return result;
         }
@@ -286,7 +1351,7 @@ namespace FumisCodex
         public static PrerequisiteFeaturesFromList CreatePrerequisiteFeaturesFromList(bool any, int amount, params BlueprintFeature[] features)
         {
             if (features == null || features[0] == null) throw new ArgumentNullException();
-            var result = ScriptableObject.CreateInstance<PrerequisiteFeaturesFromList>();
+            var result = Helper.Create<PrerequisiteFeaturesFromList>();
             result.Features = features;
             result.Amount = amount;
             result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
@@ -296,7 +1361,7 @@ namespace FumisCodex
         public static AbilityEffectRunAction CreateAbilityEffectRunAction(SavingThrowType save = SavingThrowType.Unknown, params GameAction[] actions)
         {
             if (actions == null || actions[0] == null) throw new ArgumentNullException();
-            var result = ScriptableObject.CreateInstance<AbilityEffectRunAction>();
+            var result = Helper.Create<AbilityEffectRunAction>();
             result.SavingThrowType = save;
             result.Actions = new ActionList() { Actions = actions };
             return result;
@@ -304,12 +1369,12 @@ namespace FumisCodex
 
         public static ContextActionApplyBuff CreateActionApplyBuff(BlueprintBuff buff, int duration = 0, DurationRate rate = DurationRate.Rounds, bool dispellable = false, bool permanent = false)
         {
-            return Helpers.CreateApplyBuff(buff, Helpers.CreateContextDuration(bonus: new ContextValue() { Value = duration }, rate: rate), fromSpell: false, dispellable: dispellable, permanent: permanent);
+            return HelperEA.CreateApplyBuff(buff, HelperEA.CreateContextDuration(bonus: new ContextValue() { Value = duration }, rate: rate), fromSpell: false, dispellable: dispellable, permanent: permanent);
         }
 
         public static BuffSubstitutionOnApply CreateBuffSubstitutionOnApply(BlueprintBuff GainedFact, BlueprintBuff SubstituteBuff)
         {
-            var result = ScriptableObject.CreateInstance<BuffSubstitutionOnApply>();
+            var result = Helper.Create<BuffSubstitutionOnApply>();
             result.GainedFact = GainedFact;
             result.SubstituteBuff = SubstituteBuff;
             return result;
@@ -317,14 +1382,14 @@ namespace FumisCodex
 
         public static SpecificBuffImmunity CreateSpecificBuffImmunity(BlueprintBuff buff)
         {
-            var result = ScriptableObject.CreateInstance<SpecificBuffImmunity>();
+            var result = Helper.Create<SpecificBuffImmunity>();
             result.Buff = buff;
             return result;
         }
 
         public static ContextActionRemoveBuff CreateActionRemoveBuff(BlueprintBuff buff, bool toCaster = false)
         {
-            var result = ScriptableObject.CreateInstance<ContextActionRemoveBuff>();
+            var result = Helper.Create<ContextActionRemoveBuff>();
             result.Buff = buff;
             result.ToCaster = toCaster;
             return result;
@@ -337,7 +1402,7 @@ namespace FumisCodex
 
             for (int i = 0; i < result.Length; i++)
             {
-                var buff = ScriptableObject.CreateInstance<ContextConditionHasBuff>();
+                var buff = Helper.Create<ContextConditionHasBuff>();
                 buff.Buff = buffs[i];
                 buff.Not = true;
                 result[i] = buff;
@@ -348,7 +1413,7 @@ namespace FumisCodex
 
         public static AbilityRequirementActionAvailable CreateRequirementActionAvailable(bool Not, ActionType Action)
         {
-            var result = ScriptableObject.CreateInstance<AbilityRequirementActionAvailable>();
+            var result = Helper.Create<AbilityRequirementActionAvailable>();
             result.Not = Not;
             result.Action = Action;
             return result;
@@ -356,7 +1421,7 @@ namespace FumisCodex
 
         public static AbilityRequirementHasBuffs CreateAbilityRequirementHasBuffs(bool Not, params BlueprintBuff[] Buffs)
         {
-            var result = ScriptableObject.CreateInstance<AbilityRequirementHasBuffs>();
+            var result = Helper.Create<AbilityRequirementHasBuffs>();
             result.Not = Not;
             result.Buffs = Buffs;
             return result;
@@ -364,7 +1429,7 @@ namespace FumisCodex
 
         public static AbilityRequirementHasBuffTimed CreateAbilidtyRequirementHasBuffTimed(CompareType Compare, TimeSpan TimeLeft, params BlueprintBuff[] Buffs)
         {
-            var result = ScriptableObject.CreateInstance<AbilityRequirementHasBuffTimed>();
+            var result = Helper.Create<AbilityRequirementHasBuffTimed>();
             result.Compare = Compare;
             result.Buffs = Buffs;
             result.TimeLeft = TimeLeft;
@@ -392,7 +1457,7 @@ namespace FumisCodex
 
         public static AddContextStatBonusMinMax CreateAddContextStatBonusMin(ContextValue value, int multiplier, StatType stat, params ModifierDescriptor[] descriptor)
         {
-            var result = ScriptableObject.CreateInstance<AddContextStatBonusMinMax>();
+            var result = Helper.Create<AddContextStatBonusMinMax>();
             result.Multiplier = multiplier;
             result.Value = value;
             result.Stat = stat;
@@ -403,7 +1468,7 @@ namespace FumisCodex
 
         public static HasFact CreateHasFact(BlueprintUnitFact fact, UnitEvaluator unit = null)
         {
-            var result = ScriptableObject.CreateInstance<HasFact>();
+            var result = Helper.Create<HasFact>();
             result.Fact = fact;
             result.Unit = unit;
             return result;
@@ -411,7 +1476,7 @@ namespace FumisCodex
 
         public static AbilitySpawnFx CreateAbilitySpawnFx(string AssetId, AbilitySpawnFxTime spawnTime, AbilitySpawnFxAnchor position, AbilitySpawnFxAnchor orientation)
         {
-            var spawnFx = ScriptableObject.CreateInstance<AbilitySpawnFx>();
+            var spawnFx = Helper.Create<AbilitySpawnFx>();
             spawnFx.PrefabLink = new Kingmaker.ResourceLinks.PrefabLink();
             spawnFx.PrefabLink.AssetId = AssetId;
             spawnFx.Time = AbilitySpawnFxTime.OnPrecastStart;
@@ -419,17 +1484,17 @@ namespace FumisCodex
             spawnFx.OrientationAnchor = orientation;
             return spawnFx;
         }
-		
-		public static PrefabLink Resource(string AssetId)
-		{
-			var result = new Kingmaker.ResourceLinks.PrefabLink();
-			result.AssetId = AssetId;
-			return result;
-		}
+
+        public static PrefabLink Resource(string AssetId)
+        {
+            var result = new Kingmaker.ResourceLinks.PrefabLink();
+            result.AssetId = AssetId;
+            return result;
+        }
 
         public static ContextActionSpawnMonster CreateContextActionSpawnMonster(BlueprintUnit unit, ContextDiceValue amount = null, ContextDurationValue duration = null, BlueprintSummonPool pool = null)
         {
-            var result = ScriptableObject.CreateInstance<ContextActionSpawnMonster>();
+            var result = Helper.Create<ContextActionSpawnMonster>();
             result.Blueprint = unit;
             result.SummonPool = pool ?? Contexts.SummonPool;
             result.DurationValue = duration ?? Contexts.DurationRankInRounds;
@@ -441,7 +1506,7 @@ namespace FumisCodex
         public static ContextActionSpawnMonsterUnique CreateContextActionSpawnMonsterUnique(BlueprintUnit unit, BlueprintSummonPool pool, ContextDiceValue amount = null, ContextDurationValue duration = null)
         {
             if (pool == null) throw new ArgumentNullException();
-            var result = ScriptableObject.CreateInstance<ContextActionSpawnMonsterUnique>();
+            var result = Helper.Create<ContextActionSpawnMonsterUnique>();
             result.Blueprint = unit;
             result.SummonPool = pool;
             result.DurationValue = duration ?? Contexts.DurationRankInRounds;
@@ -452,7 +1517,7 @@ namespace FumisCodex
 
         public static ContextActionSpawnMonsterLeveled CreateContextActionSpawnMonsterLeveled(int[] LevelThreshold, BlueprintUnit[] BlueprintPool)
         {
-            var result = ScriptableObject.CreateInstance<ContextActionSpawnMonsterLeveled>();
+            var result = Helper.Create<ContextActionSpawnMonsterLeveled>();
             result.LevelThreshold = LevelThreshold;
             result.BlueprintPool = BlueprintPool;
             return result;
@@ -460,16 +1525,16 @@ namespace FumisCodex
 
         public static ContextActionToggleActivatable CreateContextActionToggleActivatable(bool TurnOn, BlueprintActivatableAbility Activatable, params GameAction[] OnFailure)
         {
-            var result = ScriptableObject.CreateInstance<ContextActionToggleActivatable>();
+            var result = Helper.Create<ContextActionToggleActivatable>();
             result.TurnOn = TurnOn;
             result.Activatable = Activatable;
-			result.OnFailure = CreateActionList(OnFailure);
+            result.OnFailure = CreateActionList(OnFailure);
             return result;
         }
 
         public static ContextActionKillSummons CreateContextActionKillSummons(BlueprintSummonPool SummonPool, params BlueprintBuff[] Buffs)
         {
-            var result = ScriptableObject.CreateInstance<ContextActionKillSummons>();
+            var result = Helper.Create<ContextActionKillSummons>();
             result.SummonPool = SummonPool;
             result.Buffs = Buffs;
             return result;
@@ -477,21 +1542,21 @@ namespace FumisCodex
 
         public static AbilityShowIfCasterHasAnyFacts CreateAbilityShowIfCasterHasAnyFacts(params BlueprintUnitFact[] facts)
         {
-            var result = ScriptableObject.CreateInstance<AbilityShowIfCasterHasAnyFacts>();
+            var result = Helper.Create<AbilityShowIfCasterHasAnyFacts>();
             result.UnitFacts = facts;
             return result;
         }
 
         public static AbilityCasterHasNoFacts CreateAbilityCasterHasNoFacts(params BlueprintUnitFact[] facts)
         {
-            var result = ScriptableObject.CreateInstance<AbilityCasterHasNoFacts>();
+            var result = Helper.Create<AbilityCasterHasNoFacts>();
             result.Facts = facts;
             return result;
         }
 
         public static ContextActionCastSpell CreateContextActionCastSpell(BlueprintAbility spell, ContextValue dc = null, ContextValue spellLevel = null)
         {
-            var result = ScriptableObject.CreateInstance<ContextActionCastSpell>();
+            var result = Helper.Create<ContextActionCastSpell>();
             result.Spell = spell;
             result.OverrideDC = dc != null;
             result.OverrideSpellLevel = spellLevel != null;
@@ -502,7 +1567,7 @@ namespace FumisCodex
 
         public static AddSpellImmunity CreateAddSpellImmunity(int immunityType, SpellDescriptor descriptor, params BlueprintAbility[] exceptions)
         {
-            var result = ScriptableObject.CreateInstance<AddSpellImmunity>();
+            var result = Helper.Create<AddSpellImmunity>();
             result.SpellDescriptor = new SpellDescriptorWrapper(descriptor);
             result.Type = (SpellImmunityType)immunityType;
             if (exceptions != null) result.Exceptions = exceptions;
@@ -511,7 +1576,7 @@ namespace FumisCodex
 
         public static AddKineticistBurnModifier CreateAddKineticistBurnModifier(int Value, KineticistBurnType BurnType = KineticistBurnType.Infusion, ContextValue BurnValue = null, params BlueprintAbility[] AppliableTo)
         {
-            var result = ScriptableObject.CreateInstance<AddKineticistBurnModifier>();
+            var result = Helper.Create<AddKineticistBurnModifier>();
             result.Value = Value;
             result.BurnType = BurnType;
             result.BurnValue = BurnValue;
@@ -523,13 +1588,13 @@ namespace FumisCodex
 
         public static ContextActionRemoveSelf CreateContextActionRemoveSelf()
         {
-            var result = ScriptableObject.CreateInstance<ContextActionRemoveSelf>();
+            var result = Helper.Create<ContextActionRemoveSelf>();
             return result;
         }
 
         public static BuffMovementSpeed CreateBuffMovementSpeed(int Value, ModifierDescriptor Descriptor = ModifierDescriptor.None, int MinimumCap = 0, float MultiplierCap = 0f)
         {
-            var result = ScriptableObject.CreateInstance<BuffMovementSpeed>();
+            var result = Helper.Create<BuffMovementSpeed>();
             result.Value = Value;
             result.Descriptor = Descriptor;
             result.CappedOnMultiplier = (MultiplierCap != 0f);
@@ -541,7 +1606,7 @@ namespace FumisCodex
 
         public static CriticalConfirmationWeaponType CreateCriticalConfirmationWeaponType(ContextValue Value, WeaponCategory Type)
         {
-            var result = ScriptableObject.CreateInstance<CriticalConfirmationWeaponType>();
+            var result = Helper.Create<CriticalConfirmationWeaponType>();
             result.Value = Value;
             result.Type = Type;
             return result;
@@ -549,7 +1614,7 @@ namespace FumisCodex
 
         public static AddContextStatBonus CreateAddContextStatBonus(StatType Stat, ContextValue Value, ModifierDescriptor Descriptor = ModifierDescriptor.UntypedStackable)
         {
-            var result = ScriptableObject.CreateInstance<AddContextStatBonus>();
+            var result = Helper.Create<AddContextStatBonus>();
             result.Stat = Stat;
             result.Value = Value;
             result.Descriptor = Descriptor;
@@ -559,22 +1624,22 @@ namespace FumisCodex
         ///<summary>SubFeature is the second or third feat of the style chain.</summary>
         public static AddFactContextActions CombatStyleHelper(BlueprintFeature SubFeature, BlueprintBuff Buff)
         {
-            var applyBuff = ScriptableObject.CreateInstance<ContextActionApplyBuff>();
+            var applyBuff = Helper.Create<ContextActionApplyBuff>();
             applyBuff.Buff = Buff;
             applyBuff.DurationValue = Contexts.DurationZero;
             applyBuff.IsFromSpell = false;
             applyBuff.IsNotDispelable = false;
             applyBuff.Permanent = true;
 
-            var has = ScriptableObject.CreateInstance<ContextConditionHasFact>();
+            var has = Helper.Create<ContextConditionHasFact>();
             has.Fact = SubFeature;
 
-            var c = ScriptableObject.CreateInstance<Conditional>();
+            var c = Helper.Create<Conditional>();
             c.ConditionsChecker = new ConditionsChecker() { Conditions = new Condition[] { has }, Operation = Operation.And };
             c.IfTrue = CreateActionList(applyBuff);
             c.IfFalse = CreateActionList();
 
-            var result = ScriptableObject.CreateInstance<AddFactContextActions>();
+            var result = Helper.Create<AddFactContextActions>();
             result.Activated = CreateActionList(c);
             result.Deactivated = CreateActionList();
             result.NewRound = CreateActionList();
@@ -584,7 +1649,7 @@ namespace FumisCodex
 
         public static ContextActionRestoreResource CreateContextActionRestoreResource(BlueprintAbilityResource Resource, ContextValue Amount, bool ToCaster = false)
         {
-            var result = ScriptableObject.CreateInstance<ContextActionRestoreResource>();
+            var result = Helper.Create<ContextActionRestoreResource>();
             result.Resource = Resource;
             result.Amount = Amount;
             result.ToCaster = ToCaster;
@@ -593,7 +1658,7 @@ namespace FumisCodex
 
         public static RendSpecial CreateRendSpecial(DiceFormula RendDamage, DamageTypeDescription RendType = null, WeaponCategory? Category = null, bool TargetSelf = false, params GameAction[] Actions)
         {
-            var result = ScriptableObject.CreateInstance<RendSpecial>();
+            var result = Helper.Create<RendSpecial>();
             result.RendType = RendType ?? CreateDamageTypeDescription();
             result.RendDamage = RendDamage;
             result.TargetSelf = TargetSelf;
@@ -614,12 +1679,9 @@ namespace FumisCodex
             return result;
         }
 
-        public static AddOutgoingPhysicalDamageProperty CreateAddOutgoingPhysicalDamageProperty(
-            BlueprintWeaponType WeaponType = null, bool CheckRange = false, bool IsRanged = false, bool AddMagic = false,
-            PhysicalDamageMaterial? Material = null, PhysicalDamageForm? Form = null, DamageAlignment? Alignment = null,
-            bool MyAlignment = false, DamageRealityType? Reality = null)
+        public static AddOutgoingPhysicalDamageProperty CreateAddOutgoingPhysicalDamageProperty(BlueprintWeaponType WeaponType = null, bool CheckRange = false, bool IsRanged = false, bool AddMagic = false, PhysicalDamageMaterial? Material = null, PhysicalDamageForm? Form = null, DamageAlignment? Alignment = null, bool MyAlignment = false, DamageRealityType? Reality = null)
         {
-            var result = ScriptableObject.CreateInstance<AddOutgoingPhysicalDamageProperty>();
+            var result = Helper.Create<AddOutgoingPhysicalDamageProperty>();
             result.CheckWeaponType = WeaponType != null;
             result.WeaponType = WeaponType;
             result.CheckRange = CheckRange;
@@ -638,9 +1700,19 @@ namespace FumisCodex
 
         public static ContextActionCombatManeuver CreateContextActionCombatManeuver(CombatManeuver Type, params GameAction[] OnSuccess)
         {
-            var result = ScriptableObject.CreateInstance<ContextActionCombatManeuver>();
+            var result = Helper.Create<ContextActionCombatManeuver>();
             result.Type = Type;
             result.OnSuccess = CreateActionList(OnSuccess);
+            return result;
+        }
+
+        public static BlueprintAbilityAreaEffect CreateBlueprintAbilityAreaEffect(string name, string guid)
+        {
+            var result = Create<BlueprintAbilityAreaEffect>();
+            result.name = name;
+            result.AssetGuid = guid;
+
+            HelperEA.AddAsset(Main.library, result, guid);
             return result;
         }
 
@@ -649,7 +1721,7 @@ namespace FumisCodex
             if (actions == null || actions.Length == 1 && actions[0] == null) actions = Array.Empty<GameAction>();
             return new ActionList() { Actions = actions };
         }
-        
+
         public static class Image2Sprite
         {
             public static Sprite Create(string filename)
@@ -669,4 +1741,110 @@ namespace FumisCodex
             }
         }
     }
+
+    public class ExtraSpellList
+    {
+        public struct SpellId
+        {
+            public readonly string guid;
+            public readonly int level;
+            public SpellId(string spell_guid, int spell_level)
+            {
+                guid = spell_guid;
+                level = spell_level;
+            }
+
+            public BlueprintAbility getSpell()
+            {
+                return Main.library.Get<BlueprintAbility>(guid);
+            }
+        }
+
+        SpellId[] spells;
+
+        public ExtraSpellList(params SpellId[] list_spells)
+        {
+            spells = list_spells;
+        }
+
+
+
+        public ExtraSpellList(params string[] list_spell_guids)
+        {
+            spells = new SpellId[list_spell_guids.Length];
+            for (int i = 0; i < list_spell_guids.Length; i++)
+            {
+                spells[i] = new SpellId(list_spell_guids[i], i + 1);
+            }
+        }
+
+
+        public ExtraSpellList(params BlueprintAbility[] spells_array)
+        {
+            spells = new SpellId[spells_array.Length];
+            for (int i = 0; i < spells_array.Length; i++)
+            {
+                spells[i] = new SpellId(spells_array[i].AssetGuid, i + 1);
+            }
+        }
+
+
+        public Kingmaker.Blueprints.Classes.Spells.BlueprintSpellList createSpellList(string name, string guid)
+        {
+            var spell_list = Helper.Create<Kingmaker.Blueprints.Classes.Spells.BlueprintSpellList>();
+            spell_list.name = name;
+            Main.library.AddAsset(spell_list, guid);
+            spell_list.SpellsByLevel = new SpellLevelList[10];
+            for (int i = 0; i < spell_list.SpellsByLevel.Length; i++)
+            {
+                spell_list.SpellsByLevel[i] = new SpellLevelList(i);
+            }
+            foreach (var s in spells)
+            {
+                if (!s.guid.Empty())
+                {
+                    var spell = Main.library.Get<BlueprintAbility>(s.guid);
+                    spell.AddToSpellList(spell_list, s.level);
+                }
+            }
+            return spell_list;
+        }
+
+
+        public Kingmaker.UnitLogic.FactLogic.LearnSpellList createLearnSpellList(string name, string guid, BlueprintCharacterClass character_class, BlueprintArchetype archetype = null)
+        {
+            Kingmaker.UnitLogic.FactLogic.LearnSpellList learn_spell_list = Helper.Create<Kingmaker.UnitLogic.FactLogic.LearnSpellList>();
+            learn_spell_list.Archetype = archetype;
+            learn_spell_list.CharacterClass = character_class;
+            learn_spell_list.SpellList = createSpellList(name, guid);
+            return learn_spell_list;
+        }
+
+
+        public LevelEntry[] createLearnSpellLevelEntries(string name, string description, string guid,
+                                                         int[] levels,
+                                                         BlueprintCharacterClass character_class, BlueprintArchetype archetype = null)
+        {
+            LevelEntry[] entires = new LevelEntry[levels.Length];
+
+            for (int i = 0; i < entires.Length; i++)
+            {
+                var s = spells[i].getSpell();
+                var feature = HelperEA.CreateFeature(name + s.name,
+                                                    s.Name,
+                                                    description + "\n" + s.Name + ": " + s.Description,
+                                                    HelperEA.MergeIds(guid, s.AssetGuid),
+                                                    s.Icon,
+                                                    FeatureGroup.None,
+                                                    HelperEA.CreateAddKnownSpell(s, character_class, i + 1, archetype)
+                                                    );
+                entires[i] = HelperEA.LevelEntry(levels[i], feature);
+            }
+
+            return entires;
+        }
+
+    }
+
+
 }

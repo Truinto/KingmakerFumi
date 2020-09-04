@@ -9,7 +9,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityModManagerNet;
-using CallOfTheWild;
 using Kingmaker;
 using Kingmaker.Enums;
 using Kingmaker.Blueprints;
@@ -54,6 +53,7 @@ using Kingmaker.UI.ServiceWindow.CharacterScreen;
 using Kingmaker.UI.Common;
 using System.Reflection.Emit;
 using Kingmaker.Items.Slots;
+//using CallOfTheWild;
 
 namespace FumisCodex
 {
@@ -69,21 +69,21 @@ namespace FumisCodex
         public static BlueprintFeature TWF = library.Get<BlueprintFeature>("6948b379c0562714d9f6d58ccbfa8faa");//TwoWeaponFightingBasicMechanics
         public static BlueprintFeatureSelection ki_powers = library.Get<BlueprintFeatureSelection>("3049386713ff04245a38b32483362551");//MonkKiPowerSelection
 
-        public static PrerequisiteFeature preq_IUS = Helpers.PrerequisiteFeature(IUS);
+        public static PrerequisiteFeature preq_IUS = HelperEA.PrerequisiteFeature(IUS);
         public static List<BlueprintFeature> combat_styles = new List<BlueprintFeature>();
         public static BlueprintArchetype archetype_MOMS;
-        public static readonly ActivatableAbilityGroup MOMS_wildcardgroup = Main.Patch_ActivatableAbilityGroup.GetNewGroup();
+        public static ActivatableAbilityGroup MOMS_wildcardgroup = Main.Patch_ActivatableAbilityGroup.GetNewGroup();
 
-        public static BlueprintBuff DualUnarmedBuff = Helpers.CreateBuff(   //buff for activateable that enables logic
+        public static BlueprintBuff DualUnarmedBuff = HelperEA.CreateBuff(   //buff for activateable that enables logic
             "DualUnarmedBuff", "Unarmed Dual Wielding", "You may use your empty offhand for Two Weapon Fighting.", "215e193fbc1448bb828ade364df60e72", null, Contexts.NullPrefabLink);
 
         public static void allowTWFwithFists()
         {
-            var dual_unarmed_activatable = Helpers.CreateActivatableAbility(
+            var dual_unarmed_activatable = HelperEA.CreateActivatableAbility(
                 "DualUnarmedActivatable",
-                DualUnarmedBuff.GetName(),
+                DualUnarmedBuff.Name,
                 DualUnarmedBuff.Description,
-                "c483908a936b454893117ad67bbacb05",
+                Guid.i.Reg("c483908a936b454893117ad67bbacb05"),
                 library.Get<BlueprintFeature>("cd96b7275c206da4899c69ae127ffda6").Icon,
                 DualUnarmedBuff,
                 AbilityActivationType.Immediately,
@@ -101,39 +101,39 @@ namespace FumisCodex
 
         public static void createStyleMaster(bool enabled = true)
         {
-            var stylemaster_feat = Helpers.CreateFeature(
+            var stylemaster_feat = HelperEA.CreateFeature(
                 "CombatStyleMasterFeature",
                 "Combat Style Master",
                 "You can fuse two of the styles you knows into a more perfect style. You can have two style feat stances active at once.",
-                "e3f51860700148f2b0c66e8cd3d0599b",
+                Guid.i.Reg("e3f51860700148f2b0c66e8cd3d0599b"),
                 null,
                 FeatureGroup.Feat,
-                Common.createIncreaseActivatableAbilityGroupSize(ActivatableAbilityGroup.CombatStyle),
-                Helpers.PrerequisiteFeature(IUS),
-                Helpers.PrerequisiteStatValue(StatType.BaseAttackBonus, 6, true),
-                Helpers.PrerequisiteClassLevel(monk_class, 5, true)
+                HelperEA.CreateIncreaseActivatableAbilityGroupSize(ActivatableAbilityGroup.CombatStyle),
+                HelperEA.PrerequisiteFeature(IUS),
+                HelperEA.PrerequisiteStatValue(StatType.BaseAttackBonus, 6, true),
+                HelperEA.PrerequisiteClassLevel(monk_class, 5, true)
             );
             stylemaster_feat.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat };
 
             if (enabled)
-                library.AddCombatFeats(stylemaster_feat);
+                HelperEA.AddCombatFeats(library, stylemaster_feat);
         }
 
         public static void createMedusasWrath()
         {
-            var feature = Helpers.CreateFeature(
+            var feature = HelperEA.CreateFeature(
                 "MedusasWrath",
                 "Medusa's Wrath",
                 "Whenever you use the full-attack action and make at least one unarmed strike, you can make two additional unarmed strikes at your highest base attack bonus. These bonus attacks must be made against a dazed, flat-footed, paralyzed, staggered, stunned, or unconscious foe.",
-                "6696238387114063b11ea42ae4291acd",
+                Guid.i.Reg("6696238387114063b11ea42ae4291acd"),
                 null,
                 FeatureGroup.CombatFeat,
-                Helpers.Create<MedusasWrath>()
+                Helper.Create<MedusasWrath>()
             );
             feature.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat };
 
-            var monk10 = library.Get<BlueprintFeatureSelection>("1051170c612d5b844bfaa817d6f4cfff");//MonkBonusFeatSelectionLevel10
-            Helper.AppendAndReplace(ref monk10.AllFeatures, feature);
+            Helper.AppendAndReplace(ref library.Get<BlueprintFeatureSelection>("1051170c612d5b844bfaa817d6f4cfff").AllFeatures, feature);//MonkBonusFeatSelectionLevel10
+            Helper.AppendAndReplace(ref library.Get<BlueprintFeatureSelection>("c569fc66f22825445a7b7f3b5d6d208f").AllFeatures, feature);//ScaledFistBonusFeatSelectionLevel10
         }
 
         #region Combat Styles
@@ -166,20 +166,20 @@ namespace FumisCodex
 
             var icon = Helper.Image2Sprite.Create("snake.png");
 
-            var snakestyle_buff = Helpers.CreateBuff(
+            var snakestyle_buff = HelperEA.CreateBuff(
                 "SnakeStyleBuff",
                 "Snake Style",
                 "Snake style emphasizes quick, shifting movements. Its practitioners normally hold their hands flat with the fingers together to mimic the head of a snake. Able to strike when least expected, snake stylists are known for opportunism and blinding speed.",
-                "da3d0cebc1884779a70d3223a68d2317",
+                Guid.i.Reg("da3d0cebc1884779a70d3223a68d2317"),
                 icon,
                 Contexts.NullPrefabLink,
                 Helper.CreateAddContextStatBonus(StatType.AC, Contexts.ValueTwo, ModifierDescriptor.Dodge)
             );
-            var snakestyle_activatable = Helpers.CreateActivatableAbility(
+            var snakestyle_activatable = HelperEA.CreateActivatableAbility(
                 "SnakeStyleActivatable",
                 "Snake Style",
                 snakestyle_buff.Description,
-                "f789139421494be29d54431ba2626b48",
+                Guid.i.Reg("f789139421494be29d54431ba2626b48"),
                 icon,
                 snakestyle_buff,
                 AbilityActivationType.Immediately,
@@ -187,67 +187,67 @@ namespace FumisCodex
                 null
             );
             snakestyle_activatable.Group = ActivatableAbilityGroup.CombatStyle;
-            var snake_style = Helpers.CreateFeature(
+            var snake_style = HelperEA.CreateFeature(
                 "SnakeStyle",
                 "Snake Style",
                 "You watch your foe’s every movement and then punch through its defense. You gain a +2 bonus on Diplomacy checks, and you can deal piercing damage with your unarmed strikes. While using the Snake Style feat, you receive a +2 dodge bonus on your AC.",
-                "5d2fd973e148415fbe5f008245e5dc8f",
+                Guid.i.Reg("5d2fd973e148415fbe5f008245e5dc8f"),
                 icon,
                 FeatureGroup.Feat,
                 preq_IUS,
-                Helpers.PrerequisiteStatValue(StatType.SkillAthletics, 1),
-                Helpers.PrerequisiteStatValue(StatType.CheckDiplomacy, 3),
-                Helpers.CreateAddFact(snakestyle_activatable),
+                HelperEA.PrerequisiteStatValue(StatType.SkillAthletics, 1),
+                HelperEA.PrerequisiteStatValue(StatType.CheckDiplomacy, 3),
+                HelperEA.CreateAddFact(snakestyle_activatable),
                 Helper.CreateAddContextStatBonus(StatType.CheckDiplomacy, Contexts.ValueTwo),
                 Helper.CreateAddOutgoingPhysicalDamageProperty(WeaponType: weapon_unarmed, Form: PhysicalDamageForm.Piercing)
             );
 
-            var snakesidewind_buff = Helpers.CreateBuff(
+            var snakesidewind_buff = HelperEA.CreateBuff(
                 "SnakeSidewindBuff",
                 "Snake Sidewind",
                 "",
-                "47aba9b9c2e34d62b1fc619659c2df95",
+                Guid.i.Reg("47aba9b9c2e34d62b1fc619659c2df95"),
                 icon,
                 Contexts.NullPrefabLink,
                 Helper.CreateCriticalConfirmationWeaponType(Contexts.ValueFour, WeaponCategory.UnarmedStrike),
                 Helper.CreateBuffMovementSpeed(5, ModifierDescriptor.Circumstance)// TODO: should be crit only! createAddInitiatorAttackWithWeaponTriggerWithCategory
             );
             snakesidewind_buff.m_Flags(HiddenInUi: true);
-            var snake_sidewind = Helpers.CreateFeature(
+            var snake_sidewind = HelperEA.CreateFeature(
                 "SnakeSidewind",
                 "Snake Sidewind",
                 "Your sensitive twisting movements make you difficult to anticipate combat. You gain a +4 bonus to CMD against trip combat maneuvers. While using the Snake Style feat, whenever you score a critical threat with your unarmed strike, you receive a +4 circumstance bonus on attack rolls made to confirm critical hits. Whenever you score a critical hit with your unarmed strike, you receive a +5 foot circumstance bonus on your movement speed for 1 round.",
-                "e550008e19914cde9f3deebcea2ac829",
+                Guid.i.Reg("e550008e19914cde9f3deebcea2ac829"),
                 icon,
                 FeatureGroup.Feat,
-                Helpers.PrerequisiteFeature(snake_style),
-                Helpers.PrerequisiteStatValue(StatType.SkillAthletics, 3),
-                Helpers.PrerequisiteStatValue(StatType.CheckDiplomacy, 6),
-                Common.createManeuverDefenseBonus(CombatManeuver.Trip, 4)
+                HelperEA.PrerequisiteFeature(snake_style),
+                HelperEA.PrerequisiteStatValue(StatType.SkillAthletics, 3),
+                HelperEA.PrerequisiteStatValue(StatType.CheckDiplomacy, 6),
+                HelperEA.CreateManeuverDefenseBonus(CombatManeuver.Trip, 4)
             );
 
-            var snakefang_buff = Helpers.CreateBuff(
+            var snakefang_buff = HelperEA.CreateBuff(
                 "SnakeFangBuff",
                 "Snake Fang",
                 "",
-                "2cda60f8e18742569eadbd870b10ba79",
+                Guid.i.Reg("2cda60f8e18742569eadbd870b10ba79"),
                 icon,
                 Contexts.NullPrefabLink,
-                Helpers.Create<SnakeFang>()
+                Helper.Create<SnakeFang>()
             );
             snakefang_buff.m_Flags(HiddenInUi: true);
-            var snake_fang = Helpers.CreateFeature(
+            var snake_fang = HelperEA.CreateFeature(
                 "SnakeFang",
                 "Snake Fang",
                 "You can unleash attacks against an opponent that has dropped its guard. While using the Snake Style feat, when an opponent’s attack misses you, you can make an attack of opportunity against that opponent.",
-                "11478867d1a64638b7a9635c664c3354",
+                Guid.i.Reg("11478867d1a64638b7a9635c664c3354"),
                 icon,
                 FeatureGroup.Feat,
-                Helpers.PrerequisiteFeature(snake_style),
-                Helpers.PrerequisiteFeature(snake_sidewind),
-                Helpers.PrerequisiteFeature(library.Get<BlueprintFeature>("0f8939ae6f220984e8fb568abbdfba95")),//CombatReflexes
-                Helpers.PrerequisiteStatValue(StatType.SkillAthletics, 6),
-                Helpers.PrerequisiteStatValue(StatType.CheckDiplomacy, 9)
+                HelperEA.PrerequisiteFeature(snake_style),
+                HelperEA.PrerequisiteFeature(snake_sidewind),
+                HelperEA.PrerequisiteFeature(library.Get<BlueprintFeature>("0f8939ae6f220984e8fb568abbdfba95")),//CombatReflexes
+                HelperEA.PrerequisiteStatValue(StatType.SkillAthletics, 6),
+                HelperEA.PrerequisiteStatValue(StatType.CheckDiplomacy, 9)
             );
 
             snakestyle_buff.AddComponents(
@@ -259,7 +259,7 @@ namespace FumisCodex
             snake_sidewind.Groups = snake_style.Groups;
             snake_fang.Groups = snake_style.Groups;
 
-            library.AddFeats(snake_style, snake_sidewind, snake_fang);
+            HelperEA.AddFeats(library, snake_style, snake_sidewind, snake_fang);
             combat_styles.Add(snake_style);
             combat_styles.Add(snake_sidewind);
             combat_styles.Add(snake_fang);
@@ -288,54 +288,53 @@ namespace FumisCodex
 
             var icon = Helper.Image2Sprite.Create("boar.png");
 
-            var boar_ferocity = Helpers.CreateFeature(
+            var boar_ferocity = HelperEA.CreateFeature(
                 "BoarFerocity",
                 "Boar Ferocity",
                 "You add piercing damage to the damage types you can deal with your unarmed strikes. Further, you gain a +2 bonus on Intimidate checks to demoralize opponents. While using Boar Style, whenever you tear an opponent’s flesh, you can spend a free action to make an Intimidate check to demoralize that opponent.",
-                "51241be4957847c6ba737bb3aaa0e402",
+                Guid.i.Reg("51241be4957847c6ba737bb3aaa0e402"),
                 icon,
                 FeatureGroup.CombatFeat,
                 Helper.CreateAddOutgoingPhysicalDamageProperty(WeaponType: weapon_unarmed, Form: PhysicalDamageForm.Piercing),
                 Helper.CreateAddContextStatBonus(StatType.CheckIntimidate, Contexts.ValueTwo, ModifierDescriptor.UntypedStackable),
                 preq_IUS,
-                Helpers.PrerequisiteStatValue(StatType.CheckIntimidate, 6)
+                HelperEA.PrerequisiteStatValue(StatType.CheckIntimidate, 6)
             );
-            var ferocity_conditional = Helpers.CreateConditional(Helpers.CreateConditionCasterHasFact(boar_ferocity), Helpers.Create<Demoralize>( a => {
-                a.Buff = library.Get<BlueprintBuff>("25ec6cb6ab1845c48a95f9c20b034220");//Shaken
-                a.GreaterBuff = library.Get<BlueprintBuff>("f08a7239aa961f34c8301518e71d4cdf");//Frightened
-            }));//we need this for boar style, since it's called from RendSpecial
+            var ferocity_conditional = HelperEA.CreateConditional(HelperEA.CreateConditionCasterHasFact(boar_ferocity), 
+                ifTrue: library.Get<BlueprintAbility>("7d2233c3b7a0b984ba058a83b736e6ac").GetComponent<AbilityEffectRunAction>().Actions.Actions[0]
+            );//we need this for boar style, since it's called from RendSpecial
             
             var intimidate_ab = library.CopyAndAdd<BlueprintAbility>("7d2233c3b7a0b984ba058a83b736e6ac", "IntimidateAsMoveAbility", Guid.i.Reg("d3fe9ad8af284f29b3bb7384e9249b9a"));//PersuasionUseAbility
             intimidate_ab.ActionType = CommandType.Move;
-            var boar_shred = Helpers.CreateFeature(
+            var boar_shred = HelperEA.CreateFeature(
                 "BoarShred",
                 "Boar Shred",
                 "You can make an Intimidate check to demoralize an opponent as a move action. While using Boar Style, whenever you tear an opponent’s flesh, once per round at the start of that opponent’s turn he takes 1d6 bleed damage. The bleed damage dealt while using Boar Style persist even if you later switch to a different style.",
-                "fe358f6c01724011ae848daf71db7fe2",
+                Guid.i.Reg("fe358f6c01724011ae848daf71db7fe2"),
                 icon,
                 FeatureGroup.CombatFeat,
-                Helpers.CreateAddFact(intimidate_ab),
+                HelperEA.CreateAddFact(intimidate_ab),
                 preq_IUS,
-                Helpers.PrerequisiteStatValue(StatType.CheckIntimidate, 9)
+                HelperEA.PrerequisiteStatValue(StatType.CheckIntimidate, 9)
             );
-            var shred_conditional = Helpers.CreateConditional(Helpers.CreateConditionCasterHasFact(boar_shred), Helpers.CreateApplyBuff(
+            var shred_conditional = HelperEA.CreateConditional(HelperEA.CreateConditionCasterHasFact(boar_shred), HelperEA.CreateApplyBuff(
                 library.Get<BlueprintBuff>("75039846c3d85d940aa96c249b97e562"), Contexts.DurationZero, false, false,
                 false, false, true));//we need this for boar style, since it's called from RendSpecial
 
-            var boar_style_buff = Helpers.CreateBuff(
+            var boar_style_buff = HelperEA.CreateBuff(
                 "BoarStyleBuff",
                 "Boar Style",
                 "The objective of the Boar Style is to attack with as much viciousness and cruelty as possible in order to break enemy morale. Fanatical followers of the style use herbal and alchemical reagents to harden their nails and teeth, sometimes performing self-mutilating procedures that result in claw-like nails and sharpened teeth.",
-                "c09127b74e2e441f83dec13a3c045ee8",
+                Guid.i.Reg("c09127b74e2e441f83dec13a3c045ee8"),
                 icon,
                 Contexts.NullPrefabLink,
                 Helper.CreateRendSpecial(new DiceFormula(2, DiceType.D6), null, WeaponCategory.UnarmedStrike, false, ferocity_conditional, shred_conditional)
             );
-            var boarstyle_activatable = Helpers.CreateActivatableAbility(
+            var boarstyle_activatable = HelperEA.CreateActivatableAbility(
                 "BoarStyleActivatable",
                 "Boar Style",
                 boar_style_buff.Description,
-                "18fd7159e7cc41a5b98ca671251b4573",
+                Guid.i.Reg("18fd7159e7cc41a5b98ca671251b4573"),
                 icon,
                 boar_style_buff,
                 AbilityActivationType.Immediately,
@@ -343,27 +342,27 @@ namespace FumisCodex
                 null
             );
             boarstyle_activatable.Group = ActivatableAbilityGroup.CombatStyle;
-            var boar_style = Helpers.CreateFeature(
+            var boar_style = HelperEA.CreateFeature(
                 "BoarStyle",
                 "Boar Style",
                 "You can deal bludgeoning and slashing damage with your unarmed strikes. While using this style, once per round when you hit a single foe with two or more unarmed strikes, you can tear flesh. When you do, you deal 2d6 extra points of damage with the attack.",
-                "7b9502f170c549b3a198058f3c1fecea",
+                Guid.i.Reg("7b9502f170c549b3a198058f3c1fecea"),
                 icon,
                 FeatureGroup.CombatFeat,
-                Helpers.CreateAddFact(boarstyle_activatable),
+                HelperEA.CreateAddFact(boarstyle_activatable),
                 Helper.CreateAddOutgoingPhysicalDamageProperty(WeaponType: weapon_unarmed, Form: PhysicalDamageForm.Slashing),
                 preq_IUS,
-                Helpers.PrerequisiteStatValue(StatType.CheckIntimidate, 3)
+                HelperEA.PrerequisiteStatValue(StatType.CheckIntimidate, 3)
             );
 
-            boar_ferocity.AddComponent(Helpers.PrerequisiteFeature(boar_style));
-            boar_shred.AddComponents(Helpers.PrerequisiteFeature(boar_style), Helpers.PrerequisiteFeature(boar_ferocity));
+            boar_ferocity.AddComponent(HelperEA.PrerequisiteFeature(boar_style));
+            boar_shred.AddComponents(HelperEA.PrerequisiteFeature(boar_style), HelperEA.PrerequisiteFeature(boar_ferocity));
 
             boar_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat };
             boar_ferocity.Groups = boar_style.Groups;
             boar_shred.Groups = boar_style.Groups;
 
-            library.AddFeats(boar_style, boar_ferocity, boar_shred);
+            HelperEA.AddFeats(library, boar_style, boar_ferocity, boar_shred);
             combat_styles.Add(boar_style);
             combat_styles.Add(boar_ferocity);
             combat_styles.Add(boar_shred);
@@ -392,48 +391,48 @@ namespace FumisCodex
 
             var icon = Helper.Image2Sprite.Create("wolf.png");
 
-            var speed_debuff = Helpers.CreateBuff(
+            var speed_debuff = HelperEA.CreateBuff(
                 "WolfStyleSpeedDebuff",
                 "Wolf Style Movement Debuff",
                 "-5 feet speed",
-                "89564ba513894e57b845307f8e62844d",
+                Guid.i.Reg("89564ba513894e57b845307f8e62844d"),
                 null,
                 Contexts.NullPrefabLink,
-                Helpers.Create<BuffMovementSpeed>( a => {
+                Helper.Create<BuffMovementSpeed>( a => {
                     a.Descriptor = ModifierDescriptor.UntypedStackable;
                     a.Value = -5;
                 })
             );
             speed_debuff.Stacking = StackingType.Stack;
             speed_debuff.m_Flags(HiddenInUi: true);
-            var add_initiatorattack = Helpers.Create<AddInitiatorAttackDamageThreshold>( a => {
+            var add_initiatorattack = Helper.Create<AddInitiatorAttackDamageThreshold>( a => {
                 a.CheckCategory = true;
                 a.CheckForNaturalWeapon = true;
                 a.DamageThreshold = 10;
                 a.RepeatActions = true;
                 a.OnlyOnAttackOfOpportunity = true;
-                a.Action = Helpers.CreateActionList(
-                    Helpers.CreateApplyBuff(speed_debuff, Contexts.Duration1Round, false, false),
-                    Helpers.CreateConditional(Helpers.CreateConditionsCheckerAnd(Helpers.Create<ContextConditionMovespeed>(b => b.Speed = GameConsts.MinUnitSpeedMps),
-                                              Helpers.Create<ContextConditionHasUnitCondition>(c => {c.Condition = UnitCondition.Prone; c.Not = true;})),
-                        Helper.CreateContextActionCombatManeuver(CombatManeuver.Trip))
+                a.Action = Helper.CreateActionList(
+                    HelperEA.CreateApplyBuff(speed_debuff, Contexts.Duration1Round, false, false),
+                    HelperEA.CreateConditional(Helper.ToArray<Condition>(Helper.Create<ContextConditionMovespeed>(b => b.Speed = GameConsts.MinUnitSpeedMps),
+                                                                         Helper.Create<ContextConditionHasUnitCondition>(c => {c.Condition = UnitCondition.Prone; c.Not = true;})),
+                                       ifTrue: Helper.CreateContextActionCombatManeuver(CombatManeuver.Trip).ObjToArray())
                 );
             });
 
-            var wolfstyle_buff = Helpers.CreateBuff(
+            var wolfstyle_buff = HelperEA.CreateBuff(
                 "WolfStyleBuff",
                 "Wolf Style",
                 "While in this style, you hamper foes that turn their backs on you.",
-                "86a19898ef7f4df8b9bf94414f90e55c",
+                Guid.i.Reg("86a19898ef7f4df8b9bf94414f90e55c"),
                 icon,
                 Contexts.NullPrefabLink,
                 add_initiatorattack //slow if damage >= 10, trip if speed == minspeed
             );
-            var wolfstyle_activatable = Helpers.CreateActivatableAbility(
+            var wolfstyle_activatable = HelperEA.CreateActivatableAbility(
                 "WolfStyleActivatable",
                 "Wolf Style",
                 wolfstyle_buff.Description,
-                "6341b762347948b6939c39285326407b",
+                Guid.i.Reg("6341b762347948b6939c39285326407b"),
                 icon,
                 wolfstyle_buff,
                 AbilityActivationType.Immediately,
@@ -441,64 +440,64 @@ namespace FumisCodex
                 null
             );
             wolfstyle_activatable.Group = ActivatableAbilityGroup.CombatStyle;
-            var wolf_style = Helpers.CreateFeature(
+            var wolf_style = HelperEA.CreateFeature(
                 "WolfStyle",
                 "Wolf Style",
                 "While using this style, whenever you deal at least 10 points of damage to a foe with an attack of opportunity, that foe’s base speed decreases by 5 feet until the end of its next turn. For every 10 points of damage your attack deals beyond 10, the foe’s base speed decreases by an additional 5 feet. If the penalty meets or exceeds the total base speed of the foe, you can attempt to trip the foe as a free action after the attack of opportunity is resolved.",
-                "3e744fbe64dd4d45ad137820ccfd5b87",
+                Guid.i.Reg("3e744fbe64dd4d45ad137820ccfd5b87"),
                 icon,
                 FeatureGroup.Feat,
                 preq_IUS,
-                Helpers.PrerequisiteStatValue(StatType.Wisdom, 13),
-                Helpers.PrerequisiteStatValue(StatType.SkillLoreNature, 3),
-                Helpers.CreateAddFact(wolfstyle_activatable)
+                HelperEA.PrerequisiteStatValue(StatType.Wisdom, 13),
+                HelperEA.PrerequisiteStatValue(StatType.SkillLoreNature, 3),
+                HelperEA.CreateAddFact(wolfstyle_activatable)
             );
 
-            var wolftrip_buff = Helpers.CreateBuff(
+            var wolftrip_buff = HelperEA.CreateBuff(
                 "WolfTripBuff",
                 "Wolf Trip",
                 "DESC",
-                "99146e0bb3154f86aa2f55a51f59979d",
+                Guid.i.Reg("99146e0bb3154f86aa2f55a51f59979d"),
                 icon,
                 Contexts.NullPrefabLink,
-                Common.createManeuverBonus(CombatManeuver.Trip, 2)
+                HelperEA.CreateManeuverBonus(CombatManeuver.Trip, 2)
             );
             wolftrip_buff.m_Flags(HiddenInUi: true);
-            var wolf_trip = Helpers.CreateFeature(
+            var wolf_trip = HelperEA.CreateFeature(
                 "WolfTrip",
                 "Wolf Trip",
                 "While using Wolf Style, you gain a +2 bonus when you attempt a trip combat maneuver.",
-                "445e5601d4b44da482284785d93e8a84",
+                Guid.i.Reg("445e5601d4b44da482284785d93e8a84"),
                 icon,
                 FeatureGroup.Feat,
                 preq_IUS,
-                Helpers.PrerequisiteStatValue(StatType.Wisdom, 15),
-                Helpers.PrerequisiteStatValue(StatType.SkillLoreNature, 6),
-                Helpers.PrerequisiteFeature(wolf_style)
+                HelperEA.PrerequisiteStatValue(StatType.Wisdom, 15),
+                HelperEA.PrerequisiteStatValue(StatType.SkillLoreNature, 6),
+                HelperEA.PrerequisiteFeature(wolf_style)
             );
 
-            var wolfsavage_buff = Helpers.CreateBuff(
+            var wolfsavage_buff = HelperEA.CreateBuff(
                 "WolfSavageBuff",
                 "Wolf Savage",
                 "DESC",
-                "9372a8110dba4ff49c2098954978adcf",
+                Guid.i.Reg("9372a8110dba4ff49c2098954978adcf"),
                 icon,
                 Contexts.NullPrefabLink,
-                Helpers.Create<WolfSavage>()
+                Helper.Create<WolfSavage>()
             );
             wolfsavage_buff.m_Flags(HiddenInUi: true);
-            var wolf_savage = Helpers.CreateFeature(
+            var wolf_savage = HelperEA.CreateFeature(
                 "WolfSavage",
                 "Wolf Savage",
                 "While using Wolf Style, once per round, when you deal at least 10 points of damage to a prone opponent with a natural weapon or an unarmed strike, you can savage that creature. When you do, your opponent must succeed at a Fortitude save (DC = 10 + half your character level + your Wisdom modifier). If the target fails the saving throw, it takes 1d4 Constitution damage.",
-                "f2d8d4adc18343b68713cbadca94f5af",
+                Guid.i.Reg("f2d8d4adc18343b68713cbadca94f5af"),
                 icon,
                 FeatureGroup.Feat,
                 preq_IUS,
-                Helpers.PrerequisiteStatValue(StatType.Wisdom, 17),
-                Helpers.PrerequisiteStatValue(StatType.SkillLoreNature, 9),
-                Helpers.PrerequisiteFeature(wolf_style),
-                Helpers.PrerequisiteFeature(wolf_trip)
+                HelperEA.PrerequisiteStatValue(StatType.Wisdom, 17),
+                HelperEA.PrerequisiteStatValue(StatType.SkillLoreNature, 9),
+                HelperEA.PrerequisiteFeature(wolf_style),
+                HelperEA.PrerequisiteFeature(wolf_trip)
             );
 
             wolfstyle_buff.AddComponents(
@@ -510,7 +509,7 @@ namespace FumisCodex
             wolf_trip.Groups = wolf_style.Groups;
             wolf_savage.Groups = wolf_style.Groups;
 
-            library.AddFeats(wolf_style, wolf_trip, wolf_savage);
+            HelperEA.AddFeats(library, wolf_style, wolf_trip, wolf_savage);
             combat_styles.Add(wolf_style);
             combat_styles.Add(wolf_trip);
             combat_styles.Add(wolf_savage);
@@ -567,29 +566,29 @@ namespace FumisCodex
             // get the all the base game styles and from CotW
             loadStyles();
 
-            archetype_MOMS = Helpers.Create<BlueprintArchetype>(a =>
+            archetype_MOMS = Helper.Create<BlueprintArchetype>(a =>
             {
                 a.name = "MasterOfManyStylesArchetype";
-                a.LocalizedName = Helpers.CreateString($"{a.name}.Name", "Master Of Many Styles");
-                a.LocalizedDescription = Helpers.CreateString($"{a.name}.Description", "The master of many styles is a collector. For every move, he seeks a counter. For every style, he has a riposte. Ultimately, he seeks perfection through the fusion of styles.");
+                a.LocalizedName = HelperEA.CreateString($"{a.name}.Name", "Master Of Many Styles");
+                a.LocalizedDescription = HelperEA.CreateString($"{a.name}.Description", "The master of many styles is a collector. For every move, he seeks a counter. For every style, he has a riposte. Ultimately, he seeks perfection through the fusion of styles.");
             });
 
-            Helpers.SetField(archetype_MOMS, "m_ParentClass", monk_class);
+            Access.set_ParentClass(archetype_MOMS, monk_class);
             library.AddAsset(archetype_MOMS, Guid.i.Reg("5205f152da3c40e3a258c574d528d58f"));
 
             // remove features
             var bonusfeat1 = library.Get<BlueprintFeatureSelection>("ac3b7f5c11bce4e44aeb332f66b75bab");//MonkBonusFeatSelectionLevel1
             var bonusfeat10 = library.Get<BlueprintFeatureSelection>("1051170c612d5b844bfaa817d6f4cfff");//MonkBonusFeatSelectionLevel10
             archetype_MOMS.RemoveFeatures = new LevelEntry[] {
-                Helpers.LevelEntry(1, library.Get<BlueprintFeature>("fd99770e6bd240a4aab70f7af103e56a")),//MonkFlurryOfBlowstUnlock
-                Helpers.LevelEntry(1, bonusfeat1),
-                Helpers.LevelEntry(2, bonusfeat1),
-                Helpers.LevelEntry(6, library.Get<BlueprintFeature>("b993f42cb119b4f40ac423ae76394374")),//MonkBonusFeatSelectionLevel6
-                Helpers.LevelEntry(10, bonusfeat10),
-                Helpers.LevelEntry(11, library.Get<BlueprintFeature>("a34b8a9fcc9024b42bacfd5e6b614bfa")),//MonkFlurryOfBlowstLevel11Unlock
-                Helpers.LevelEntry(14, bonusfeat10),
-                Helpers.LevelEntry(18, bonusfeat10),
-                Helpers.LevelEntry(20, library.Get<BlueprintFeature>("3854f693180168a4980646aee9494c72"))//KiPerfectSelfFeature
+                HelperEA.LevelEntry(1, library.Get<BlueprintFeature>("fd99770e6bd240a4aab70f7af103e56a"),//MonkFlurryOfBlowstUnlock
+                                       bonusfeat1),
+                HelperEA.LevelEntry(2, bonusfeat1),
+                HelperEA.LevelEntry(6, library.Get<BlueprintFeature>("b993f42cb119b4f40ac423ae76394374")),//MonkBonusFeatSelectionLevel6
+                HelperEA.LevelEntry(10, bonusfeat10),
+                HelperEA.LevelEntry(11, library.Get<BlueprintFeature>("a34b8a9fcc9024b42bacfd5e6b614bfa")),//MonkFlurryOfBlowstLevel11Unlock
+                HelperEA.LevelEntry(14, bonusfeat10),
+                HelperEA.LevelEntry(18, bonusfeat10),
+                HelperEA.LevelEntry(20, library.Get<BlueprintFeature>("3854f693180168a4980646aee9494c72"))//KiPerfectSelfFeature
             };
 
             // new Wildcard feature
@@ -604,32 +603,32 @@ namespace FumisCodex
                 if (ab != null) wildcardlist.Add(ab);
             }
             string description_wildcard = "Whenever he enters one or more styles, he can spend his wildcard style slots to gain feats in those styles’ feat paths (such as Snake Fang) as long as he meets the prerequisites. Each time he changes styles, he can also change these wildcard style slots.";
-            var wildcard = Helpers.CreateFeature(
+            var wildcard = HelperEA.CreateFeature(
                 "MasterOfManyStylesWildCardSlot",
                 "Wildcard Slot",
                 "Pick this before you expand your Wildcard Slots!\n"+description_wildcard,
-                "f2f97aa042a0445e94aca7257368d3e5",
+                Guid.i.Reg("f2f97aa042a0445e94aca7257368d3e5"),
                 null,
                 FeatureGroup.None,
-                Helpers.CreateAddFacts(wildcardlist.ToArray())
+                HelperEA.CreateAddFacts(wildcardlist.ToArray())
             );
-            var wildcard_extra1 = Helpers.CreateFeature(
+            var wildcard_extra1 = HelperEA.CreateFeature(
                 "MasterOfManyStylesWildCardSlotExtra1",
                 "Wildcard Slot Expand",
                 description_wildcard,
-                "9a45807387254c3abed6742a7742275f",
+                Guid.i.Reg("9a45807387254c3abed6742a7742275f"),
                 null,
                 FeatureGroup.None,
-                Common.createIncreaseActivatableAbilityGroupSize(MOMS_wildcardgroup)
+                HelperEA.CreateIncreaseActivatableAbilityGroupSize(MOMS_wildcardgroup)
             ); 
             var wildcard_extra2 = library.CopyAndAdd(wildcard_extra1, "MasterOfManyStylesWildCardSlotExtra2", "116af8c506094038bdf6df92722eadc1");
             var wildcard_extra3 = library.CopyAndAdd(wildcard_extra1, "MasterOfManyStylesWildCardSlotExtra3", "dbe3668786484dfd9a1030536e97084d");
 
-            var bonusfeat_MOMS = Helpers.CreateFeatureSelection(
+            var bonusfeat_MOMS = HelperEA.CreateFeatureSelection(
                 "MasterOfManyStylesBonusFeatSelection",
                 "Monk Bonus Feat",
                 "At 1st level, 2nd level, and every four levels thereafter, a master of many styles may select a bonus style feat. He does not need to meet the prerequisites of that feat. Starting at 6th level, a master of many styles can choose to instead gain a wildcard style slot. Whenever he enters one or more styles, he can spend his wildcard style slots to gain feats in those styles’ feat paths (such as Snake Fang) as long as he meets the prerequisites. Each time he changes styles, he can also change these wildcard style slots.",
-                "3b09dd2247e34a45a37b4be5007601df",
+                Guid.i.Reg("3b09dd2247e34a45a37b4be5007601df"),
                 null,
                 FeatureGroup.None
             );
@@ -641,25 +640,25 @@ namespace FumisCodex
             Helper.AppendAndReplace(ref bonusfeat_MOMS6.AllFeatures, wildcard, wildcard_extra1, wildcard_extra2, wildcard_extra3);
 
             // extra combat style slots
-            var extra_style_slot1 = Helpers.CreateFeature("MasterOfManyStylesGroupInc1", "Extra Combat Style", "You can enter an additional combat style simultaneously.", "c6eff162b97740af82746152a01553f3", null, FeatureGroup.None, Common.createIncreaseActivatableAbilityGroupSize(ActivatableAbilityGroup.CombatStyle));
-            var extra_style_slot2 = library.CopyAndAdd(extra_style_slot1, "MasterOfManyStylesGroupInc2", "3046db1d4a9b4b7bb2d57969465d30bc");
-            var extra_style_slot3 = library.CopyAndAdd(extra_style_slot1, "MasterOfManyStylesGroupInc3", "716f2294a69845938b50615537f89a4f");
-            var extra_style_slot4 = library.CopyAndAdd(extra_style_slot1, "MasterOfManyStylesGroupInc4", "92ab8576d8d54c988b14530f061778e5");
+            var extra_style_slot1 = HelperEA.CreateFeature("MasterOfManyStylesGroupInc1", "Extra Combat Style", "You can enter an additional combat style simultaneously.", "c6eff162b97740af82746152a01553f3", null, FeatureGroup.None, HelperEA.CreateIncreaseActivatableAbilityGroupSize(ActivatableAbilityGroup.CombatStyle));
+            var extra_style_slot2 = library.CopyAndAdd(extra_style_slot1, "MasterOfManyStylesGroupInc2", Guid.i.Reg("3046db1d4a9b4b7bb2d57969465d30bc"));
+            var extra_style_slot3 = library.CopyAndAdd(extra_style_slot1, "MasterOfManyStylesGroupInc3", Guid.i.Reg("716f2294a69845938b50615537f89a4f"));
+            var extra_style_slot4 = library.CopyAndAdd(extra_style_slot1, "MasterOfManyStylesGroupInc4", Guid.i.Reg("92ab8576d8d54c988b14530f061778e5"));
 
             archetype_MOMS.AddFeatures = new LevelEntry[] {
-                Helpers.LevelEntry(1, bonusfeat_MOMS),
-                Helpers.LevelEntry(1, extra_style_slot1),
-                Helpers.LevelEntry(2, bonusfeat_MOMS),
-                Helpers.LevelEntry(6, bonusfeat_MOMS6),
-                Helpers.LevelEntry(8, extra_style_slot2),
-                Helpers.LevelEntry(10, bonusfeat_MOMS6),
-                Helpers.LevelEntry(14, bonusfeat_MOMS6),
-                Helpers.LevelEntry(15, extra_style_slot3),
-                Helpers.LevelEntry(18, bonusfeat_MOMS6),
-                Helpers.LevelEntry(20, extra_style_slot4)
+                HelperEA.LevelEntry(1, bonusfeat_MOMS,
+                                      extra_style_slot1),
+                HelperEA.LevelEntry(2, bonusfeat_MOMS),
+                HelperEA.LevelEntry(6, bonusfeat_MOMS6),
+                HelperEA.LevelEntry(8, extra_style_slot2),
+                HelperEA.LevelEntry(10, bonusfeat_MOMS6),
+                HelperEA.LevelEntry(14, bonusfeat_MOMS6),
+                HelperEA.LevelEntry(15, extra_style_slot3),
+                HelperEA.LevelEntry(18, bonusfeat_MOMS6),
+                HelperEA.LevelEntry(20, extra_style_slot4)
             };
 
-            monk_class.Archetypes = monk_class.Archetypes.AddToArray(archetype_MOMS);
+            Helper.AppendAndReplace(ref monk_class.Archetypes, archetype_MOMS);
         }
 
         private static BlueprintActivatableAbility wildcardslots(BlueprintFeature style)
@@ -667,9 +666,9 @@ namespace FumisCodex
             if (style == null) return null;
 
             string name = "WildcardBuff" + style.name;
-            var buff = Helpers.CreateBuff(
+            var buff = HelperEA.CreateBuff(
                 name,
-                "Wildcard: " + style.GetName(),
+                "Wildcard: " + style.Name,
                 style.Description,
                 Guid.i.Get(name),
                 style.Icon,
@@ -679,9 +678,9 @@ namespace FumisCodex
             );
 
             string name2 = "Wildcard" + style.name;
-            var activatable = Helpers.CreateActivatableAbility(
+            var activatable = HelperEA.CreateActivatableAbility(
                 name2,
-                buff.GetName(),
+                buff.Name,
                 style.Description,
                 Guid.i.Get(name2),
                 style.Icon,
@@ -689,13 +688,13 @@ namespace FumisCodex
                 AbilityActivationType.Immediately,
                 CommandType.Free,
                 null,
-                Helpers.Create<ActivatableRestrictionPrerequisite>( a => a.Feature = style)
+                Helper.Create<ActivatableRestrictionPrerequisite>( a => a.Feature = style)
                 //,Helpers.Create<Kingmaker.UnitLogic.ActivatableAbilities.Restrictions.RestrictionHasFact>( a => { a.Feature = style; a.Not = true; } )
             );
             activatable.Group = MOMS_wildcardgroup;
             activatable.DeactivateImmediately = true;
 
-            buff.AddComponent(Helpers.Create<AddFactsSafe>( a => { a.Facts = style.ToArray(); a.Activatable = activatable; }));
+            buff.AddComponent(Helper.Create<AddFactsSafe>( a => { a.Facts = style.ObjToArray(); a.Activatable = activatable; }));
 
             return activatable;
         }
@@ -716,16 +715,16 @@ namespace FumisCodex
         {
             var restore_ki = Helper.CreateContextActionRestoreResource(library.Get<BlueprintAbilityResource>("9d9c90a9a1f52d04799294bf91c80a82"), Contexts.ValueOne, true);//KiPowerResource
 
-            var ki_leech = Helpers.CreateFeature(
+            var ki_leech = HelperEA.CreateFeature(
                 "KiLeechFeature",
                 "Ki Power: Ki Leech",
                 "You place your spirit in a receptive state so when you confirm a critical hit against a living enemy or reduce a living enemy to 0 or fewer hit points, you can steal some of that creature’s ki. This replenishes 1 point of ki. This does not allow you to exceed your ki pool’s maximum.",
-                "36c5fb7ac2164758ab13b196e9183258",
+                Guid.i.Reg("36c5fb7ac2164758ab13b196e9183258"),
                 library.Get<BlueprintAbility>("32280b137ca642c45be17e2d92898758").Icon,
                 FeatureGroup.KiPowers,
-                Helpers.PrerequisiteClassLevel(monk_class, 10),
-                Common.createAddInitiatorAttackWithWeaponTrigger(Helpers.CreateActionList(restore_ki), critical_hit: true),
-                Common.createAddInitiatorAttackWithWeaponTrigger(Helpers.CreateActionList(restore_ki), reduce_hp_to_zero: true)
+                HelperEA.PrerequisiteClassLevel(monk_class, 10),
+                HelperEA.CreateAddInitiatorAttackWithWeaponTrigger(Helper.CreateActionList(restore_ki), critical_hit: true),
+                HelperEA.CreateAddInitiatorAttackWithWeaponTrigger(Helper.CreateActionList(restore_ki), reduce_hp_to_zero: true)
             );
             ki_leech.Groups = new FeatureGroup[] { FeatureGroup.KiPowers, FeatureGroup.ScaledFistKiPowers };
             ki_leech.ReapplyOnLevelUp = true;
@@ -743,45 +742,45 @@ namespace FumisCodex
 
             var icon = library.Get<BlueprintAbility>("a970537ea2da20e42ae709c0bb8f793f").Icon;
 
-            var one_touch_buff = Helpers.CreateBuff(
+            var one_touch_buff = HelperEA.CreateBuff(
                 "OneTouchKiPowerBuff",
                 "One Touch Buff",
                 "DESC",
-                "fded2446731e4079bf26b1262ab1d2d2",
+                Guid.i.Reg("fded2446731e4079bf26b1262ab1d2d2"),
                 icon,
                 Contexts.NullPrefabLink,
-                Helpers.Create<AttackTypeChange>(a => { a.NeedsWeapon = true; a.NewType = AttackType.Touch; }),//same as DimensionStrikeBuff
-                Common.createContextWeaponTypeDamageBonus(Contexts.ValueRank, weapon_unarmed),
-                Helpers.CreateContextRankConfig(ContextRankBaseValueType.ClassLevel, ContextRankProgression.Div2, classes: monk_class.ToArray())
+                Helper.Create<AttackTypeChange>(a => { a.NeedsWeapon = true; a.NewType = AttackType.Touch; }),//same as DimensionStrikeBuff
+                HelperEA.CreateContextWeaponTypeDamageBonus(Contexts.ValueRank, weapon_unarmed),
+                HelperEA.CreateContextRankConfig(ContextRankBaseValueType.ClassLevel, ContextRankProgression.Div2, classes: monk_class.ObjToArray())
             );
             one_touch_buff.m_Flags(HiddenInUi: true);
 
-            var one_touch_ab = Helpers.CreateAbility(
+            var one_touch_ab = HelperEA.CreateAbility(
                 "OneTouchKiPower",
                 "Ki Power: One Touch",
                 "As a standard action, a monk with this power can make an unarmed strike against a foe as a touch attack. He adds 1/2 his monk level as a bonus on the damage roll. A monk must be at least 12th level before selecting this ki power.",
-                "b71a3d7b616f42908a88e4887c92f596",
+                Guid.i.Reg("b71a3d7b616f42908a88e4887c92f596"),
                 icon,
                 AbilityType.Extraordinary,
                 CommandType.Standard,
                 AbilityRange.Touch,
                 "",
                 "",
-                Helpers.CreateRunActions(
-                    Helpers.CreateApplyBuff(one_touch_buff, Contexts.Duration1Round, false, false, true, true),
-                    Helpers.Create<ContextActionMeleeAttack>())
+                HelperEA.CreateRunActions(
+                    HelperEA.CreateApplyBuff(one_touch_buff, Contexts.Duration1Round, false, false, true, true),
+                    Helper.Create<ContextActionMeleeAttack>())
             );
-            one_touch_ab.setMiscAbilityParametersTouchHarmful(false, UnitAnimationActionCastSpell.CastAnimationStyle.Special, CastAnimationStyle.CastActionSpecialAttack);
+            HelperEA.SetMiscAbilityParametersTouchHarmful(one_touch_ab, false, UnitAnimationActionCastSpell.CastAnimationStyle.Special, CastAnimationStyle.CastActionSpecialAttack);
 
-            var one_touch = Helpers.CreateFeature(
+            var one_touch = HelperEA.CreateFeature(
                 "OneTouchKiPowerFeature",
                 "Ki Power: One Touch",
                 one_touch_ab.Description,
-                "a98e18b40bfa4e5399ea52ee05efbf3a",
+                Guid.i.Reg("a98e18b40bfa4e5399ea52ee05efbf3a"),
                 icon,
                 FeatureGroup.KiPowers,
-                Helpers.PrerequisiteClassLevel(monk_class, 12),
-                Helpers.CreateAddFact(one_touch_ab)
+                HelperEA.PrerequisiteClassLevel(monk_class, 12),
+                HelperEA.CreateAddFact(one_touch_ab)
             );
             one_touch.Groups = new FeatureGroup[] { FeatureGroup.KiPowers, FeatureGroup.ScaledFistKiPowers };
 

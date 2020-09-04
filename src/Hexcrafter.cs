@@ -9,7 +9,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityModManagerNet;
-using CallOfTheWild;
 using Kingmaker;
 using Kingmaker.Enums;
 using Kingmaker.Blueprints;
@@ -40,6 +39,7 @@ using static Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCas
 using Guid = FumisCodex.GuidManager;
 using Kingmaker.UnitLogic.Abilities.Components.Base;
 using Kingmaker.ElementsSystem;
+using CallOfTheWild;
 
 namespace FumisCodex
 {
@@ -73,14 +73,14 @@ namespace FumisCodex
 
         public static void createHexcrafter()
         {
-            archetype = Helpers.Create<BlueprintArchetype>(a =>
+            archetype = Helper.Create<BlueprintArchetype>(a =>
             {
                 a.name = "HexcrafterArchetype";
-                a.LocalizedName = Helpers.CreateString($"{a.name}.Name", "Hexcrafter");
-                a.LocalizedDescription = Helpers.CreateString($"{a.name}.Description", "A hexcrafter magus has uncovered the secret of using his arcane pool to recreate witch hexes. These magi can hex friend and foe, curse those they strike, and expand their spell selection to include many curses and harmful spells.");
+                a.LocalizedName = HelperEA.CreateString($"{a.name}.Name", "Hexcrafter");
+                a.LocalizedDescription = HelperEA.CreateString($"{a.name}.Description", "A hexcrafter magus has uncovered the secret of using his arcane pool to recreate witch hexes. These magi can hex friend and foe, curse those they strike, and expand their spell selection to include many curses and harmful spells.");
             });
 
-            Helpers.SetField(archetype, "m_ParentClass", magus);
+            Access.set_ParentClass(archetype, magus);
             library.AddAsset(archetype, Guid.i.Reg("d8c2c968311942d19df6e352a97d8428"));
 
             //hex_engine = new HexEngine(new BlueprintCharacterClass[] { magus }, StatType.Intelligence, StatType.Charisma, archetype);
@@ -93,27 +93,31 @@ namespace FumisCodex
             // add curse spells to spellbook
             //var spell_search = library.GetAllBlueprints().OfType<BlueprintAbility>().Where(b => b.IsSpell && (b.SpellDescriptor & SpellDescriptor.Curse) != 0).ToArray(); //.Cast<BlueprintAbility>().ToArray()
             spellbook = library.CopyAndAdd<BlueprintSpellbook>(magus.Spellbook, "HexcrafterSpellbook", Guid.i.Reg("5d0c1159252d4f38962103f83b7e2483"));
-            spellbook.SpellList = spellbook.SpellList.CreateCopy();   //Common.combineSpellLists("HexcrafterSpellList", spellbook.SpellList);
+            spellbook.SpellList = Helper.Instantiate(spellbook.SpellList);   //Common.combineSpellLists("HexcrafterSpellList", spellbook.SpellList);
             library.Get<BlueprintAbility>("989ab5c44240907489aba0a8568d0603").AddToSpellList(spellbook.SpellList, 3);    //BestowCurse
+
+            NewSpells.accursed_glare.AddToSpellList(spellbook.SpellList, 3);    //Accursed Glare
+            NewSpells.curse_major.AddToSpellList(spellbook.SpellList, 5);    //Bestow Curse, Major
+
             archetype.ReplaceSpellbook = spellbook;
 
             var spell_recall = library.Get<BlueprintFeature>("61fc0521e9992624e9c518060bf89c0f");
             var improved_spell_recall = library.Get<BlueprintFeature>("0ef6ec1c2fdfc204fbd3bff9f1609490");
 
             archetype.RemoveFeatures = new LevelEntry[] {
-                Helpers.LevelEntry(4, spell_recall),
-                Helpers.LevelEntry(11, improved_spell_recall)
+                HelperEA.LevelEntry(4, spell_recall),
+                HelperEA.LevelEntry(11, improved_spell_recall)
             };
 
             archetype.AddFeatures = new LevelEntry[] {
-                Helpers.LevelEntry(1, hexcrafter_spells, arcana_hexes),
-                Helpers.LevelEntry(4, extra_hex),
-                Helpers.LevelEntry(11, spell_recall)
+                HelperEA.LevelEntry(1, hexcrafter_spells, arcana_hexes),
+                HelperEA.LevelEntry(4, extra_hex),
+                HelperEA.LevelEntry(11, spell_recall)
             };
 
-            magus.Progression.UIDeterminatorsGroup = magus.Progression.UIDeterminatorsGroup.AddToArray(hexcrafter_spells, arcana_hexes);
-            magus.Progression.UIGroups = magus.Progression.UIGroups.AddToArray(Helpers.CreateUIGroup(extra_hex));
-            magus.Archetypes = magus.Archetypes.AddToArray(archetype);
+            Helper.AppendAndReplace(ref magus.Progression.UIDeterminatorsGroup, hexcrafter_spells, arcana_hexes);
+            Helper.AppendAndReplace(ref magus.Progression.UIGroups, HelperEA.CreateUIGroup(extra_hex));
+            Helper.AppendAndReplace(ref magus.Archetypes, archetype);
         }
 
         // attaching to witch class of CotW; this means class levels stack with each other in regards to effective hex levels
@@ -126,9 +130,14 @@ namespace FumisCodex
             HexEngine.split_hex_feat.GetComponent<PrerequisiteClassLevel>().Group = Prerequisite.GroupType.Any;
             HexEngine.split_major_hex_feat.GetComponent<PrerequisiteClassLevel>().Group = Prerequisite.GroupType.Any;
 
-            HexEngine.accursed_hex_feat.AddComponent(Common.createPrerequisiteArchetypeLevel(magus, archetype, 1, true));
-            HexEngine.split_hex_feat.AddComponent(Common.createPrerequisiteArchetypeLevel(magus, archetype, 10, true));
-            HexEngine.split_major_hex_feat.AddComponent(Common.createPrerequisiteArchetypeLevel(magus, archetype, 18, true));
+            HexEngine.accursed_hex_feat.AddComponent(HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 1, true));
+            HexEngine.split_hex_feat.AddComponent(HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 10, true));
+            HexEngine.split_major_hex_feat.AddComponent(HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 18, true));
+
+            //fix flight prerequisite
+            Witch.flight_hex.RemoveComponents<PrerequisiteClassLevel>();
+            Witch.flight_hex.AddComponent(HelperEA.PrerequisiteClassLevel(Witch.witch_class, 5, true));
+            Witch.flight_hex.AddComponent(HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 5, true));
 
             hexes_grant.Add(Witch.animal_servant);
             hexes_grant.Add(Witch.death_curse);
@@ -164,9 +173,9 @@ namespace FumisCodex
             hexes.AddRange(hexes_major);
             hexes.AddRange(hexes_grant);
 
+            //get abilities of all hexes for other functionalities
             foreach (var feature in hexes)
             {
-                //get abilities of all hexes for other functionalities
                 foreach(var addfact in feature.GetComponents<AddFacts>())
                 {
                     foreach (var fact in addfact.Facts)
@@ -193,9 +202,12 @@ namespace FumisCodex
 
                 foreach (var rank in ranks)
                 {
-                    if (rank.m_BaseValueType() == ContextRankBaseValueType.ClassLevel)
+                    if (Access.get_BaseValueType(rank) == ContextRankBaseValueType.ClassLevel)
                     {
-                        rank.m_BaseValueType(ContextRankBaseValueType.CasterLevel);
+                        // note, this allows only for a single archetype to be defined. if multiple are required, then replace this with a CustomProperty
+                        HarmonyLib.AccessTools.Field(typeof(ContextRankConfig), "m_Class").SetValue(rank, new BlueprintCharacterClass[] { Witch.witch_class, magus });
+                        HarmonyLib.AccessTools.Field(typeof(ContextRankConfig), "Archetype").SetValue(rank, archetype);
+                        Access.set_BaseValueType(rank, ContextRankBaseValueType.MaxClassLevelWithArchetype);
                     }
 
                     //ability.ReplaceComponent<ContextRankConfig>(rank.Convert(magus.ToArray(), archetype.ToArray()));
@@ -210,12 +222,12 @@ namespace FumisCodex
 
             foreach (var feature in hexes_major)
             {
-                feature.AddComponent(Common.createPrerequisiteArchetypeLevel(magus, archetype, 12, true));
+                feature.AddComponent(HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 12, true));
             }
 
             foreach (var feature in hexes_grant)
             {
-                feature.AddComponent(Common.createPrerequisiteArchetypeLevel(magus, archetype, 18, true));
+                feature.AddComponent(HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 18, true));
             }
 
             hexes_offensive.Add("EvilEyeAC",
@@ -260,25 +272,36 @@ namespace FumisCodex
 
             var baleful = library.Get<BlueprintAbility>("3105d6e9febdc3f41a08d2b7dda1fe74");//BalefulPolymorph
             var baleful_touch = library.CopyAndAdd(baleful, "BalefulPolymorphCast", Guid.i.Reg("32e0d31f45484a64b78bea82f80d42af"));
-            baleful.AddComponent(Helpers.CreateDeliverTouch());
+            baleful.AddComponent(HelperEA.CreateDeliverTouch());
             baleful_touch.Range = AbilityRange.Touch;
             baleful_touch.Animation = CastAnimationStyle.Touch;
-            baleful_touch.ReplaceComponent<AbilityEffectRunAction>(Helpers.CreateStickyTouch(baleful));
+            baleful_touch.ReplaceComponent<AbilityEffectRunAction>(HelperEA.CreateStickyTouch(baleful));
             baleful_touch.RemoveComponents<AbilitySpawnFx>();
 
-            var bonus_spelllist = new Common.ExtraSpellList(new Common.SpellId("32e0d31f45484a64b78bea82f80d42af", 5)).createLearnSpellList("MagusBonusSpellList", Guid.i.Reg("d1797a72a3c843459be0c44d22aa7296"), magus, archetype);
+            NewSpells.accursed_glare.AddComponent(HelperEA.CreateDeliverTouch());
+            var accursed_glare_touch = library.CopyAndAdd(NewSpells.accursed_glare, "AccursedGlareCast", Guid.i.Reg("419f9b711f4f47baa3844f8cbe8eac86"));
+            accursed_glare_touch.Range = AbilityRange.Touch;
+            accursed_glare_touch.Animation = CastAnimationStyle.Touch;
+            accursed_glare_touch.ReplaceComponent<AbilityEffectRunAction>(HelperEA.CreateStickyTouch(accursed_glare_touch));
+            accursed_glare_touch.RemoveComponents<AbilitySpawnFx>();
+
+            var bonus_spelllist = new ExtraSpellList(
+                    new ExtraSpellList.SpellId(baleful_touch.AssetGuid, 5),
+                    new ExtraSpellList.SpellId(accursed_glare_touch.AssetGuid, 3)
+                ).createLearnSpellList("MagusBonusSpellList", Guid.i.Reg("d1797a72a3c843459be0c44d22aa7296"), magus, archetype);
 
             int i = 0;
             accursed_strike_variants = new BlueprintAbility[hexes_offensive.Count];
             foreach (var hex in hexes_offensive)
             {
                 accursed_strike_variants[i] = hex.Value.CreateTouchSpellCast();
+                accursed_strike_variants[i].ActionType = CommandType.Standard;
                 accursed_strike_variants[i++].AddComponent(Helper.CreateAbilityShowIfCasterHasAnyFacts(hex.Value.Parent ? hex.Value.Parent : hex.Value));
-                hex.Value.AddComponent(Helpers.CreateDeliverTouch());
+                hex.Value.AddComponent(HelperEA.CreateDeliverTouch());
 
-                //hex.Value.AddComponent(Helpers.CreateDeliverTouch());
+                //hex.Value.AddComponent(HelperEA.CreateDeliverTouch());
                 //string name = "AccursedStrike"+hex.Key+"Ability";
-                //accursed_strike_variants[i] = Helpers.CreateAbility(
+                //accursed_strike_variants[i] = HelperEA.CreateAbility(
                 //    name,
                 //    "Accursed Strike: "+hex.Value.GetName(),
                 //    hex.Value.Description,
@@ -289,13 +312,13 @@ namespace FumisCodex
                 //    AbilityRange.Touch,
                 //    hex.Value.LocalizedDuration,
                 //    hex.Value.LocalizedSavingThrow,
-                //    Helpers.CreateStickyTouch(hex.Value),
+                //    HelperEA.CreateStickyTouch(hex.Value),
                 //    Helper.CreateAbilityShowIfCasterHasAnyFacts(hex.Value.Parent ? hex.Value.Parent : hex.Value)
                 //);
                 //accursed_strike_variants[i++].setMiscAbilityParametersTouchHarmful();
             }
 
-            var accursed_strike_ab = Helpers.CreateAbility(
+            var accursed_strike_ab = HelperEA.CreateAbility(
                 "AccursedStrikeAbility",
                 "Accursed Strike",
                 "Any prepared spell or hex with the curse descriptor can be delivered using the spellstrike ability, even if the spells are not touch attack spells.",
@@ -307,18 +330,18 @@ namespace FumisCodex
                 "",
                 ""
             );
-            accursed_strike_ab.setMiscAbilityParametersTouchHarmful();
-            accursed_strike_ab.SetComponents(Helpers.CreateAbilityVariants(accursed_strike_ab, accursed_strike_variants));
+            HelperEA.SetMiscAbilityParametersTouchHarmful(accursed_strike_ab);
+            accursed_strike_ab.SetComponents(HelperEA.CreateAbilityVariants(accursed_strike_ab, accursed_strike_variants));
 
-            accursed_strike = Helpers.CreateFeature(
+            accursed_strike = HelperEA.CreateFeature(
                 "AccursedStrikeFeature",
                 "Accursed Strike",
                 "Any prepared spell or hex with the curse descriptor can be delivered using the spellstrike ability, even if the spells are not touch attack spells.",
                 Guid.i.Reg("842537d10e1a47e7-a87d050613b6e85b"),
                 accursed_strike_variants[0].Icon,
                 FeatureGroup.None,
-                Common.createPrerequisiteArchetypeLevel(magus, archetype, 1, true),
-                Helpers.CreateAddFact(accursed_strike_ab),
+                HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 1, true),
+                HelperEA.CreateAddFact(accursed_strike_ab),
                 bonus_spelllist
             );
 
@@ -329,7 +352,7 @@ namespace FumisCodex
         // adds hexes to arcana selection
         static void createHexArcana()   //after attachHexes()
         {
-            hex_arcana_selection = Helpers.CreateFeatureSelection(
+            hex_arcana_selection = HelperEA.CreateFeatureSelection(
                 "HexArcanaFeat",
                 "Hex Arcana",
                 "You gain one hex. You must meet the prerequisites for this hex.\n"
@@ -352,13 +375,13 @@ namespace FumisCodex
             hex_arcana_feat.Groups = new FeatureGroup[] { FeatureGroup.None };
             //hex_arcana_feat.AddComponent(archetype.CreatePrerequisite(1, true));
             
-            magus_arcana_selection.AllFeatures = magus_arcana_selection.AllFeatures.AddToArray(hex_arcana_feat);
+            Helper.AppendAndReplace(ref magus_arcana_selection.AllFeatures, hex_arcana_feat);
         }
 
         // makes features, mostly cosmetic
         static void createClassFeatures()   //after createHexArcana()
         {
-            hexcrafter_spells = Helpers.CreateFeature(
+            hexcrafter_spells = HelperEA.CreateFeature(
                 "ExtendSpellListHexcrafter",
                 "Spells",
                 "A hexcrafter magus adds the following spells to his magus spell list: bestow curse, major curse, and all other spells of 6th level or lower that have the curse descriptor.",
@@ -367,7 +390,7 @@ namespace FumisCodex
                 FeatureGroup.None
             );
 
-            arcana_hexes = Helpers.CreateFeature(
+            arcana_hexes = HelperEA.CreateFeature(
                 "HexArcanaFeature",
                 "Hex Arcana",
                 "The hexcrafter may select any witch hex in place of a magus arcana. He gains the benefit of or uses that hex as if he were a witch of a level equal to his magus level. At 12th level, the hexcrafter may select a hex or major hex in place of a magus arcana. At 18th level, a hexcrafter can select a hex, major hex, or grand hex in place of a magus arcana.",
@@ -376,7 +399,7 @@ namespace FumisCodex
                 FeatureGroup.None
             );
 
-            extra_hex = Helpers.CreateFeatureSelection(
+            extra_hex = HelperEA.CreateFeatureSelection(
                 "ExtraHexArcanaFeature",
                 "Hex Magus",
                 "At 4th level, the hexcrafter magus picks one hex from the witch’s hex class feature. This feature replaces spell recall.",
@@ -391,7 +414,7 @@ namespace FumisCodex
 
         public static void createExtraArcanaFeat()  //after createHexcrafter() 
         {
-            var extra_arcana_feat_selection = Helpers.CreateFeatureSelection(
+            var extra_arcana_feat_selection = HelperEA.CreateFeatureSelection(
                 "ExtraArcanaFeat",
                 "Extra Arcana",
                 "You gain one additional magus arcana. You must meet all the prerequisites for this magus arcana.\n"
@@ -399,13 +422,13 @@ namespace FumisCodex
                 Guid.i.Reg("dbc7e543d8044952975f53f34310cee0"),
                 library.Get<BlueprintFeature>("42f96fc8d6c80784194262e51b0a1d25").Icon, //ExtraArcanePool.Icon
                 FeatureGroup.Feat,
-                magus.PrerequisiteClassLevel(1, true)
+                HelperEA.PrerequisiteClassLevel(magus, 1, true)
             );
             extra_arcana_feat_selection.AllFeatures = magus_arcana_selection.AllFeatures;
             extra_arcana_feat = extra_arcana_feat_selection;
             extra_arcana_feat.Ranks = 10;
             extra_arcana_feat.Groups = new FeatureGroup[] { FeatureGroup.Feat };
-            library.AddFeats(extra_arcana_feat);
+            HelperEA.AddFeats(library, extra_arcana_feat);
         }
 
         // known issues:
@@ -423,23 +446,24 @@ namespace FumisCodex
             foreach (var hex in hexes_offensive)
             {
                 string name = "HexStrike"+hex.Key+"OwnerBuff";
-                var buff = Helpers.CreateBuff(
+                var buff = HelperEA.CreateBuff(
                     name,
-                    "Hex Strike: "+hex.Value.GetName(),
+                    "Hex Strike: " + hex.Value.Name,
                     hex.Value.Description,
                     Guid.i.Get(name),
                     hex.Value.Icon,
                     Contexts.NullPrefabLink, 
-                    Common.createAddInitiatorAttackWithWeaponTriggerWithCategory(Helpers.CreateActionList(Helpers.CreateConditional(
-                        Helpers.Create<ContextConditionCanTarget>(), new GameAction[] { 
+                    HelperEA.CreateAddInitiatorAttackWithWeaponTriggerWithCategory(Helper.CreateActionList(HelperEA.CreateConditional(
+                        Helper.Create<ContextConditionCanTarget>().ObjToArray(),
+                        ifTrue: new GameAction[] { 
                             Helper.CreateContextActionCastSpell(hex.Value), 
                             Helper.CreateContextActionRemoveSelf() })))
                 );
 
                 name = "HexStrike"+hex.Key+"Ability";
-                variants[i++] = Helpers.CreateAbility(
+                variants[i++] = HelperEA.CreateAbility(
                     name,
-                    "Hex Strike: "+hex.Value.GetName(),
+                    "Hex Strike: " + hex.Value.Name,
                     hex.Value.Description,
                     Guid.i.Get(name),
                     hex.Value.Icon,
@@ -448,16 +472,16 @@ namespace FumisCodex
                     AbilityRange.Personal,
                     hex.Value.LocalizedDuration,
                     hex.Value.LocalizedSavingThrow,
-                    Helpers.CreateRunActions(Helpers.CreateApplyBuff(buff, Contexts.Duration1Round, false, false, true, permanent: false)),
+                    HelperEA.CreateRunActions(HelperEA.CreateApplyBuff(buff, Contexts.Duration1Round, false, false, true, permanent: false)),
                     Helper.CreateAbilityCasterHasNoFacts(buff),
                     Helper.CreateAbilityShowIfCasterHasAnyFacts(hex.Value.Parent ? hex.Value.Parent : hex.Value)
                 );
             }
             
-            var hexstrike_ab = Helpers.CreateAbility(
+            var hexstrike_ab = HelperEA.CreateAbility(
                 "HexStrikeAbility",
                 "Hex Strike",
-                "Choose one hex that you can use to affect no more than one opponent. If you make a successful unarmed strike against an opponent, in addition to dealing your unarmed strike damage, you can use a swift action to deliver the effects of the chosen hex to that opponent. Doing so does not provoke attacks of opportunity.",
+                "(Fumi's Codex Variant. You may want to use CallOfTheWild ones instead.\nChoose one hex that you can use to affect no more than one opponent. If you make a successful unarmed strike against an opponent, in addition to dealing your unarmed strike damage, you can use a swift action to deliver the effects of the chosen hex to that opponent. Doing so does not provoke attacks of opportunity.",
                 Guid.i.Reg("12d204e3a92c49048b2408ed1c2d8c94"),
                 variants[0].Icon,
                 AbilityType.Supernatural,
@@ -466,22 +490,22 @@ namespace FumisCodex
                 "",
                 ""
             );
-            hexstrike_ab.SetComponents(Helpers.CreateAbilityVariants(hexstrike_ab, variants));
+            hexstrike_ab.SetComponents(HelperEA.CreateAbilityVariants(hexstrike_ab, variants));
 
-            hexstrike_feat = Helpers.CreateFeature(
+            hexstrike_feat = HelperEA.CreateFeature(
                 "HexStrikeFeature",
                 "Hex Strike",
                 hexstrike_ab.Description,
                 Guid.i.Reg("ce4ddca6abc04990a5ee6f24ac2d0cad"),
                 variants[0].Icon,
                 FeatureGroup.Feat,
-                Helpers.CreateAddFact(hexstrike_ab),
-                Helpers.PrerequisiteFeature(library.Get<BlueprintFeature>("7812ad3672a4b9a4fb894ea402095167")),//ImprovedUnarmedStrike
-                Helpers.PrerequisiteClassLevel(Witch.witch_class, 1, true),
-                Common.createPrerequisiteArchetypeLevel(magus, archetype, 1, true)
+                HelperEA.CreateAddFact(hexstrike_ab),
+                HelperEA.PrerequisiteFeature(library.Get<BlueprintFeature>("7812ad3672a4b9a4fb894ea402095167")),//ImprovedUnarmedStrike
+                HelperEA.PrerequisiteClassLevel(Witch.witch_class, 1, true),
+                HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 1, true)
             );
             Helper.AppendAndReplace(ref hexstrike_feat.Groups, FeatureGroup.CombatFeat);
-            library.AddCombatFeats(hexstrike_feat);
+            HelperEA.AddCombatFeats(library, hexstrike_feat);
         }
 
         #region Patches

@@ -11,7 +11,6 @@ using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.Blueprints.Facts;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.Blueprints;
-using CallOfTheWild;
 using Kingmaker.UnitLogic;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.UnitLogic.Class.LevelUp.Actions;

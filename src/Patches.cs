@@ -164,7 +164,7 @@ namespace FumisCodex
             static IEnumerable<HarmonyLib.CodeInstruction> Transpiler(IEnumerable<HarmonyLib.CodeInstruction> instr)
             {
                 List<HarmonyLib.CodeInstruction> list = instr.ToList();
-                MethodInfo original = HarmonyLib.AccessTools.Method(typeof(Fact), nameof(Fact.Get), null, typeof(ActivatableAbilityUnitCommand).ToArray());
+                MethodInfo original = HarmonyLib.AccessTools.Method(typeof(Fact), nameof(Fact.Get), null, typeof(ActivatableAbilityUnitCommand).ObjToArray());
                 MethodInfo replacement = typeof(ActivatableAbility_OnTurnOnPatch).GetMethod(nameof(NullReplacement), BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); //HarmonyLib.AccessTools.Method(typeof(ActivatableAbility_OnTurnOnPatch), nameof(NullReplacement));
                 
                 for (int i = 0; i < list.Count; i++)

@@ -102,7 +102,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="COM.cs" />
     <Compile Include="CotW.cs" />
+    <Compile Include="External\BleedMechanics.cs" />
+    <Compile Include="External\NewMechanics.cs" />
     <Compile Include="Fixes.cs" />
     <Compile Include="GuidManager.cs" />
     <Compile Include="Helper.cs" />

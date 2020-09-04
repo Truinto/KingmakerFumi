@@ -35,7 +35,7 @@ namespace FumisCodex.NewComponents
             {
                     this.m_LastUseTime = Game.Instance.TimeController.GameTime;
                     Rulebook.Trigger<RuleAttackWithWeapon>(new RuleAttackWithWeapon(evt.Initiator, evt.Target, evt.Weapon, 0));
-                    Rulebook.Trigger<RuleAttackWithWeapon>(new RuleAttackWithWeapon(evt.Initiator, evt.Target, evt.Weapon, 0));
+                    //Rulebook.Trigger<RuleAttackWithWeapon>(new RuleAttackWithWeapon(evt.Initiator, evt.Target, evt.Weapon, 0));
             }
         }
     }

@@ -6,7 +6,11 @@ namespace FumisCodex
     public class Settings
     {
         [JsonProperty]
-        public int version = 5;
+        public int version = 7;
+
+        [JsonProperty]
+        public string CallOfTheWild = "ON"; // "ON" or "OFF" or "auto"
+
         [JsonProperty]
         public bool slumberHDrestriction = false;
         [JsonProperty]
@@ -29,7 +33,7 @@ namespace FumisCodex
         public bool cheatCombineParametrizedFeats = false;
         
         [JsonProperty]
-        public bool debugEnsureGuids = false;
+        public bool debugEnsureGuids = true;
 
         public static Config.Manager<Settings> StateManager = new Config.Manager<Settings>(Path.Combine(Main.ModPath, "settings.json"));
     }

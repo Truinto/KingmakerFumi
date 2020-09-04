@@ -1,25 +1,23 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Reflection;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using UnityModManagerNet;
-using Kingmaker;
 using Kingmaker.Blueprints;
-using Kingmaker.Blueprints.Classes;
-using Kingmaker.UnitLogic.FactLogic;
-using Kingmaker.UnitLogic.Mechanics.Components;
-using Kingmaker.UnitLogic.Buffs.Blueprints;
-using Kingmaker.Designers.Mechanics.Buffs;
-using Kingmaker.Blueprints.Items;
 using UnityEngine;
 using Guid = FumisCodex.GuidManager;
 using Kingmaker.Utility;
 using Kingmaker.UnitLogic.ActivatableAbilities;
+using Kingmaker.Blueprints.Facts;
+using Kingmaker.Localization;
+using Kingmaker.UnitLogic.Mechanics.Components;
+using Kingmaker.Enums;
+using System.Reflection;
+using Kingmaker.Blueprints.Classes;
+using Kingmaker.UnitLogic.Mechanics.Properties;
+using Kingmaker.EntitySystem.Stats;
+using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
+using Kingmaker.Controllers.Brain.Blueprints;
+using Kingmaker.UnitLogic.Abilities.Components;
+using Kingmaker.UnitLogic.Mechanics.Actions;
 
 namespace FumisCodex
 {
@@ -27,6 +25,8 @@ namespace FumisCodex
     {
         internal static HarmonyLib.Harmony harmony;
         internal static LibraryScriptableObject library;
+
+        public static bool COTWpresent = false;
 
         /// <summary>True if mod is enabled. Doesn't do anything right now.</summary>
         internal static bool Enabled { get; set; } = true;
@@ -109,6 +109,11 @@ namespace FumisCodex
             if (Input.GetKeyDown(KeyCode.F1)) { }
         }
 
+        private static void OnSaveGUI(UnityModManager.ModEntry modEntry)
+        {
+            Settings.StateManager.TrySaveConfigurationState();
+        }
+
         #endregion
 
         #region Load
@@ -131,7 +136,8 @@ namespace FumisCodex
             logger = modEntry.Logger;
             modEntry.OnToggle = OnToggle;
             modEntry.OnGUI = OnGUI;
-
+            modEntry.OnSaveGUI = OnSaveGUI;
+            
             try
             {
                 harmony = new HarmonyLib.Harmony(modEntry.Info.Id);
@@ -186,10 +192,25 @@ namespace FumisCodex
                 if (Run) return; Run = true;
                 if (Main.library == null) Main.library = __instance;
                 if (Guid.library == null) Guid.library = __instance;
+
+                try
+                {
+                    COTWpresent = Main.CheckCOTW();
+                }
+                catch (Exception e)
+                {
+                    Main.DebugLogAlways(e.Message + "\n" + e.StackTrace);
+                    COTWpresent = false;
+                }
+
                 try
                 {
                     Main.DebugLogAlways("Loading Fumi's Codex");
-                    
+
+                    //try {
+                    //    Monk.MOMS_wildcardgroup = Main.Patch_ActivatableAbilityGroup.GetNewGroup();
+                    //} catch (Exception) { Main.DebugLogAlways("failed GetNewGroup"); }
+
                     LoadSafe(Hexcrafter.createHexcrafter);
                     LoadSafe(Hexcrafter.createExtraArcanaFeat);
                     LoadSafe(Hexcrafter.createHexStrikeFeat);
@@ -246,6 +267,24 @@ namespace FumisCodex
 
         #region Helper
 
+        public static bool CheckCOTW()
+        {
+            if (Settings.StateManager.State.CallOfTheWild == "ON")
+                return true;
+            if (Settings.StateManager.State.CallOfTheWild == "OFF")
+                return false;
+            
+            if (CallOfTheWild.Helpers.classes == null)
+            {
+            }
+            return true;
+        }
+
+        public static bool ShouldLoadBackupCOTW()
+        {
+            return Settings.StateManager.State.CallOfTheWild != "ON";
+        }
+
         public static bool LoadSafe(Action action)
         {
             try
@@ -284,14 +323,14 @@ namespace FumisCodex
             public static int ExtraGroups = 0;
             public static bool GameAlreadyRunning = false;
 
-            ///<summary>Calls this to register a new group. Returns your new enum.</summar>
+            ///<summary>Calls this to register a new group. Returns your new enum.</summary>
             public static ActivatableAbilityGroup GetNewGroup()
             {
                 if (GameAlreadyRunning)
                     return 0;
                 
                 ExtraGroups++;
-                return (ActivatableAbilityGroup) (Enum.GetValues(typeof(ActivatableAbilityGroup)).Cast<int>().Max() + 1 + ExtraGroups);
+                return (ActivatableAbilityGroup) (Enum.GetValues(typeof(ActivatableAbilityGroup)).Cast<int>().Max() + ExtraGroups);
             }
 
             public static void Postfix(ref int __result)

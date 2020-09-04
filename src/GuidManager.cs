@@ -2,9 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using CallOfTheWild;
 using UnityEngine;
 using Kingmaker.Blueprints.Facts;
+using Kingmaker.UnitLogic.Abilities.Blueprints;
+using Kingmaker.UnitLogic.Commands.Base;
+using Kingmaker.Blueprints.Classes;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
+using Kingmaker.UnitLogic.ActivatableAbilities;
 
 namespace FumisCodex
 {
@@ -143,12 +147,63 @@ namespace FumisCodex
                         if (obj == null)
                         {
                             Main.DebugLogAlways(items[1]+" not found");
-                            //obj = (BlueprintScriptableObject)ScriptableObject.CreateInstance(Type.GetType(items[3]) ?? typeof(BlueprintScriptableObject));
-                            obj = ScriptableObject.CreateInstance<BlueprintScriptableObject>();
-                            obj.name = items[0];
-                            library.AddAsset(obj, items[1]);
+                            obj = (BlueprintScriptableObject)ScriptableObject.CreateInstance(Type.GetType(items[3]) ?? typeof(BlueprintScriptableObject));
+
+                            if (items[3].EndsWith("BlueprintAbility"))
+                                obj = HelperEA.CreateAbility(items[0], "NULL", "NULL", items[1], null, AbilityType.Extraordinary, UnitCommand.CommandType.Standard, AbilityRange.Personal, "", "");
+                            else if (items[3].EndsWith("BlueprintBuff"))
+                                obj = HelperEA.CreateBuff(items[0], "NULL", "NULL", items[1], null, Contexts.NullPrefabLink);
+                            else if (items[3].EndsWith("BlueprintFeature"))
+                                obj = HelperEA.CreateFeature(items[0], "NULL", "NULL", items[1], null, FeatureGroup.None);
+                            else if (items[3].EndsWith("BlueprintFeatureSelection"))
+                                obj = HelperEA.CreateFeatureSelection(items[0], "NULL", "NULL", items[1], null, FeatureGroup.None);
+                            else if (items[3].EndsWith("BlueprintActivatableAbility"))
+                                obj = HelperEA.CreateActivatableAbility(items[0], "NULL", "NULL", items[1], null, library.Get<BlueprintBuff>("5898bcf75a0942449a5dc16adc97b279"), AbilityActivationType.Immediately, UnitCommand.CommandType.Standard, null);
+                            else if (items[3].EndsWith("BlueprintAbilityAreaEffect"))
+                                obj = Helper.CreateBlueprintAbilityAreaEffect(items[0], items[1]);
+                            else if (items[3].EndsWith("BlueprintSummonPool"))
+                            {
+                                obj = Helper.Create<BlueprintSummonPool>();
+                                obj.name = items[0];
+                                obj.AssetGuid = items[1];
+                                HelperEA.AddAsset(library, obj, items[1]);
+                            }
+                            else if (items[3].EndsWith("BlueprintUnit"))
+                            {
+                                obj = Helper.Create<Kingmaker.Blueprints.BlueprintUnit>();
+                                obj.name = items[0];
+                                obj.AssetGuid = items[1];
+                                HelperEA.AddAsset(library, obj, items[1]);
+                            }
+                            else if (items[3].EndsWith("BlueprintArchetype"))
+                            {
+                                obj = Helper.Create<Kingmaker.Blueprints.Classes.BlueprintArchetype>();
+                                obj.name = items[0];
+                                obj.AssetGuid = items[1];
+                                HelperEA.AddAsset(library, obj, items[1]);
+                            }
+                            else if (items[3].EndsWith("BlueprintSpellList"))
+                            {
+                                obj = Helper.Create<Kingmaker.Blueprints.Classes.Spells.BlueprintSpellList>();
+                                obj.name = items[0];
+                                obj.AssetGuid = items[1];
+                                HelperEA.AddAsset(library, obj, items[1]);
+                            }
+                            else if (items[3].EndsWith("BlueprintSpellbook"))
+                            {
+                                obj = Helper.Create<Kingmaker.Blueprints.Classes.Spells.BlueprintSpellbook>();
+                                obj.name = items[0];
+                                obj.AssetGuid = items[1];
+                                HelperEA.AddAsset(library, obj, items[1]);
+                            }
+                            else
+                            {
+                                obj = (BlueprintScriptableObject)ScriptableObject.CreateInstance(Type.GetType(items[3]) ?? typeof(BlueprintScriptableObject));
+                                obj.name = items[0];
+                                obj.AssetGuid = items[1];
+                                HelperEA.AddAsset(library, obj, items[1]);
+                            }
                         }
-                        
                     }
                 }
             } catch (Exception e) {

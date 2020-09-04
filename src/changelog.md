@@ -1,6 +1,30 @@
 # Changelog
 
-## upcoming [1.0.5]
+## [1.0.7-alpha]
+
+### Dev
+- NOTE: this version hasn't been tested thoroughly
+- new assemblies for game version 2.1.1
+- more internal changes
+
+## [1.0.6]
+
+### Added
+- Accursed Glare touch variant
+
+### Fixed
+- "Accursed Strike: Beast of Ill Omen" is now a standard action instead of a free action
+- fixed missing hexcrafter prerequisite to Flight hex
+- added missing "Accursed Glare" and "Major Bestow Curse" to the list of hexcrafter spells
+- fixed missing Medusa's Wrath to Scaled Fist bonus feat selection
+- fixed bug that caused inconsistencies with hexcrafter hexes (like DC or casterlevel)
+- fixed Boar Ferocity not working with Hurtful feat
+
+### Dev
+- Medusa's Warth was reported to trigger 6 instead of 2 times; reduce amount to 1 (may trigger 3 times then?) until bug is found
+- started implementation so mod may be operated without CotW (unfinished)
+
+## [1.0.5]
 
 ### Added
 - Master of Many Styles (Monk archetype)
