@@ -26,12 +26,15 @@ namespace FumisCodex
         {
             if (!enabled) return;
 
-            try {
+            try
+            {
                 foreach (string guid in guids)
                 {
                     library.Get<BlueprintAbility>(guid)?.RemoveComponents<CallOfTheWild.NewMechanics.AbilityTargetCasterHDDifference>();
                 }
-            } catch (System.Exception) {
+            }
+            catch (System.Exception)
+            {
                 Main.DebugLogAlways("Error: guids for slumber wrong.");
                 return;
             }

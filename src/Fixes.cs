@@ -17,7 +17,7 @@ namespace FumisCodex
         public static void fixShamblingMoundGrapple()
         {
             var grapple_self = Main.library.Get<BlueprintBuff>("fde59ce17ec392e46a33420219e85b23");//ShamblingMoundGrappledCantAttack
-            Access.set_Description(grapple_self, HelperEA.CreateString(grapple_self.name + ".Description", "A shambling mound can not move while grappling the foe."));
+            Access.m_DescriptionStr(grapple_self, "A shambling mound can not move while grappling the foe.");
             grapple_self.SetComponents(Array.Empty<BlueprintComponent>());
         }
 

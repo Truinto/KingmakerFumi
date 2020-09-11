@@ -44,6 +44,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
+using static HarmonyLib.AccessTools;
 
 namespace FumisCodex
 {
@@ -169,97 +170,47 @@ namespace FumisCodex
 
     public class Access
     {
-        public static void set_DescriptionStr(BlueprintUnitFact f, string str)
+
+        public static readonly FieldRef<BlueprintUnitFact, LocalizedString> m_DisplayName = FieldRefAccess<BlueprintUnitFact, LocalizedString>("m_DisplayName");
+        public static void m_DisplayNameStr(BlueprintUnitFact f, string str)
         {
-            set_Description(f, HelperEA.CreateString(f.Name + ".Description", str));
+            m_DisplayName(f) = HelperEA.CreateString(f.name + ".DisplayName", str);
         }
-
-        public static readonly HarmonyLib.GetterHandler<BlueprintUnitFact, LocalizedString> get_DisplayName = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintUnitFact, LocalizedString>(typeof(BlueprintUnitFact).GetField("m_DisplayName", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<BlueprintUnitFact, LocalizedString> set_DisplayName = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintUnitFact, LocalizedString>(typeof(BlueprintUnitFact).GetField("m_DisplayName", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<BlueprintUnitFact, LocalizedString> get_Description = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintUnitFact, LocalizedString>(typeof(BlueprintUnitFact).GetField("m_Description", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<BlueprintUnitFact, LocalizedString> set_Description = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintUnitFact, LocalizedString>(typeof(BlueprintUnitFact).GetField("m_Description", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<BlueprintUnitFact, Sprite> get_Icon = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintUnitFact, Sprite>(typeof(BlueprintUnitFact).GetField("m_Icon", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<BlueprintUnitFact, Sprite> set_Icon = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintUnitFact, Sprite>(typeof(BlueprintUnitFact).GetField("m_Icon", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<LocalizedString, string> get_LocalizedString_Key = HarmonyLib.FastAccess.CreateGetterHandler<LocalizedString, string>(typeof(LocalizedString).GetField("m_Key", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<LocalizedString, string> set_LocalizedString_Key = HarmonyLib.FastAccess.CreateSetterHandler<LocalizedString, string>(typeof(LocalizedString).GetField("m_Key", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, ContextRankBaseValueType> get_BaseValueType = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, ContextRankBaseValueType>(typeof(ContextRankConfig).GetField("m_BaseValueType", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, ContextRankBaseValueType> set_BaseValueType = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, ContextRankBaseValueType>(typeof(ContextRankConfig).GetField("m_BaseValueType", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, AbilityRankType> get_Type = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, AbilityRankType>(typeof(ContextRankConfig).GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, AbilityRankType> set_Type = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, AbilityRankType>(typeof(ContextRankConfig).GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, ContextRankProgression> get_Progression = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, ContextRankProgression>(typeof(ContextRankConfig).GetField("m_Progression", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, ContextRankProgression> set_Progression = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, ContextRankProgression>(typeof(ContextRankConfig).GetField("m_Progression", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, bool> get_UseMin = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_UseMin", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, bool> set_UseMin = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_UseMin", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, int> get_Min = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_Min", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, int> set_Min = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_Min", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, bool> get_UseMax = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_UseMax", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, bool> set_UseMax = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_UseMax", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, int> get_Max = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_Max", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, int> set_Max = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_Max", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, int> get_StartLevel = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_StartLevel", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, int> set_StartLevel = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_StartLevel", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, int> get_StepLevel = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_StepLevel", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, int> set_StepLevel = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, int>(typeof(ContextRankConfig).GetField("m_StepLevel", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintFeature> get_Feature = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintFeature>(typeof(ContextRankConfig).GetField("m_Feature", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintFeature> set_Feature = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintFeature>(typeof(ContextRankConfig).GetField("m_Feature", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, bool> get_ExceptClasses = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_ExceptClasses", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, bool> set_ExceptClasses = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, bool>(typeof(ContextRankConfig).GetField("m_ExceptClasses", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintUnitProperty> get_CustomProperty = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintUnitProperty>(typeof(ContextRankConfig).GetField("m_CustomProperty", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintUnitProperty> set_CustomProperty = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintUnitProperty>(typeof(ContextRankConfig).GetField("m_CustomProperty", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, StatType> get_Stat = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, StatType>(typeof(ContextRankConfig).GetField("m_Stat", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, StatType> set_Stat = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, StatType>(typeof(ContextRankConfig).GetField("m_Stat", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintCharacterClass[]> get_Class = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintCharacterClass[]>(typeof(ContextRankConfig).GetField("m_Class", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintCharacterClass[]> set_Class = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintCharacterClass[]>(typeof(ContextRankConfig).GetField("m_Class", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintArchetype> get_Archetype = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintArchetype>(typeof(ContextRankConfig).GetField("Archetype", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintArchetype> set_Archetype = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintArchetype>(typeof(ContextRankConfig).GetField("Archetype", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, BlueprintFeature[]> get_FeatureList = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, BlueprintFeature[]>(typeof(ContextRankConfig).GetField("m_FeatureList", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, BlueprintFeature[]> set_FeatureList = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, BlueprintFeature[]>(typeof(ContextRankConfig).GetField("m_FeatureList", BindingFlags.NonPublic | BindingFlags.Instance));
-
+        public static readonly FieldRef<BlueprintUnitFact, LocalizedString> m_Description = FieldRefAccess<BlueprintUnitFact, LocalizedString>("m_Description");
+        public static void m_DescriptionStr(BlueprintUnitFact f, string str)
+        {
+            m_Description(f) = HelperEA.CreateString(f.name + ".Description", str);
+        }
+        public static readonly FieldRef<BlueprintUnitFact, Sprite> m_Icon = FieldRefAccess<BlueprintUnitFact, Sprite>("m_Icon");
+        public static readonly FieldRef<LocalizedString, string> m_Key = FieldRefAccess<LocalizedString, string>("m_Key");
+        public static readonly FieldRef<ContextRankConfig, ContextRankBaseValueType> m_BaseValueType = FieldRefAccess<ContextRankConfig, ContextRankBaseValueType>("m_BaseValueType");
+        public static readonly FieldRef<ContextRankConfig, AbilityRankType> m_Type_ContextRankConfig = FieldRefAccess<ContextRankConfig, AbilityRankType>("m_Type");
+        public static readonly FieldRef<ContextRankConfig, ContextRankProgression> m_Progression = FieldRefAccess<ContextRankConfig, ContextRankProgression>("m_Progression");
+        public static readonly FieldRef<ContextRankConfig, bool> m_UseMin = FieldRefAccess<ContextRankConfig, bool>("m_UseMin");
+        public static readonly FieldRef<ContextRankConfig, int> m_Min = FieldRefAccess<ContextRankConfig, int>("m_Min");
+        public static readonly FieldRef<ContextRankConfig, bool> m_UseMax = FieldRefAccess<ContextRankConfig, bool>("m_UseMax");
+        public static readonly FieldRef<ContextRankConfig, int> m_Max = FieldRefAccess<ContextRankConfig, int>("m_Max");
+        public static readonly FieldRef<ContextRankConfig, int> m_StartLevel = FieldRefAccess<ContextRankConfig, int>("m_StartLevel");
+        public static readonly FieldRef<ContextRankConfig, int> m_StepLevel = FieldRefAccess<ContextRankConfig, int>("m_StepLevel");
+        public static readonly FieldRef<ContextRankConfig, BlueprintFeature> m_Feature = FieldRefAccess<ContextRankConfig, BlueprintFeature>("m_Feature");
+        public static readonly FieldRef<ContextRankConfig, bool> m_ExceptClasses = FieldRefAccess<ContextRankConfig, bool>("m_ExceptClasses");
+        public static readonly FieldRef<ContextRankConfig, BlueprintUnitProperty> m_CustomProperty = FieldRefAccess<ContextRankConfig, BlueprintUnitProperty>("m_CustomProperty");
+        public static readonly FieldRef<ContextRankConfig, StatType> m_Stat = FieldRefAccess<ContextRankConfig, StatType>("m_Stat");
+        public static readonly FieldRef<ContextRankConfig, BlueprintCharacterClass[]> m_Class = FieldRefAccess<ContextRankConfig, BlueprintCharacterClass[]>("m_Class");
+        public static readonly FieldRef<ContextRankConfig, BlueprintArchetype> Archetype = FieldRefAccess<ContextRankConfig, BlueprintArchetype>("Archetype");
+        public static readonly FieldRef<ContextRankConfig, BlueprintFeature[]> m_FeatureList = FieldRefAccess<ContextRankConfig, BlueprintFeature[]>("m_FeatureList");
         public static readonly Type typeof_CustomProgressionItem = typeof(ContextRankConfig).GetNestedType("CustomProgressionItem", BindingFlags.NonPublic);
+        //public static readonly FieldRef<object, int> BaseValue = FieldRefAccess<object, int>("BaseValue");
+        //public static readonly FieldRef<object, int> ProgressionValue = FieldRefAccess<object, int>("ProgressionValue");
+        public static readonly FieldRef<ContextRankConfig, object> m_CustomProgression = FieldRefAccess<ContextRankConfig, object>("m_CustomProgression");
+        public static readonly FieldRef<BlueprintActivatableAbility, CommandType> m_ActivateWithUnitCommand = FieldRefAccess<BlueprintActivatableAbility, CommandType>("m_ActivateWithUnitCommand");
+        public static readonly FieldRef<BlueprintArchetype, BlueprintCharacterClass> m_ParentClass = FieldRefAccess<BlueprintArchetype, BlueprintCharacterClass>("m_ParentClass");
+        //public static readonly FieldRef<ContextActionDealDamage, int> m_Type_ContextActionDealDamage = FieldRefAccess<ContextActionDealDamage, int>("m_Type");
+        public static readonly FieldRef<AbilityAoERadius, Feet> m_Radius = FieldRefAccess<AbilityAoERadius, Feet>("m_Radius");
+        public static readonly FieldRef<AbilityAoERadius, TargetType> m_TargetType = FieldRefAccess<AbilityAoERadius, TargetType>("m_TargetType");
+        public static readonly FieldRef<BlueprintScriptableObject, string> m_AssetGuid = FieldRefAccess<BlueprintScriptableObject, string>("m_AssetGuid");
 
-        public static readonly HarmonyLib.GetterHandler<object, int> get_BaseValue = HarmonyLib.FastAccess.CreateGetterHandler<object, int>(typeof_CustomProgressionItem.GetField("BaseValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<object, int> set_BaseValue = HarmonyLib.FastAccess.CreateSetterHandler<object, int>(typeof_CustomProgressionItem.GetField("BaseValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<object, int> get_ProgressionValue = HarmonyLib.FastAccess.CreateGetterHandler<object, int>(typeof_CustomProgressionItem.GetField("ProgressionValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<object, int> set_ProgressionValue = HarmonyLib.FastAccess.CreateSetterHandler<object, int>(typeof_CustomProgressionItem.GetField("ProgressionValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextRankConfig, object> get_CustomProgression = HarmonyLib.FastAccess.CreateGetterHandler<ContextRankConfig, object>(typeof(ContextRankConfig).GetField("m_CustomProgression", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextRankConfig, object> set_CustomProgression = HarmonyLib.FastAccess.CreateSetterHandler<ContextRankConfig, object>(typeof(ContextRankConfig).GetField("m_CustomProgression", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<BlueprintActivatableAbility, CommandType> get_ActivateWithUnitCommand = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintActivatableAbility, CommandType>(typeof(BlueprintActivatableAbility).GetField("m_ActivateWithUnitCommand", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<BlueprintActivatableAbility, CommandType> set_ActivateWithUnitCommand = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintActivatableAbility, CommandType>(typeof(BlueprintActivatableAbility).GetField("m_ActivateWithUnitCommand", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<BlueprintArchetype, BlueprintCharacterClass> get_ParentClass = HarmonyLib.FastAccess.CreateGetterHandler<BlueprintArchetype, BlueprintCharacterClass>(typeof(BlueprintArchetype).GetField("m_ParentClass", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<BlueprintArchetype, BlueprintCharacterClass> set_ParentClass = HarmonyLib.FastAccess.CreateSetterHandler<BlueprintArchetype, BlueprintCharacterClass>(typeof(BlueprintArchetype).GetField("m_ParentClass", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<ContextActionDealDamage, int> get_ContextActionDealDamage_Type = HarmonyLib.FastAccess.CreateGetterHandler<ContextActionDealDamage, int>(typeof(ContextActionDealDamage).GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<ContextActionDealDamage, int> set_ContextActionDealDamage_Type = HarmonyLib.FastAccess.CreateSetterHandler<ContextActionDealDamage, int>(typeof(ContextActionDealDamage).GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<AbilityAoERadius, Feet> get_Radius = HarmonyLib.FastAccess.CreateGetterHandler<AbilityAoERadius, Feet>(typeof(AbilityAoERadius).GetField("m_Radius", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<AbilityAoERadius, Feet> set_Radius = HarmonyLib.FastAccess.CreateSetterHandler<AbilityAoERadius, Feet>(typeof(AbilityAoERadius).GetField("m_Radius", BindingFlags.NonPublic | BindingFlags.Instance));
-
-        public static readonly HarmonyLib.GetterHandler<AbilityAoERadius, TargetType> get_TargetType = HarmonyLib.FastAccess.CreateGetterHandler<AbilityAoERadius, TargetType>(typeof(AbilityAoERadius).GetField("m_TargetType", BindingFlags.NonPublic | BindingFlags.Instance));
-        public static readonly HarmonyLib.SetterHandler<AbilityAoERadius, TargetType> set_TargetType = HarmonyLib.FastAccess.CreateSetterHandler<AbilityAoERadius, TargetType>(typeof(AbilityAoERadius).GetField("m_TargetType", BindingFlags.NonPublic | BindingFlags.Instance));
-
+        //public static readonly FieldRef<> m_ = FieldRefAccess<>("");
 
     }
 
@@ -320,11 +271,17 @@ namespace FumisCodex
             int index = library.GetAllBlueprints().FindIndex(a => a.AssetGuid == guid);
 
             if (index < 0)
+            {
+                Access.m_AssetGuid(blueprint) = guid;
                 library.GetAllBlueprints().Add(blueprint);
+                library.BlueprintsByAssetId[guid] = blueprint;
+            }
             else if (overwrite)
             {
                 Main.DebugLogAlways("Overwriting Asset: " + guid);
+                Access.m_AssetGuid(blueprint) = guid;
                 library.GetAllBlueprints()[index] = blueprint;
+                library.BlueprintsByAssetId[guid] = blueprint;
             }
             else
                 Main.DebugLogAlways("[Error] Duplicate Asset ID: " + guid);
@@ -493,17 +450,17 @@ namespace FumisCodex
 
         public static void SetNameDescriptionIcon(this BlueprintUnitFact feature, string displayName, string description, Sprite icon = null)
         {
-            Access.set_DisplayName(feature, CreateString(feature.name + ".Name", displayName));
-            Access.set_Description(feature, CreateString(feature.name + ".Description", description));
+            Access.m_DisplayName(feature) = CreateString(feature.name + ".Name", displayName);
+            Access.m_Description(feature) = CreateString(feature.name + ".Description", description);
             if (icon != null)
-                Access.set_Icon(feature, icon);
+                Access.m_Icon(feature) = icon;
         }
 
         public static void SetNameDescriptionIcon(this BlueprintUnitFact feature, BlueprintUnitFact feature2)
         {
-            Access.set_DisplayName(feature, CreateString(feature.name + ".Name", feature2.Name));
-            Access.set_Description(feature, CreateString(feature.name + ".Description", feature2.Description));
-            Access.set_Icon(feature, feature.Icon);
+            Access.m_DisplayName(feature) = CreateString(feature.name + ".Name", feature2.Name);
+            Access.m_Description(feature) = CreateString(feature.name + ".Description", feature2.Description);
+            Access.m_Icon(feature) = feature.Icon;
         }
 
         public static LocalizedString CreateString(string key, string value)
@@ -526,7 +483,7 @@ namespace FumisCodex
             }
             strings[key] = value;
             localized = new LocalizedString();
-            Access.set_LocalizedString_Key(localized, key);
+            Access.m_Key(localized) = key;
             textToLocalizedString[value] = localized;
             return localized;
         }
@@ -571,7 +528,7 @@ namespace FumisCodex
             ability.Buff = buff;
             ability.ResourceAssetIds = Array.Empty<string>();
             ability.ActivationType = activationType;
-            Access.set_ActivateWithUnitCommand(ability, commandType);
+            Access.m_ActivateWithUnitCommand(ability) = commandType;
             ability.SetComponents(components);
             ability.ActivateWithUnitAnimation = activateWithUnitAnimation;
             Main.library.AddAsset(ability, assetId);
@@ -581,22 +538,22 @@ namespace FumisCodex
         public static ContextRankConfig CreateContextRankConfig(ContextRankBaseValueType baseValueType = ContextRankBaseValueType.CasterLevel, ContextRankProgression progression = ContextRankProgression.AsIs, AbilityRankType type = AbilityRankType.Default, int? min = null, int? max = null, int startLevel = 0, int stepLevel = 0, bool exceptClasses = false, StatType stat = StatType.Unknown, BlueprintUnitProperty customProperty = null, BlueprintCharacterClass[] classes = null, BlueprintArchetype archetype = null, BlueprintFeature feature = null, BlueprintFeature[] featureList = null/*, (int, int)[] customProgression = null*/)
         {
             var config = Helper.Create<ContextRankConfig>();
-            Access.set_Type(config, type);
-            Access.set_BaseValueType(config, baseValueType);
-            Access.set_Progression(config, progression);
-            Access.set_UseMin(config, min.HasValue);
-            Access.set_Min(config, min.GetValueOrDefault());
-            Access.set_UseMax(config, max.HasValue);
-            Access.set_Max(config, max.GetValueOrDefault());
-            Access.set_StartLevel(config, startLevel);
-            Access.set_StepLevel(config, stepLevel);
-            Access.set_Feature(config, feature);
-            Access.set_ExceptClasses(config, exceptClasses);
-            Access.set_CustomProperty(config, customProperty);
-            Access.set_Stat(config, stat);
-            Access.set_Class(config, classes ?? Array.Empty<BlueprintCharacterClass>());
-            Access.set_Archetype(config, archetype);
-            Access.set_FeatureList(config, featureList ?? Array.Empty<BlueprintFeature>());
+            Access.m_Type_ContextRankConfig(config) = type;
+            Access.m_BaseValueType(config) = baseValueType;
+            Access.m_Progression(config) = progression;
+            Access.m_UseMin(config) = min.HasValue;
+            Access.m_Min(config) = min.GetValueOrDefault();
+            Access.m_UseMax(config) = max.HasValue;
+            Access.m_Max(config) = max.GetValueOrDefault();
+            Access.m_StartLevel(config) = startLevel;
+            Access.m_StepLevel(config) = stepLevel;
+            Access.m_Feature(config) = feature;
+            Access.m_ExceptClasses(config) = exceptClasses;
+            Access.m_CustomProperty(config) = customProperty;
+            Access.m_Stat(config) = stat;
+            Access.m_Class(config) = classes ?? Array.Empty<BlueprintCharacterClass>();
+            Access.Archetype(config) = archetype;
+            Access.m_FeatureList(config) = featureList ?? Array.Empty<BlueprintFeature>();
 
             //if (customProgression != null)
             //{
@@ -938,10 +895,10 @@ namespace FumisCodex
             return c;
         }
 
-        public static ContextActionDealDamage CreateActionDealDamage(StatType abilityType, ContextDiceValue damage, bool drain = false, bool isAoE = false, bool halfIfSaved = false, bool IgnoreCritical = false)
+        public static ContextActionDealDamage CreateActionDealDamageNOTREADY(StatType abilityType, ContextDiceValue damage, bool drain = false, bool isAoE = false, bool halfIfSaved = false, bool IgnoreCritical = false)
         {
             var c = Helper.Create<ContextActionDealDamage>();
-            Access.set_ContextActionDealDamage_Type(c, 1);  // AbilityDamage
+            //Access.m_Type_ContextActionDealDamage(c) = 1;  // AbilityDamage // TODO: fix assignment
             c.Duration = HelperEA.CreateContextDuration(0);
             c.AbilityType = abilityType;
             c.Value = damage;
@@ -1043,8 +1000,8 @@ namespace FumisCodex
         {
             var a = Helper.Create<AbilityAoERadius>();
 
-            Access.set_Radius(a, radius);
-            Access.set_TargetType(a, target_type);
+            Access.m_Radius(a) = radius;
+            Access.m_TargetType(a) = target_type;
             return a;
         }
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.8-alpha]
+
+### Added
+- Option to not load patches (gives great control over the mod, but disabling certain patches can cause issues or crashes)
+
+### Fixed
+- fixed catastrophic bug that corrupts saves and prevents leveling up
+- fixed some GUIDs appearing twice (although it would work just fine)
+
 ## [1.0.7-alpha]
 
 ### Dev

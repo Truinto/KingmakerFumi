@@ -152,7 +152,9 @@
     <Compile Include="WeaponFocusGroups.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="changelog.md" />
+    <None Include="changelog.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Settings\Repository.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

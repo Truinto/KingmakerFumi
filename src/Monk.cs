@@ -573,7 +573,7 @@ namespace FumisCodex
                 a.LocalizedDescription = HelperEA.CreateString($"{a.name}.Description", "The master of many styles is a collector. For every move, he seeks a counter. For every style, he has a riposte. Ultimately, he seeks perfection through the fusion of styles.");
             });
 
-            Access.set_ParentClass(archetype_MOMS, monk_class);
+            Access.m_ParentClass(archetype_MOMS) = monk_class;
             library.AddAsset(archetype_MOMS, Guid.i.Reg("5205f152da3c40e3a258c574d528d58f"));
 
             // remove features

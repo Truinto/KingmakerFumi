@@ -338,9 +338,9 @@ namespace FumisCodex
             if (!Main.COTWpresent)
                 enabled = false;
 
-            var metamagic_comp = ScriptableObject.CreateInstance<AutoMetamagic>();
+            var metamagic_comp = Helper.Create<AutoMetamagic>();
             HarmonyLib.AccessTools.Field(typeof(AutoMetamagic), "m_AllowedAbilities").SetValue(metamagic_comp, 2); //enum AllowedType.KineticistBlast
-            metamagic_comp.Metamagic = Main.COTWpresent ? (Metamagic)CallOfTheWild.MetamagicFeats.MetamagicExtender.Selective : (Metamagic)0;
+            metamagic_comp.Metamagic = enabled ? (Metamagic)CallOfTheWild.MetamagicFeats.MetamagicExtender.Selective : (Metamagic)0;
             metamagic_comp.Abilities = all_blasts;
 
             var precise_blast_feature = ScriptableObject.CreateInstance<BlueprintFeature>();
@@ -372,15 +372,14 @@ namespace FumisCodex
             //var slowed_debuff = library.Get<BlueprintBuff>("488e53ede2802ff4da9372c6a494fb66");    //Slowed
             // ---------------
             
-            Access.set_Icon(buff1, gather_original_ab.Icon);
-            Access.set_DisplayName(buff1, HelperEA.CreateString(buff1.name + ".Name", buff1.Name + " Lv1"));
-
+            Access.m_Icon(buff1) = gather_original_ab.Icon;
+            Access.m_DisplayNameStr(buff1, buff1.Name + " Lv1");
             
-            Access.set_Icon(buff2, gather_original_ab.Icon);
-            Access.set_DisplayName(buff2, HelperEA.CreateString(buff2.name + ".Name", buff2.Name + " Lv2"));
+            Access.m_Icon(buff2) = gather_original_ab.Icon;
+            Access.m_DisplayNameStr(buff2, buff2.Name + " Lv2");
             
-            Access.set_Icon(buff3, gather_original_ab.Icon);
-            Access.set_DisplayName(buff3, HelperEA.CreateString(buff3.name + ".Name", buff3.Name + " Lv3"));
+            Access.m_Icon(buff3) = gather_original_ab.Icon;
+            Access.m_DisplayNameStr(buff3, buff3.Name + " Lv3");
 
             // new buff that halves movement speed, disallows normal gathering, penalty on concentration?
             mobile_debuff = ScriptableObject.CreateInstance<BlueprintBuff>();

@@ -80,7 +80,7 @@ namespace FumisCodex
                 a.LocalizedDescription = HelperEA.CreateString($"{a.name}.Description", "A hexcrafter magus has uncovered the secret of using his arcane pool to recreate witch hexes. These magi can hex friend and foe, curse those they strike, and expand their spell selection to include many curses and harmful spells.");
             });
 
-            Access.set_ParentClass(archetype, magus);
+            Access.m_ParentClass(archetype) = magus;
             library.AddAsset(archetype, Guid.i.Reg("d8c2c968311942d19df6e352a97d8428"));
 
             //hex_engine = new HexEngine(new BlueprintCharacterClass[] { magus }, StatType.Intelligence, StatType.Charisma, archetype);
@@ -202,12 +202,12 @@ namespace FumisCodex
 
                 foreach (var rank in ranks)
                 {
-                    if (Access.get_BaseValueType(rank) == ContextRankBaseValueType.ClassLevel)
+                    if (Access.m_BaseValueType(rank) == ContextRankBaseValueType.ClassLevel)
                     {
                         // note, this allows only for a single archetype to be defined. if multiple are required, then replace this with a CustomProperty
-                        HarmonyLib.AccessTools.Field(typeof(ContextRankConfig), "m_Class").SetValue(rank, new BlueprintCharacterClass[] { Witch.witch_class, magus });
-                        HarmonyLib.AccessTools.Field(typeof(ContextRankConfig), "Archetype").SetValue(rank, archetype);
-                        Access.set_BaseValueType(rank, ContextRankBaseValueType.MaxClassLevelWithArchetype);
+                        Access.m_Class(rank) = new BlueprintCharacterClass[] { Witch.witch_class, magus };
+                        Access.Archetype(rank) = archetype;
+                        Access.m_BaseValueType(rank) = ContextRankBaseValueType.MaxClassLevelWithArchetype;
                     }
 
                     //ability.ReplaceComponent<ContextRankConfig>(rank.Convert(magus.ToArray(), archetype.ToArray()));
@@ -337,7 +337,7 @@ namespace FumisCodex
                 "AccursedStrikeFeature",
                 "Accursed Strike",
                 "Any prepared spell or hex with the curse descriptor can be delivered using the spellstrike ability, even if the spells are not touch attack spells.",
-                Guid.i.Reg("842537d10e1a47e7-a87d050613b6e85b"),
+                Guid.i.Reg("842537d10e1a47e7a87d050613b6e85b"),
                 accursed_strike_variants[0].Icon,
                 FeatureGroup.None,
                 HelperEA.CreatePrerequisiteArchetypeLevel(magus, archetype, 1, true),

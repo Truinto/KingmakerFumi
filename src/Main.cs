@@ -1,23 +1,23 @@
-﻿using System;
-using System.Linq;
-using UnityModManagerNet;
-using Kingmaker.Blueprints;
-using UnityEngine;
-using Guid = FumisCodex.GuidManager;
-using Kingmaker.Utility;
-using Kingmaker.UnitLogic.ActivatableAbilities;
-using Kingmaker.Blueprints.Facts;
-using Kingmaker.Localization;
-using Kingmaker.UnitLogic.Mechanics.Components;
-using Kingmaker.Enums;
-using System.Reflection;
+﻿using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
-using Kingmaker.UnitLogic.Mechanics.Properties;
+using Kingmaker.Blueprints.Facts;
 using Kingmaker.EntitySystem.Stats;
-using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
-using Kingmaker.Controllers.Brain.Blueprints;
+using Kingmaker.Enums;
+using Kingmaker.Localization;
 using Kingmaker.UnitLogic.Abilities.Components;
+using Kingmaker.UnitLogic.ActivatableAbilities;
 using Kingmaker.UnitLogic.Mechanics.Actions;
+using Kingmaker.UnitLogic.Mechanics.Components;
+using Kingmaker.UnitLogic.Mechanics.Properties;
+using Kingmaker.Utility;
+using System;
+using System.Linq;
+using System.Reflection;
+using UnityEngine;
+using UnityModManagerNet;
+using static HarmonyLib.AccessTools;
+using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
+using Guid = FumisCodex.GuidManager;
 
 namespace FumisCodex
 {
@@ -68,10 +68,55 @@ namespace FumisCodex
             return true;
         }
 
+        private static bool bExpand = false;
+        private static string[] loadSaveOptions = new string[] {
+            "Hexcrafter.*", 
+            "Hexcrafter.createHexcrafter", 
+            "Hexcrafter.createExtraArcanaFeat", 
+            "Hexcrafter.createHexStrikeFeat", 
+            "Rogue.createFlensingStrike", 
+            "Kineticist.*", 
+            "Kineticist.init", 
+            "Kineticist.createImpaleInfusion", 
+            "Kineticist.extendSprayInfusion", 
+            "Kineticist.createPreciseBlastTalent", 
+            "Kineticist.createMobileGatheringFeat", 
+            "Kineticist.createHurricaneQueen", 
+            "Kineticist.createMindShield", 
+            "Kineticist.createFlight", 
+            "Kineticist.createShiftEarth", 
+            "Kineticist.createSparkofLife", 
+            "Kineticist.fixWallInfusion", 
+            "Kineticist.createMobileBlast", 
+            "Kineticist.createWoodSoldiers", 
+            "Kineticist.createExtraWildTalentFeat", 
+            "Kineticist.fixExpandElement", 
+            "Monk.*", 
+            "Monk.allowTWFwithFists", 
+            "Monk.createMedusasWrath", 
+            "Monk.createStyleMaster", 
+            "Monk.createSnakeStyle", 
+            "Monk.createBoarStyle", 
+            "Monk.createWolfStyle", 
+            "Monk.modKiPowers", 
+            "Monk.createKiLeech", 
+            "Monk.createOneTouch", 
+            "Monk.createMasterOfManyStyles", 
+            "Fixes.*", 
+            "Fixes.fixShamblingMoundGrapple", 
+            "CotW.*", 
+            "CotW.modSlumber", 
+            "CotW.modAuraOfDoomToogle", 
+            "CotW.modDazeToogle"
+        };
+
         /// <summary>Draws the GUI</summary>
         private static void OnGUI(UnityModManager.ModEntry modEntry)
         {
             GUILayout.Label("Disclaimer: Remember that playing with mods makes them mandatory for your save game! If you want to uninstall anyway, then you need to remove all references to said mod. In my case respec all your characters, that should do the trick.");
+            GUILayout.Label("Stuff in the options are either homebrew or modifications on CotW. For a full list read the mods description."
+                + "\nLegend: [F] This adds a feat. You still need to pick feats/talents for these effects. If you already picked these features, then they stay in effect regardless of the option above."
+                + "\n[*] Option is enabled/disabled immediately, without restart.");
 
             Checkbox(ref Settings.StateManager.State.slumberHDrestriction, "CotW - remove slumber HD restriction");
             Checkbox(ref Settings.StateManager.State.auraOfDoomFx, "CotW [*] - Aura of Doom visible area effect", CotW.modAuraOfDoomToogle);
@@ -82,18 +127,44 @@ namespace FumisCodex
             Checkbox(ref Settings.StateManager.State.mindShieldTalent, "Kineticist [F] - Mind Shield: Utility talent to reduce Mind Burn's effect on Psychokineticist");
             Checkbox(ref Settings.StateManager.State.fixShamblingMoundGrapple, "Fix - Shambling Mound can act while grappling");
             Checkbox(ref Settings.StateManager.State.cheatCombineParametrizedFeats, "Cheat [*] - picking Weapon Focus (Greater etc.) will grant all in the same group");
-            GUILayout.Label("Stuff in the options are either homebrew or. For a full list read the mods description."
-                + "\nLegend: [F] This adds a feat. You still need to pick feats/talents for these effects. If you already picked these features, then they stay in effect regardless of the option above."
-                + "\n[*] Option is active immediately.");
+            
+            GUILayout.Label("");
+
+            if (!bExpand)
+            {
+                Checkbox(ref bExpand, "Expand 'Advanced feature select'");
+            }
+            else
+            {
+                Checkbox(ref bExpand, "Collapse 'Advanced feature select'");
+                GUILayout.Label("Options marked with <color=red><b>✖</b></color> will not be loaded. You can use this to disable certain patches you don't like or that cause you issues ingame."
+                    + "\nWarning: All option require a restart. Disabling options may cause your current saves to be stuck at loading, until re-enabled.");
+                foreach (string str in loadSaveOptions)
+                {
+                    bool enabled = !Settings.StateManager.State.doNotLoad.Contains(str);
+                    if (GUILayout.Button($"{(enabled ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} {str}", GUILayout.ExpandWidth(false)))
+                    {
+                        if (enabled) 
+                            Settings.StateManager.State.doNotLoad.Add(str);
+                        else
+                            Settings.StateManager.State.doNotLoad.Remove(str);
+                    }
+                }
+            }
+
+            GUILayout.Label("");
+
             if (GUILayout.Button("Save settings!"))
             {
                 Settings.StateManager.TrySaveConfigurationState();
             }
             
         }
+
         private static void Checkbox(ref bool value, string label, Action<bool> action = null)
         {
             GUILayout.BeginHorizontal();
+
             if (GUILayout.Button($"{(value ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} {label}", GUILayout.ExpandWidth(false)))
             {
                 value = !value;
@@ -196,6 +267,33 @@ namespace FumisCodex
                 try
                 {
                     COTWpresent = Main.CheckCOTW();
+                    FieldRef<BlueprintUnitFact, Sprite> m_Icon = FieldRefAccess<BlueprintUnitFact, Sprite>("m_Icon");
+                    FieldRef<LocalizedString, string> m_Key = FieldRefAccess<LocalizedString, string>("m_Key");
+                    FieldRef<ContextRankConfig, ContextRankBaseValueType> m_BaseValueType = FieldRefAccess<ContextRankConfig, ContextRankBaseValueType>("m_BaseValueType");
+                    FieldRef<ContextRankConfig, AbilityRankType> m_Type_ContextRankConfig = FieldRefAccess<ContextRankConfig, AbilityRankType>("m_Type");
+                    FieldRef<ContextRankConfig, ContextRankProgression> m_Progression = FieldRefAccess<ContextRankConfig, ContextRankProgression>("m_Progression");
+                    FieldRef<ContextRankConfig, bool> m_UseMin = FieldRefAccess<ContextRankConfig, bool>("m_UseMin");
+                    FieldRef<ContextRankConfig, int> m_Min = FieldRefAccess<ContextRankConfig, int>("m_Min");
+                    FieldRef<ContextRankConfig, bool> m_UseMax = FieldRefAccess<ContextRankConfig, bool>("m_UseMax");
+                    FieldRef<ContextRankConfig, int> m_Max = FieldRefAccess<ContextRankConfig, int>("m_Max");
+                    FieldRef<ContextRankConfig, int> m_StartLevel = FieldRefAccess<ContextRankConfig, int>("m_StartLevel");
+                    FieldRef<ContextRankConfig, int> m_StepLevel = FieldRefAccess<ContextRankConfig, int>("m_StepLevel");
+                    FieldRef<ContextRankConfig, BlueprintFeature> m_Feature = FieldRefAccess<ContextRankConfig, BlueprintFeature>("m_Feature");
+                    FieldRef<ContextRankConfig, bool> m_ExceptClasses = FieldRefAccess<ContextRankConfig, bool>("m_ExceptClasses");
+                    FieldRef<ContextRankConfig, BlueprintUnitProperty> m_CustomProperty = FieldRefAccess<ContextRankConfig, BlueprintUnitProperty>("m_CustomProperty");
+                    FieldRef<ContextRankConfig, StatType> m_Stat = FieldRefAccess<ContextRankConfig, StatType>("m_Stat");
+                    FieldRef<ContextRankConfig, BlueprintCharacterClass[]> m_Class = FieldRefAccess<ContextRankConfig, BlueprintCharacterClass[]>("m_Class");
+                    FieldRef<ContextRankConfig, BlueprintArchetype> Archetype = FieldRefAccess<ContextRankConfig, BlueprintArchetype>("Archetype");
+                    FieldRef<ContextRankConfig, BlueprintFeature[]> m_FeatureList = FieldRefAccess<ContextRankConfig, BlueprintFeature[]>("m_FeatureList");
+                    Type typeof_CustomProgressionItem = typeof(ContextRankConfig).GetNestedType("CustomProgressionItem", BindingFlags.NonPublic);
+                    //FieldRef<object, int> BaseValue = FieldRefAccess<object, int>("BaseValue");
+                    //FieldRef<object, int> ProgressionValue = FieldRefAccess<object, int>("ProgressionValue");
+                    FieldRef<ContextRankConfig, object> m_CustomProgression = FieldRefAccess<ContextRankConfig, object>("m_CustomProgression");
+                    FieldRef<BlueprintActivatableAbility, CommandType> m_ActivateWithUnitCommand = FieldRefAccess<BlueprintActivatableAbility, CommandType>("m_ActivateWithUnitCommand");
+                    FieldRef<BlueprintArchetype, BlueprintCharacterClass> m_ParentClass = FieldRefAccess<BlueprintArchetype, BlueprintCharacterClass>("m_ParentClass");
+                    //FieldRef<ContextActionDealDamage, int> m_Type_ContextActionDealDamage = FieldRefAccess<ContextActionDealDamage, int>("m_Type");
+                    FieldRef<AbilityAoERadius, Feet> m_Radius = FieldRefAccess<AbilityAoERadius, Feet>("m_Radius");
+                    FieldRef<AbilityAoERadius, TargetType> m_TargetType = FieldRefAccess<AbilityAoERadius, TargetType>("m_TargetType");
                 }
                 catch (Exception e)
                 {
@@ -250,6 +348,8 @@ namespace FumisCodex
                     LoadSafe(CotW.modAuraOfDoomToogle, Settings.StateManager.State.auraOfDoomFx);
                     LoadSafe(CotW.modDazeToogle, Settings.StateManager.State.dazeIsNotStun);
 
+                    Main.DebugLogAlways("Finished loading Fumi's Codex");
+
                     //if (Settings.StateManager.State.debugEnsureGuids) Guid.i.Ensure(); does not work... too bad
 #if DEBUG
                     Main.DebugLog("Running in debug.");
@@ -287,8 +387,17 @@ namespace FumisCodex
 
         public static bool LoadSafe(Action action)
         {
+            string name = action.Method.DeclaringType.Name + "." + action.Method.Name;
+
+            if (CheckSetting(name))
+            {
+                Main.DebugLogAlways($"Skipped loading {name}");
+                return false;
+            }
+               
             try
             {
+                Main.DebugLogAlways($"Loading {name}");
                 action();
                 return true;
             }
@@ -301,8 +410,17 @@ namespace FumisCodex
 
         public static bool LoadSafe(Action<bool> action, bool flag)
         {
+            string name = action.Method.DeclaringType.Name + "." + action.Method.Name;
+
+            if (CheckSetting(name))
+            {
+                Main.DebugLogAlways($"Skipped loading {name}");
+                return false;
+            }
+            
             try
             {
+                Main.DebugLogAlways($"Loading {name}:{flag}");
                 action(flag);
                 return true;
             }
@@ -311,6 +429,20 @@ namespace FumisCodex
                 Main.DebugError(e);
                 return false;
             }
+        }
+
+        private static bool CheckSetting(string name)
+        {
+            foreach (string str in Settings.StateManager.State.doNotLoad)
+            {
+                if (str == name)
+                    return true;
+                
+                if (str.EndsWith(".*", StringComparison.Ordinal) && name.StartsWith(str.Substring(0, str.Length-1), StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
         }
 
         #endregion

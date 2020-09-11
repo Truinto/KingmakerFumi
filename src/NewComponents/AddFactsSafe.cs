@@ -70,13 +70,18 @@ namespace FumisCodex.NewComponents
 
         public void HandleUnitDisableFeaturesBeforeLevelUp()
         {
+            Main.DebugLog("HandleUnitDisableFeaturesBeforeLevelUp start");
             this.OnFactDeactivate();
             if (this.Activatable != null)
             {
                 foreach (var act in base.Owner.ActivatableAbilities)
                 {
+                    Main.DebugLog("HandleUnitDisableFeaturesBeforeLevelUp checking " + act.Name);
                     if (act.Blueprint == this.Activatable)
+                    {
                         act.IsOn = false;
+                        break;
+                    }
                 }
             }
         }

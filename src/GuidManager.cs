@@ -74,24 +74,35 @@ namespace FumisCodex
                 foreach (KeyValuePair<string, string> pair in guid_list)
                 {
                     BlueprintScriptableObject obj = null;
-                    try { obj = library.Get<BlueprintScriptableObject>(pair.Value); } catch (Exception) { }
+                    try { obj = library.Get<BlueprintScriptableObject>(pair.Value); } catch (Exception e) { Main.DebugLogAlways("WriteAll guid_list: " + e.Message); }
                     if (obj != null)
                     {
                         writer.WriteLine(pair.Key + '\t' + pair.Value + '\t' + obj.GetType().FullName);
-                        if (pair.Key != obj.name) Debug.LogError(pair.Key + " != " + obj.name);
+                        if (pair.Key != obj.name) Main.DebugLogAlways(pair.Key + " != " + obj.name);
                     }
                     else
-                        Main.DebugLogAlways(pair.Value+" does not exist");
+                    {
+                        Main.DebugLogAlways(pair.Value + " does not exist");
+                        writer.WriteLine(pair.Key + '\t' + pair.Value + '\t' + "NULL");
+                    }
                 }
 
                 foreach (string guid in register)
                 {
+                    if (guid_list.ContainsValue(guid))
+                        continue;
+
                     BlueprintScriptableObject obj = null;
-                    try { obj = library.Get<BlueprintScriptableObject>(guid); } catch (Exception) { }
+                    try { obj = library.Get<BlueprintScriptableObject>(guid); } catch (Exception e) { Main.DebugLogAlways("WriteAll register: " + e.Message); }
                     if (obj != null)
+                    {
                         writer.WriteLine(obj.name + '\t' + guid + '\t' + obj.GetType().FullName);
+                    }
                     else
-                        Main.DebugLogAlways(guid+" does not exist");
+                    {
+                        Main.DebugLogAlways(guid + " does not exist");
+                        writer.WriteLine("UNKNOWN" + '\t' + guid + '\t' + "NULL");
+                    }
                 }
             }
         }
@@ -118,6 +129,7 @@ namespace FumisCodex
                 if (!allow_guid_generation)
                     throw new Exception("Tried to generate a new GUID while not allowed! " + key);
 
+                Main.DebugLogAlways("Warning: Generating new GUID for " + key);
                 result = Guid.NewGuid().ToString("N");
                 guid_list[key] = result;
                 Write(key, result);
