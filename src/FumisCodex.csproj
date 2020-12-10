@@ -121,6 +121,7 @@
     <Compile Include="NewComponents\AddFactsSafe.cs" />
     <Compile Include="NewComponents\AddInitiatorAttackDamageThreshold.cs" />
     <Compile Include="NewComponents\AddKineticistBurnToSharedValue.cs" />
+    <Compile Include="NewComponents\AddPermanentWeapon.cs" />
     <Compile Include="NewComponents\ContextActionMoveUniqueArea.cs" />
     <Compile Include="NewComponents\ContextActionRestoreResource.cs" />
     <Compile Include="NewComponents\ContextActionSpawnMonsterUnique.cs" />
@@ -131,6 +132,7 @@
     <Compile Include="NewComponents\ContextActionDealDamage2.cs" />
     <Compile Include="NewComponents\ContextActionKillSummons.cs" />
     <Compile Include="NewComponents\ContextActionSpawnMonsterLeveled.cs" />
+    <Compile Include="NewComponents\ContextActionTryCastSpell.cs" />
     <Compile Include="NewComponents\ContextConditionCanTarget.cs" />
     <Compile Include="NewComponents\ContextConditionHasBuffOrVul.cs" />
     <Compile Include="NewComponents\ContextConditionHasUnitCondition.cs" />
@@ -140,6 +142,8 @@
     <Compile Include="NewComponents\MedusasWrath.cs" />
     <Compile Include="NewComponents\RendSpecial.cs" />
     <Compile Include="NewComponents\SnakeFang.cs" />
+    <Compile Include="NewComponents\TransferDamageToMaster.cs" />
+    <Compile Include="NewComponents\WeaponEnhancementScaling.cs" />
     <Compile Include="NewComponents\WolfSavage.cs" />
     <Compile Include="NewInterfaces\IUnitDisableFeaturesBeforeLevelUpHandler.cs" />
     <Compile Include="Patches.cs" />
@@ -147,7 +151,6 @@
     <Compile Include="Rogue.cs" />
     <Compile Include="Settings\ConfigManager.cs" />
     <Compile Include="Settings\Settings.cs" />
-    <Compile Include="Settings\_notes.cs" />
     <Compile Include="Tests.cs" />
     <Compile Include="WeaponFocusGroups.cs" />
   </ItemGroup>

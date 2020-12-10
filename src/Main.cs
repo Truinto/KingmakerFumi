@@ -21,17 +21,17 @@ using Guid = FumisCodex.GuidManager;
 
 namespace FumisCodex
 {
-    internal class Main
+    public class Main
     {
-        internal static HarmonyLib.Harmony harmony;
-        internal static LibraryScriptableObject library;
+        public static HarmonyLib.Harmony harmony;
+        public static LibraryScriptableObject library;
 
         public static bool COTWpresent = false;
 
         /// <summary>True if mod is enabled. Doesn't do anything right now.</summary>
-        internal static bool Enabled { get; set; } = true;
+        public static bool Enabled { get; set; } = true;
         /// <summary>Path of current mod.</summary>
-        public static string ModPath { get; set; }
+        public static string ModPath;
 
         #region logging
 
@@ -121,6 +121,7 @@ namespace FumisCodex
             Checkbox(ref Settings.StateManager.State.slumberHDrestriction, "CotW - remove slumber HD restriction");
             Checkbox(ref Settings.StateManager.State.auraOfDoomFx, "CotW [*] - Aura of Doom visible area effect", CotW.modAuraOfDoomToogle);
             Checkbox(ref Settings.StateManager.State.dazeIsNotStun, "CotW [*] - Dazing Spell does not count as MindAffecting or Compulsion", CotW.modDazeToogle);
+            Checkbox(ref Settings.StateManager.State.eidolonLifeLink, "CotW [*] - Life Link triggers at 1 HP", CotW.modEidolonLifeLinkToogle);
             Checkbox(ref Settings.StateManager.State.extendSprayInfusion, "Kineticist - Spray infusion may be used with cold blast");
             Checkbox(ref Settings.StateManager.State.extraWildTalentFeat, "Kineticist [F] - Feat for extra wild talents");
             Checkbox(ref Settings.StateManager.State.preciseBlastTalent, "Kineticist [F] - Utility talent for precise blasts (similiar to alchemist discovery, but for blasts)");
@@ -228,13 +229,13 @@ namespace FumisCodex
             return true;
         }
 
-#endregion
+        #endregion
 
         #region Load_Patch
 
-        [HarmonyLib.HarmonyBefore(new string[] { "CallOfTheWild" })]
-        [HarmonyLib.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
-        static class LibraryScriptableObject_LoadDictionary_Patch_Before
+        //[HarmonyLib.HarmonyBefore(new string[] { "CallOfTheWild" })]
+        //[HarmonyLib.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
+        public static class LibraryScriptableObject_LoadDictionary_Patch_Before
         {
             static bool Run = false;
             static void Postfix(LibraryScriptableObject __instance)
@@ -255,7 +256,7 @@ namespace FumisCodex
 
         [HarmonyLib.HarmonyAfter(new string[] { "CallOfTheWild" })]
         [HarmonyLib.HarmonyPatch(typeof(LibraryScriptableObject), "LoadDictionary", new Type[0])]
-        static class LibraryScriptableObject_LoadDictionary_Patch_After
+        public static class LibraryScriptableObject_LoadDictionary_Patch_After
         {
             static bool Run = false;
             static void Postfix(LibraryScriptableObject __instance)
@@ -267,33 +268,6 @@ namespace FumisCodex
                 try
                 {
                     COTWpresent = Main.CheckCOTW();
-                    FieldRef<BlueprintUnitFact, Sprite> m_Icon = FieldRefAccess<BlueprintUnitFact, Sprite>("m_Icon");
-                    FieldRef<LocalizedString, string> m_Key = FieldRefAccess<LocalizedString, string>("m_Key");
-                    FieldRef<ContextRankConfig, ContextRankBaseValueType> m_BaseValueType = FieldRefAccess<ContextRankConfig, ContextRankBaseValueType>("m_BaseValueType");
-                    FieldRef<ContextRankConfig, AbilityRankType> m_Type_ContextRankConfig = FieldRefAccess<ContextRankConfig, AbilityRankType>("m_Type");
-                    FieldRef<ContextRankConfig, ContextRankProgression> m_Progression = FieldRefAccess<ContextRankConfig, ContextRankProgression>("m_Progression");
-                    FieldRef<ContextRankConfig, bool> m_UseMin = FieldRefAccess<ContextRankConfig, bool>("m_UseMin");
-                    FieldRef<ContextRankConfig, int> m_Min = FieldRefAccess<ContextRankConfig, int>("m_Min");
-                    FieldRef<ContextRankConfig, bool> m_UseMax = FieldRefAccess<ContextRankConfig, bool>("m_UseMax");
-                    FieldRef<ContextRankConfig, int> m_Max = FieldRefAccess<ContextRankConfig, int>("m_Max");
-                    FieldRef<ContextRankConfig, int> m_StartLevel = FieldRefAccess<ContextRankConfig, int>("m_StartLevel");
-                    FieldRef<ContextRankConfig, int> m_StepLevel = FieldRefAccess<ContextRankConfig, int>("m_StepLevel");
-                    FieldRef<ContextRankConfig, BlueprintFeature> m_Feature = FieldRefAccess<ContextRankConfig, BlueprintFeature>("m_Feature");
-                    FieldRef<ContextRankConfig, bool> m_ExceptClasses = FieldRefAccess<ContextRankConfig, bool>("m_ExceptClasses");
-                    FieldRef<ContextRankConfig, BlueprintUnitProperty> m_CustomProperty = FieldRefAccess<ContextRankConfig, BlueprintUnitProperty>("m_CustomProperty");
-                    FieldRef<ContextRankConfig, StatType> m_Stat = FieldRefAccess<ContextRankConfig, StatType>("m_Stat");
-                    FieldRef<ContextRankConfig, BlueprintCharacterClass[]> m_Class = FieldRefAccess<ContextRankConfig, BlueprintCharacterClass[]>("m_Class");
-                    FieldRef<ContextRankConfig, BlueprintArchetype> Archetype = FieldRefAccess<ContextRankConfig, BlueprintArchetype>("Archetype");
-                    FieldRef<ContextRankConfig, BlueprintFeature[]> m_FeatureList = FieldRefAccess<ContextRankConfig, BlueprintFeature[]>("m_FeatureList");
-                    Type typeof_CustomProgressionItem = typeof(ContextRankConfig).GetNestedType("CustomProgressionItem", BindingFlags.NonPublic);
-                    //FieldRef<object, int> BaseValue = FieldRefAccess<object, int>("BaseValue");
-                    //FieldRef<object, int> ProgressionValue = FieldRefAccess<object, int>("ProgressionValue");
-                    FieldRef<ContextRankConfig, object> m_CustomProgression = FieldRefAccess<ContextRankConfig, object>("m_CustomProgression");
-                    FieldRef<BlueprintActivatableAbility, CommandType> m_ActivateWithUnitCommand = FieldRefAccess<BlueprintActivatableAbility, CommandType>("m_ActivateWithUnitCommand");
-                    FieldRef<BlueprintArchetype, BlueprintCharacterClass> m_ParentClass = FieldRefAccess<BlueprintArchetype, BlueprintCharacterClass>("m_ParentClass");
-                    //FieldRef<ContextActionDealDamage, int> m_Type_ContextActionDealDamage = FieldRefAccess<ContextActionDealDamage, int>("m_Type");
-                    FieldRef<AbilityAoERadius, Feet> m_Radius = FieldRefAccess<AbilityAoERadius, Feet>("m_Radius");
-                    FieldRef<AbilityAoERadius, TargetType> m_TargetType = FieldRefAccess<AbilityAoERadius, TargetType>("m_TargetType");
                 }
                 catch (Exception e)
                 {
@@ -347,6 +321,7 @@ namespace FumisCodex
                     LoadSafe(CotW.modSlumber, Settings.StateManager.State.slumberHDrestriction);
                     LoadSafe(CotW.modAuraOfDoomToogle, Settings.StateManager.State.auraOfDoomFx);
                     LoadSafe(CotW.modDazeToogle, Settings.StateManager.State.dazeIsNotStun);
+                    LoadSafe(CotW.modEidolonLifeLinkToogle, Settings.StateManager.State.eidolonLifeLink);
 
                     Main.DebugLogAlways("Finished loading Fumi's Codex");
 
@@ -374,7 +349,7 @@ namespace FumisCodex
             if (Settings.StateManager.State.CallOfTheWild == "OFF")
                 return false;
             
-            if (CallOfTheWild.Helpers.classes == null)
+            if (CallOfTheWild.Helpers.classes == null) // TODO: This check doesn't work.
             {
             }
             return true;
@@ -449,6 +424,8 @@ namespace FumisCodex
 
         #region Special Patches
 
+        // Note: CallOfTheWild also patches this, but in a different manner. Not sure if there is potential in error. So far I haven't found any bugs in playtesting.
+        // Also, the enum will change, if the order of calls are changed, e.g. new mods are added. I think that's not a problem. I can't think of a reason why it would be saved in the save file. Needs further testing.
         //[HarmonyLib.HarmonyPatch(typeof(EnumUtils), nameof(EnumUtils.GetMaxValue))] since this is a generic method, we need to patch this manually, see Main.Load
         public static class Patch_ActivatableAbilityGroup
         {
@@ -462,6 +439,7 @@ namespace FumisCodex
                     return 0;
                 
                 ExtraGroups++;
+                Main.DebugLog("GetNewGroup new: " + (Enum.GetValues(typeof(ActivatableAbilityGroup)).Cast<int>().Max() + ExtraGroups).ToString());
                 return (ActivatableAbilityGroup) (Enum.GetValues(typeof(ActivatableAbilityGroup)).Cast<int>().Max() + ExtraGroups);
             }
 

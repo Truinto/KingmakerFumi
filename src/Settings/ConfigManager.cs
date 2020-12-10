@@ -168,8 +168,8 @@ namespace Config
         /// </summary>
         public Manager(string path, Func<T, bool> updateCallback = null)
         {
-            bool errorFlag = false;
-            string resultPath = null;
+            bool errorFlag;
+            string resultPath;
             
             resultPath = path;
             EnsureDirectoryExists(new FileInfo(resultPath).Directory.FullName);
@@ -188,8 +188,8 @@ namespace Config
             try
             {
                 object newObj = Activator.CreateInstance(typeof(T));
-                int newVersion = (int)newObj.GetType().GetProperty("version").GetValue(newObj, null);
-                int savedVersion = (int)State.GetType().GetProperty("version").GetValue(State, null);
+                int newVersion = (int)typeof(T).GetField("version").GetValue(newObj);
+                int savedVersion = (int)typeof(T).GetField("version").GetValue(State);
 
                 if (savedVersion != 0 && newVersion != 0)
                 {

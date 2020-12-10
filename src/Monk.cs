@@ -818,10 +818,10 @@ namespace FumisCodex
                     //cannot use flurry and TWF at the same time, so we remove the extra attacks
                     if (CheckFact(evt.Initiator, flurry1))
                     {
-                        evt.PrimaryHand.MainAttacks--;
+                        evt.PrimaryHand.AdditionalAttacks--;
                         if (CheckFact(evt.Initiator, flurry2))
                         {
-                            evt.PrimaryHand.MainAttacks--;
+                            evt.PrimaryHand.AdditionalAttacks--;
                         }
                     }
 
@@ -1016,10 +1016,10 @@ namespace FumisCodex
                 int num = __instance.Initiator.Stats.BaseAttackBonus;
                 int val = Math.Min(Math.Max(0, num / 5 - ((num % 5 != 0) ? 0 : 1)), 3);
 
-                __instance.PrimaryHand.MainAttacks++;
+                __instance.PrimaryHand.AdditionalAttacks++;
                 __instance.PrimaryHand.PenalizedAttacks += Math.Max(0, val);
 
-                __instance.SecondaryHand.MainAttacks++;
+                __instance.SecondaryHand.AdditionalAttacks++;
 
                 //bool flag = primaryHand.MaybeWeapon != null && primaryHand.MaybeWeapon.HoldInTwoHands;
                 //if ((secondaryHand.MaybeWeapon == null || !secondaryHand.MaybeWeapon.HoldInTwoHands) && primaryWeapon && (!primaryWeapon.IsUnarmed || !secondaryWeapon || secondaryWeapon.IsUnarmed))

@@ -1,4 +1,5 @@
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Mechanics.Conditions;
 

@@ -18,7 +18,7 @@ using UnityEngine;
 
 namespace FumisCodex.NewComponents
 {
-    class ContextActionDealDamage2 : ContextActionDealDamage
+    public class ContextActionDealDamage2 : ContextActionDealDamage
     {
         /// <summary>When set will make an attack roll with given weapon. Missing will skip the damage calculation.</summary>
         [CanBeNull]
@@ -148,6 +148,7 @@ namespace FumisCodex.NewComponents
                         {
                             //attackRoll.ImmuneToCriticalHit = true; // only the first target may get a crit
                             attackRoll.SuspendCombatLog = true; // don't print, since the roll would be different
+                            attackRoll.DoNotProvokeAttacksOfOpportunity = true; // don't trigger AoO for subsequent rolls
                             this.Context.TriggerRule(attackRoll);
                         }
 

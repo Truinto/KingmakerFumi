@@ -1,10 +1,12 @@
-﻿using Kingmaker.Blueprints.Classes;
+﻿using HarmonyLib;
+using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Facts;
 using Kingmaker.Controllers.Combat;
 using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.PubSubSystem;
+using Kingmaker.RuleSystem;
 using Kingmaker.RuleSystem.Rules;
 using Kingmaker.UI.UnitSettings;
 using Kingmaker.UnitLogic;
@@ -20,6 +22,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using static Kingmaker.UnitLogic.Parts.UnitPartSpellResistance;
@@ -300,6 +303,45 @@ namespace FumisCodex
                 }
                 return true;
             }
+        }
+    }
+
+    public class Patches_Rulebook
+    {
+
+        //[HarmonyLib.HarmonyPatch(typeof(RuleAttackRoll), nameof(RuleAttackRoll.OnTrigger))]
+        public class RuleAttackRoll_OnTrigger_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instr)
+            {
+                var code = instr.ToList();
+                var d20 = typeof(RulebookEvent.Dice).GetProperty(nameof(RulebookEvent.Dice.D20));
+
+                for (int i = 0; i < code.Count; i++)
+                {
+                    if (code[i].opcode == OpCodes.Call && (code[i].operand as PropertyInfo) == d20)
+                    {
+                        code[i].operand = typeof(RuleAttackRoll_OnTrigger_Patch).GetMethod(nameof(D20));
+                        Main.DebugLog("Patched D20 at line " + i);
+                    }
+                }
+
+                return code;
+            }
+
+            public static RulebookEvent.RollEntry D20()
+            {
+                var result = RulebookEvent.Dice.D20;
+                if (ForceDice != 0)
+                {
+                    result.Value = ForceDice;
+                    if (Reset) ForceDice = 0;
+                }
+                return result;
+            }
+
+            public static int ForceDice = 0;
+            public static bool Reset = true;
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using CallOfTheWild;
 using Kingmaker.Blueprints;
+using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Items.Ecnchantments;
 using Kingmaker.Enums;
@@ -65,6 +66,19 @@ namespace FumisCodex
         {
             //CallOfTheWild.NewSpells.frost_bite
             // remove level cap of frostbite
+        }
+
+        public static BlueprintComponent[] _Life_Link_Original;
+        public static void modEidolonLifeLinkToogle(bool enable = true)
+        {
+            var life_link = library.Get<BlueprintFeature>("279c97f524ee4d7cafadb9aa543bae7b");
+            if (_Life_Link_Original == null)
+                _Life_Link_Original = life_link.ComponentsArray;
+            
+            if (enable)
+                life_link.SetComponents(Helper.Create<NewComponents.TransferDamageToMaster>());
+            else
+                life_link.ComponentsArray = _Life_Link_Original;
         }
 
 

@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.0.9]
+
+### Added
+- added option to have Summoner's Life Link trigger at 1 HP, instead below 0
+
+### Removed
+- removed Kineticist flight talents, since CotW has them too
+- removed Kineticist mastery selection, since CotW also implemented that
+
+### Changed
+- reduced the Mind Shield bonus to 1
+- CotW's Hex Strike available to Hexcrafter now
+- Hex Strike should work with Feral Combat Training now
+
+### Fixed
+- fixed Mobile Blast error log
+- fixed Impale showing up twice
+- fixed Impale triggering way too many 'Attacks of Opportunity'
+- fixed accidentally making some hexes touch attacks
+- fixed Accursed Strike not being melee touch attack
+- fixed Hexcrafter some hexes not scaling
+- fixed Hex Strike ignoring cooldown
+
+### Dev
+- changed Hex Strike generation (remove any Hex Strike variants from hotbar)
+
 ## [1.0.8-alpha]
 
 ### Added

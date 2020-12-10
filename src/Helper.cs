@@ -45,6 +45,9 @@ using System.Reflection;
 using UnityEngine;
 using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
 using static HarmonyLib.AccessTools;
+using Kingmaker.EntitySystem.Entities;
+using JetBrains.Annotations;
+using Kingmaker.Blueprints.Items.Ecnchantments;
 
 namespace FumisCodex
 {
@@ -57,6 +60,9 @@ namespace FumisCodex
             value |= (HiddenInUi?2:0);
 #endif
             HarmonyLib.AccessTools.Field(typeof(BlueprintBuff), "m_Flags").SetValue(obj, value);
+
+            // TODO: improve to
+            //Access.m_Flags(obj) = value;
         }
 
         public static PrerequisiteArchetypeLevel CreatePrerequisite(this BlueprintArchetype @class, int level, bool any = true)
@@ -69,12 +75,80 @@ namespace FumisCodex
             return result;
         }
 
-        /// <returns>Action on index 0</returns>
-        public static GameAction getAction(this BlueprintAbility ability)
+        /// <summary>Appends objects on array.</summary>
+        public static T[] AddToArray<T>(this T[] orig, params T[] objs)
         {
-            return ability.GetComponent<AbilityEffectRunAction>().Actions.Actions[0];
+            if (orig == null) orig = new T[0];
+
+            int i, j;
+            T[] result = new T[orig.Length + objs.Length];
+            for (i = 0; i < orig.Length; i++)
+                result[i] = orig[i];
+            for (j = 0; i < result.Length; i++)
+                result[i] = objs[j++];
+            return result;
         }
-        //public static GameAction getAction(this AbilityEffectRunAction effectAndRun) { return effectAndRun.Actions.Actions[0]; }
+
+        private static int getActions_counter;
+        public static List<GameAction> GetActions(this BlueprintAbility ability)
+        {
+            return ability.GetComponent<AbilityEffectRunAction>()?.Actions?.Actions?.GetActions() ?? new List<GameAction>(0);
+        }
+        public static List<GameAction> GetActions(this GameAction[] actions)
+        {
+            return GetActions(actions.ToList());
+        }
+        public static List<GameAction> GetActions(this List<GameAction> actions)
+        {
+            getActions_counter = 0;
+            return getActions(actions);
+        }
+        private static List<GameAction> getActions(List<GameAction> actions)
+        {
+            //Main.DebugLog("getActions with " + actions.Count);
+
+            if (++getActions_counter > 50 || actions.Count == 0)
+            {
+                Main.DebugLogAlways("CRITICAL ERROR: possible infinite loop during getActions");
+                return new List<GameAction>(0);
+            }
+
+            var result = new List<GameAction>();
+
+            FieldInfo[] fields = new FieldInfo[3];
+            foreach (var action in actions)
+            {
+                //Main.DebugLog("getActions of type: " + action.GetType().ToString());
+
+                fields[0] = action.GetType().GetField("Actions");
+                fields[1] = action.GetType().GetField("Succeed");
+                fields[2] = action.GetType().GetField("Failed");
+
+                foreach (var field in fields)
+                {
+                    if (field != null)
+                    {
+                        if (field.FieldType == typeof(GameAction[]))
+                        {
+                            var values = field.GetValue(action) as GameAction[];
+                            if (values != null)
+                                result.AddRange(values);
+                        }
+                        else if (field.FieldType == typeof(ActionList))
+                        {
+                            var values = field.GetValue(action) as ActionList;
+                            if (values != null && values.HasActions)
+                                result.AddRange(values.Actions);
+                        }
+                    }
+                }
+            }
+
+            if (result.Count > 0)
+                result.AddRange(getActions(result));  //recursive search
+
+            return result;
+        }
 
         /// <param name="savingThrow">SavingThrowType.Unknown means "None"</param>
         public static void setSavingThrow(this BlueprintAbility ability, SavingThrowType savingThrow)
@@ -170,7 +244,6 @@ namespace FumisCodex
 
     public class Access
     {
-
         public static readonly FieldRef<BlueprintUnitFact, LocalizedString> m_DisplayName = FieldRefAccess<BlueprintUnitFact, LocalizedString>("m_DisplayName");
         public static void m_DisplayNameStr(BlueprintUnitFact f, string str)
         {
@@ -181,6 +254,22 @@ namespace FumisCodex
         {
             m_Description(f) = HelperEA.CreateString(f.name + ".Description", str);
         }
+
+        //BlueprintItemEnchantment
+        public static readonly FieldRef<BlueprintItemEnchantment, LocalizedString> BlueprintItemEnchantment_Description = FieldRefAccess<BlueprintItemEnchantment, LocalizedString>("m_Description");
+        public static void m_DescriptionStr(BlueprintItemEnchantment f, string str)
+        {
+            BlueprintItemEnchantment_Description(f) = HelperEA.CreateString(f.name + ".Description", str);
+        }
+        public static readonly FieldRef<BlueprintItemEnchantment, LocalizedString> m_EnchantName = FieldRefAccess<BlueprintItemEnchantment, LocalizedString>("m_EnchantName");
+        public static void m_EnchantNameStr(BlueprintItemEnchantment f, string str)
+        {
+            m_EnchantName(f) = HelperEA.CreateString(f.name + ".Description", str);
+        }
+        public static readonly FieldRef<BlueprintItemEnchantment, int> m_EnchantmentCost = FieldRefAccess<BlueprintItemEnchantment, int>("m_EnchantmentCost");
+
+
+        public static readonly FieldRef<BlueprintBuff, int> m_Flags;
         public static readonly FieldRef<BlueprintUnitFact, Sprite> m_Icon = FieldRefAccess<BlueprintUnitFact, Sprite>("m_Icon");
         public static readonly FieldRef<LocalizedString, string> m_Key = FieldRefAccess<LocalizedString, string>("m_Key");
         public static readonly FieldRef<ContextRankConfig, ContextRankBaseValueType> m_BaseValueType = FieldRefAccess<ContextRankConfig, ContextRankBaseValueType>("m_BaseValueType");
@@ -211,6 +300,23 @@ namespace FumisCodex
         public static readonly FieldRef<BlueprintScriptableObject, string> m_AssetGuid = FieldRefAccess<BlueprintScriptableObject, string>("m_AssetGuid");
 
         //public static readonly FieldRef<> m_ = FieldRefAccess<>("");
+
+        static Access()
+        {
+            // TODO: improve error logging by handling static constructor manually
+            try
+            {
+                Main.DebugLog("Access.m_Flags");
+                var mflag_info = HarmonyLib.AccessTools.Field(typeof(BlueprintBuff), "m_Flags");
+                Main.DebugLog($"m_Flag is Enum {mflag_info.FieldType.IsEnum} and underlying: " + Enum.GetUnderlyingType(mflag_info.FieldType).ToString());
+                //m_Flags = FieldRefAccess<BlueprintBuff, System.Int32>("m_Flags");
+                Main.DebugLog("Access done");
+            }
+            catch (Exception e)
+            {
+                Main.DebugError(e);
+            }
+        }
 
     }
 
@@ -446,6 +552,11 @@ namespace FumisCodex
         {
             var list = array.ToList();
             return list.Remove(value) ? list.ToArray() : array;
+        }
+
+        public static void SetName(this BlueprintUnitFact feature, string displayName)
+        {
+            Access.m_DisplayName(feature) = CreateString(feature.name + ".Name", displayName);
         }
 
         public static void SetNameDescriptionIcon(this BlueprintUnitFact feature, string displayName, string description, Sprite icon = null)
@@ -1221,7 +1332,6 @@ namespace FumisCodex
             return objs;
         }
 
-
         /// <summary>Appends objects on array.</summary>
         public static T[] Append<T>(T[] orig, params T[] objs)
         {
@@ -1677,6 +1787,64 @@ namespace FumisCodex
         {
             if (actions == null || actions.Length == 1 && actions[0] == null) actions = Array.Empty<GameAction>();
             return new ActionList() { Actions = actions };
+        }
+
+        public static int UnitHasClassLevels(UnitEntityData unit, BlueprintCharacterClass[] classes, BlueprintArchetype[] archetypes = null)
+        {
+            if (unit == null || classes == null)
+            {
+                Main.DebugLogAlways("ERROR: UnitHasClassLevels unit or classes is null.");
+                return 0;
+            }
+
+            int class_level = 0;
+            foreach (var c in classes)
+            {
+                var class_archetypes = archetypes?.Where(a => a.GetParentClass() == c);
+
+                if (class_archetypes == null || class_archetypes.Empty() || class_archetypes.Any(a => unit.Descriptor.Progression.IsArchetype(a)))
+                {
+                    class_level += unit.Descriptor.Progression.GetClassLevel(c);
+                }
+
+            }
+            return class_level;
+        }
+
+        public static WeaponEnhancementScaling CreateWeaponEnhancementScaling(BlueprintCharacterClass[] Class, BlueprintArchetype[] Archetype, int StartingLevel, int StartValue, int LevelStep, int PerStepIncrease)
+        {
+            var result = Helper.Create<WeaponEnhancementScaling>();
+            result.Class = Class ?? new BlueprintCharacterClass[0];
+            result.Archetype = Archetype ?? new BlueprintArchetype[0];
+            result.StartingLevel = StartingLevel;
+            result.StartValue = StartValue;
+            result.LevelStep = LevelStep;
+            result.PerStepIncrease = PerStepIncrease;
+            return result;
+        }
+
+        public static BlueprintWeaponEnchantment CreateBlueprintWeaponEnchantment(string Name, string Desc, int Cost, params BlueprintComponent[] components)
+        {
+            var result = Helper.Create<BlueprintWeaponEnchantment>();
+            Access.m_EnchantNameStr(result, Name);
+            Access.m_DescriptionStr(result, Desc);
+            Access.m_EnchantmentCost(result) = Cost;
+
+            if (components != null)
+                result.SetComponents(components);
+
+            return result;
+        }
+
+        public static ContextActionTryCastSpell CreateContextActionTryCastSpell(BlueprintAbility Spell, GameAction[] Succeed = null, GameAction[] Failed = null)
+        {
+            var result = Helper.Create<ContextActionTryCastSpell>();
+
+            result.Spell = Spell;
+            result.Succeed = CreateActionList(Succeed);
+            result.Failed = CreateActionList(Failed);
+
+            return result;
         }
 
         public static class Image2Sprite

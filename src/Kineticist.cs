@@ -79,25 +79,42 @@ namespace FumisCodex
         public static PrerequisiteFeature prerequisite_earth = HelperEA.PrerequisiteFeature(library.Get<BlueprintFeature>("7f5f82c1108b961459c9884a0fa0f5c4"));
         public static PrerequisiteFeaturesFromList prerequisite_water = library.Get<BlueprintFeature>("3ef666973adfa8f40af6c0679bd98ba5").GetComponent<PrerequisiteFeaturesFromList>();
 
-        public static List<BlueprintAbility> all_blasts = library.Get<BlueprintBuff>("f5f3aa17dd579ff49879923fb7bc2adb").GetComponent<AutoMetamagic>().Abilities;
+        public static List<BlueprintAbility> all_base = library.Get<BlueprintBuff>("f5f3aa17dd579ff49879923fb7bc2adb").GetComponent<AutoMetamagic>().Abilities;
         public static OrderedDictionary blasts_byelement = new OrderedDictionary();
         //public static Dictionary<string, BlueprintAbility[]> blasts_byelement = new Dictionary<string, BlueprintAbility[]>();
-        public static Dictionary<string, BlueprintAbility> blast_byname = new Dictionary<string, BlueprintAbility>();
-        public static Dictionary<string, AbilityVariants> blast_variants = new Dictionary<string, AbilityVariants>();
+        public static Dictionary<string, BlueprintAbility> base_byname = new Dictionary<string, BlueprintAbility>();
+        public static Dictionary<string, List<BlueprintAbility>> blast_variants = new Dictionary<string, List<BlueprintAbility>>();
 
-        public static void init()
+        public static void init() // TODO: extend blast_variants (e.g. Impale) 
         {
-            foreach (var blast in all_blasts)
+            Main.DebugLog("base blast list: ");
+            foreach (var blast in all_base)
             {
                 string name = blast.name.Substring(0, blast.name.IndexOf("Blast", StringComparison.Ordinal));
-                blast_byname[name] = blast;
-                blast_variants[name] = blast.GetComponent<AbilityVariants>();
+
+                if (name == "KineticBladeChargeWater") name = "KineticBladeChargedWater";   // fix typo, not permanent
+
+                if (blast.GetComponent<AbilityVariants>() != null && blast.name.EndsWith("Base", StringComparison.Ordinal))
+                {
+                    base_byname[name] = blast;
+                    if (!blast_variants.ContainsKey(name)) blast_variants[name] = new List<BlueprintAbility>();
+                    blast_variants[name].AddRange(blast.GetComponent<AbilityVariants>().Variants);
+                    Main.DebugLog(name + ":" + blast.name);
+                }
+                else if (name.StartsWith("KineticBlade", StringComparison.Ordinal))
+                {
+                    name = name.Substring(12);
+                    if (!blast_variants.ContainsKey(name)) blast_variants[name] = new List<BlueprintAbility>();
+                    blast_variants[name].Add(blast);
+                }
+                else
+                    Main.DebugLog("notfound?" + name + ":" + blast.name);
             }
 
-            blasts_byelement["Air"] = new BlueprintAbility[] { blast_byname["Air"], blast_byname["Electric"] };
-            blasts_byelement["Earth"] = new BlueprintAbility[] { blast_byname["Earth"] };
-            blasts_byelement["Fire"] = new BlueprintAbility[] { blast_byname["Fire"] };
-            blasts_byelement["Water"] = new BlueprintAbility[] { blast_byname["Water"], blast_byname["Cold"] };
+            blasts_byelement["Air"] = new BlueprintAbility[] { base_byname["Air"], base_byname["Electric"] };
+            blasts_byelement["Earth"] = new BlueprintAbility[] { base_byname["Earth"] };
+            blasts_byelement["Fire"] = new BlueprintAbility[] { base_byname["Fire"] };
+            blasts_byelement["Water"] = new BlueprintAbility[] { base_byname["Water"], base_byname["Cold"] };
         }
 
         // known issues:
@@ -238,10 +255,8 @@ namespace FumisCodex
             #endregion
 
             HelperEA.AddToAbilityVariants(earth_base, earth_impale_ability);
-
-            Helper.AppendAndReplace(ref earth_base.GetComponent<AbilityVariants>().Variants, earth_impale_ability);
-            Helper.AppendAndReplace(ref metal_base.GetComponent<AbilityVariants>().Variants, metal_impale_ability);
-            Helper.AppendAndReplace(ref ice_base.GetComponent<AbilityVariants>().Variants, ice_impale_ability);
+            HelperEA.AddToAbilityVariants(metal_base, metal_impale_ability);
+            HelperEA.AddToAbilityVariants(ice_base, ice_impale_ability);
         }
 
         public static void extendSprayInfusion(bool enabled = true)
@@ -341,7 +356,7 @@ namespace FumisCodex
             var metamagic_comp = Helper.Create<AutoMetamagic>();
             HarmonyLib.AccessTools.Field(typeof(AutoMetamagic), "m_AllowedAbilities").SetValue(metamagic_comp, 2); //enum AllowedType.KineticistBlast
             metamagic_comp.Metamagic = enabled ? (Metamagic)CallOfTheWild.MetamagicFeats.MetamagicExtender.Selective : (Metamagic)0;
-            metamagic_comp.Abilities = all_blasts;
+            metamagic_comp.Abilities = all_base;
 
             var precise_blast_feature = ScriptableObject.CreateInstance<BlueprintFeature>();
             precise_blast_feature.name = "PreciseBlast";
@@ -523,17 +538,17 @@ namespace FumisCodex
             BlueprintBuff mind_shield_buff = HelperEA.CreateBuff(
                 "MindShieldBuff",
                 "Mind Shield",
-                "You ignore the penalties of Mind Burn to Wisdom-based skill checks. Additionally if you fail a Will saving throw against a mind-affecting spell, you are instead dazed for the duration of the spell, but you may re-try the saving throw each round.",
+                "You reduce penalties of Mind Burn to Wisdom-based skill checks by 1. Additionally if you fail a Will saving throw against a mind-affecting spell, you are instead dazed for the duration of the spell, but you may re-try the saving throw each round.",
                 Guid.i.Reg("0ba3718f568a4c9097307a7af57c8f88"),
                 null,
                 null
             );
             mind_shield_buff.m_Flags(HiddenInUi: true);
-            var b_comp1 = HelperEA.CreateAddContextStatBonus(StatType.SkillPerception, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 2);
+            var b_comp1 = HelperEA.CreateAddContextStatBonus(StatType.SkillPerception, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 1);
             b_comp1.Value.CustomProperty = burn_number;
-            var b_comp2 = HelperEA.CreateAddContextStatBonus(StatType.SkillLoreNature, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 2);
+            var b_comp2 = HelperEA.CreateAddContextStatBonus(StatType.SkillLoreNature, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 1);
             b_comp2.Value.CustomProperty = burn_number;
-            var b_comp3 = HelperEA.CreateAddContextStatBonus(StatType.SkillLoreReligion, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 2);
+            var b_comp3 = HelperEA.CreateAddContextStatBonus(StatType.SkillLoreReligion, ModifierDescriptor.UntypedStackable, ContextValueType.CasterCustomProperty, multiplier: 1);
             b_comp3.Value.CustomProperty = burn_number;
             mind_shield_buff.SetComponents(b_comp1, b_comp2, b_comp3,
                 Helper.CreateBuffSubstitutionOnApply(buff_confusion, custom_daze),
@@ -615,8 +630,11 @@ namespace FumisCodex
             mastery_selection.SetComponents(Helper.Create<PrerequisiteSelectionPossible>(a => a.ThisFeature = mastery_selection));
             mastery_selection.AllFeatures = new BlueprintFeature[] { mastery_1_2or3, mastery_1_2_3 };
 
-            kineticist_progression.LevelEntries.FirstOrDefault(x => x.Level == 7)?.Features.Add(mastery_selection);
-            kineticist_progression.LevelEntries.FirstOrDefault(x => x.Level == 15)?.Features.Add(mastery_selection);
+            if (!Main.COTWpresent)
+            {
+                kineticist_progression.LevelEntries.FirstOrDefault(x => x.Level == 7)?.Features.Add(mastery_selection);
+                kineticist_progression.LevelEntries.FirstOrDefault(x => x.Level == 15)?.Features.Add(mastery_selection);
+            }
         }
 
         // work on hold! does not work as intended; composite blasts are not granted, simple blasts are not granted, or other issues
@@ -732,7 +750,8 @@ namespace FumisCodex
                 prerequisite_water
             );
 
-            Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, air_flight_feat, fire_flight_feat, water_flight_feat);
+            if (!Main.COTWpresent)
+                Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, air_flight_feat, fire_flight_feat, water_flight_feat);
         }
 
         public static void createShiftEarth()
@@ -783,20 +802,21 @@ namespace FumisCodex
 
         public static void fixWallInfusion()
         {
-            foreach (AbilityVariants variants in blast_variants.Values)
+            foreach (var variants in blast_variants.Values)
             {
                 try
                 {
-                    BlueprintAbility wall = variants.Variants.First(a => a.name.StartsWith("Wall", StringComparison.Ordinal));
+                    BlueprintAbility wall = variants.FirstOrDefault(a => a.name.StartsWith("Wall", StringComparison.Ordinal));
 
                     //var area = (wall.GetComponent<AbilityEffectRunAction>().Actions.Actions[0] as ContextActionSpawnAreaEffect).AreaEffect.GetComponent<AbilityAreaEffectRunAction>();
                     //area.Round = area.UnitEnter;
 
-                    Helper.RecursiveAction<ContextActionSpawnAreaEffect>(wall.GetComponent<AbilityEffectRunAction>().Actions.Actions, a =>
-                    {
-                        var area = a.AreaEffect.GetComponent<AbilityAreaEffectRunAction>();
-                        area.Round = area.UnitEnter;
-                    });
+                    if (wall != null)
+                        Helper.RecursiveAction<ContextActionSpawnAreaEffect>(wall.GetComponent<AbilityEffectRunAction>().Actions.Actions, a =>
+                        {
+                            var area = a.AreaEffect.GetComponent<AbilityAreaEffectRunAction>();
+                            area.Round = area.UnitEnter;
+                        });
                 }
                 catch (Exception e)
                 {
@@ -845,9 +865,9 @@ namespace FumisCodex
             var area_unique = Helper.Create<UniqueAreaEffect>(a => a.Feature = mobileblast_feature);
             var fx = Helper.Resource("cfacbb7d39eaf624382c58bad8ba2df1"); //will o wisp fx
 
-            foreach (KeyValuePair<string, AbilityVariants> e in blast_variants)
+            foreach (var e in blast_variants)
             {
-                BlueprintAbility wall = e.Value.Variants.FirstOrDefault(a => a.name.StartsWith("Wall", StringComparison.Ordinal));
+                BlueprintAbility wall = e.Value.FirstOrDefault(a => a.name.StartsWith("Wall", StringComparison.Ordinal));
 
                 if (wall == null)
                 {
@@ -901,7 +921,7 @@ namespace FumisCodex
                 mobileblast_ab.AddComponent(HelperEA.CreateAbilityAoERadius(2.Feet(), TargetType.Any));
 
                 // applies to variants list
-                Helper.AppendAndReplace(ref e.Value.Variants, mobileblast_ab);
+                e.Value.Add(mobileblast_ab);
             }
         }
 
@@ -917,7 +937,7 @@ namespace FumisCodex
 
             // adds new ability that can be expanded
             // - has actual abilities in its sub menu
-            var spark_ab = HelperEA.CreateAbility("SparkOfLifeAbility", "Spark of Life", description,
+            var spark_ab = HelperEA.CreateAbility("SparkOfLifeAbility", "Spark of Life (Fumi's Codex)", description,
                 Guid.i.Reg("f4f2e77c3c2841ce9ef7cd48e32fb7fc"),
                 icon_ele,
                 AbilityType.SpellLike,
@@ -1072,13 +1092,6 @@ namespace FumisCodex
             Helper.AppendAndReplace(ref wildtalent_selection.AllFeatures, spark_feat);
 
 
-        }
-
-        //future, maybe
-        public static void createSuffocate()
-        {
-            //AddCondition UnitCondition.SpellCastingIsDifficult
-            //add con save 10 +1 each round, failure reduces HPleft to 0 or -1 or death
         }
 
         //future

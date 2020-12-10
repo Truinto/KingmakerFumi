@@ -18,6 +18,8 @@ namespace FumisCodex
         public bool auraOfDoomFx = true;
         [JsonProperty]
         public bool dazeIsNotStun = true;
+        [JsonProperty]
+        public bool eidolonLifeLink = true;
 
         [JsonProperty]
         public bool extendSprayInfusion = true;
