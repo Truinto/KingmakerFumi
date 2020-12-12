@@ -90,7 +90,13 @@ namespace FumisCodex
             Main.DebugLog("base blast list: ");
             foreach (var blast in all_base)
             {
-                string name = blast.name.Substring(0, blast.name.IndexOf("Blast", StringComparison.Ordinal));
+                int index = blast.name.IndexOf("Blast", StringComparison.Ordinal);
+                if (index < 0)
+                {
+                    Main.DebugLog("Invalid blast: " + blast.name);
+                    continue;
+                }
+                string name = blast.name.Substring(0, index);
 
                 if (name == "KineticBladeChargeWater") name = "KineticBladeChargedWater";   // fix typo, not permanent
 

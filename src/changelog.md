@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.10]
+
+### Fixed
+- fix bug crashing Kineticist.init
+
 ## [1.0.9]
 
 ### Added
