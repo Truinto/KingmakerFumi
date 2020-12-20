@@ -1,32 +1,38 @@
 using System;
 using Kingmaker.Blueprints;
+using Kingmaker.Blueprints.Facts;
 using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.Blueprints.Validation;
 using Kingmaker.Items;
 using Kingmaker.Items.Slots;
 using Kingmaker.PubSubSystem;
+using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Buffs.Components;
 using Newtonsoft.Json;
 
 namespace FumisCodex.NewComponents
 {
-    [AllowedOn(typeof(BlueprintBuff))]
-    public class AddPermanentWeapon : BuffLogic, IAreaActivationHandler, IGlobalSubscriber
+    [AllowedOn(typeof(BlueprintUnitFact))]
+    public class AddPermanentWeaponFact : OwnedGameLogicComponent<UnitDescriptor>
     {
         public override void OnFactActivate()
         {
             base.OnFactActivate();
-            this.m_Applied = this.Blade.CreateEntity<ItemEntityWeapon>();
+            this.m_Applied = this.Weapon.CreateEntity<ItemEntityWeapon>();
             this.m_Applied.MakeNotLootable();
-            if (base.Owner.Body.PrimaryHand.HasItem)
+            bool flag = true;
+            if (base.Owner.Body.HandsEquipmentSets[0].PrimaryHand.HasItem)
             {
-                base.Owner.Body.PrimaryHand.RemoveItem(true);
+                flag = base.Owner.Body.HandsEquipmentSets[0].PrimaryHand.RemoveItem(true);
             }
-            ItemsCollection.DoWithoutEvents(delegate
-            {
-                base.Owner.Body.PrimaryHand.InsertItem(this.m_Applied);
-            });
+            if (flag)
+                ItemsCollection.DoWithoutEvents(delegate
+                {
+                    base.Owner.Body.HandsEquipmentSets[0].PrimaryHand.InsertItem(this.m_Applied);
+                });
+            else
+                Main.DebugLog($"AddPermanentWeaponFact cannot remove item: {base.Owner.Body.HandsEquipmentSets[0].PrimaryHand.Item?.Name}");
         }
 
         public override void OnFactDeactivate()
@@ -71,7 +77,7 @@ namespace FumisCodex.NewComponents
             }
         }
 
-        public BlueprintItemWeapon Blade;
+        public BlueprintItemWeapon Weapon;
 
         [JsonProperty]
         private ItemEntityWeapon m_Applied;

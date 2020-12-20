@@ -1,17 +1,22 @@
 ﻿using FumisCodex.NewComponents;
+using HarmonyLib;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Prerequisites;
 using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Facts;
+using Kingmaker.Blueprints.Items;
+using Kingmaker.Blueprints.Items.Ecnchantments;
 using Kingmaker.Blueprints.Items.Weapons;
+using Kingmaker.Blueprints.Loot;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
 using Kingmaker.Designers.EventConditionActionSystem.Conditions;
 using Kingmaker.Designers.Mechanics.Buffs;
 using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.Designers.Mechanics.Prerequisites;
 using Kingmaker.ElementsSystem;
+using Kingmaker.EntitySystem.Entities;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
 using Kingmaker.Enums.Damage;
@@ -43,11 +48,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
 using static HarmonyLib.AccessTools;
-using Kingmaker.EntitySystem.Entities;
-using JetBrains.Annotations;
-using Kingmaker.Blueprints.Items.Ecnchantments;
+using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
 
 namespace FumisCodex
 {
@@ -63,6 +65,28 @@ namespace FumisCodex
 
             // TODO: improve to
             //Access.m_Flags(obj) = value;
+        }
+
+        public static int MinMax(this int number, int min, int max)
+        {
+            return Math.Max(min, Math.Min(number, max));
+        }
+
+        public static void AddItemToSpecifiedVendorTable(this BlueprintSharedVendorTable vendor_table, BlueprintItem item, int amount = 1)
+        {
+            vendor_table.AddComponent(Helper.CreateLootItemsPackFixed(item, amount));
+        }
+
+        public static void SetItemNameDescriptionFlavorIcon(this BlueprintItem item, string displayName = null, string description = null, string flavorText = null, Sprite icon = null)
+        {
+            if (displayName != null)
+                Access.BlueprintItem_DisplayNameTextStr(item, displayName);
+            if (description != null)
+                Access.BlueprintItem_DescriptionTextStr(item, description);
+            if (flavorText != null)
+                Access.BlueprintItem_FlavorTextStr(item, flavorText);
+            if (icon != null)
+                Access.BlueprintItem_Icon(item) = icon;
         }
 
         public static PrerequisiteArchetypeLevel CreatePrerequisite(this BlueprintArchetype @class, int level, bool any = true)
@@ -244,72 +268,171 @@ namespace FumisCodex
 
     public class Access
     {
-        public static readonly FieldRef<BlueprintUnitFact, LocalizedString> m_DisplayName = FieldRefAccess<BlueprintUnitFact, LocalizedString>("m_DisplayName");
+        public static readonly FieldRef<LocalizedString, string> m_Key;
+        public static readonly FieldRef<BlueprintScriptableObject, string> m_AssetGuid;
+
+        #region BlueprintUnitFact
+        public static readonly FieldRef<BlueprintUnitFact, LocalizedString> m_DisplayName;
         public static void m_DisplayNameStr(BlueprintUnitFact f, string str)
         {
             m_DisplayName(f) = HelperEA.CreateString(f.name + ".DisplayName", str);
         }
-        public static readonly FieldRef<BlueprintUnitFact, LocalizedString> m_Description = FieldRefAccess<BlueprintUnitFact, LocalizedString>("m_Description");
+        public static readonly FieldRef<BlueprintUnitFact, LocalizedString> m_Description;
         public static void m_DescriptionStr(BlueprintUnitFact f, string str)
         {
             m_Description(f) = HelperEA.CreateString(f.name + ".Description", str);
         }
+        public static readonly FieldRef<BlueprintUnitFact, Sprite> m_Icon;
+        #endregion
 
-        //BlueprintItemEnchantment
-        public static readonly FieldRef<BlueprintItemEnchantment, LocalizedString> BlueprintItemEnchantment_Description = FieldRefAccess<BlueprintItemEnchantment, LocalizedString>("m_Description");
+        #region BlueprintItemWeapon
+        public static readonly FieldRef<BlueprintItemWeapon, BlueprintWeaponEnchantment[]> m_Enchantments;
+        #endregion
+
+        #region BlueprintItemEnchantment
+        public static readonly FieldRef<BlueprintItemEnchantment, LocalizedString> BlueprintItemEnchantment_Description;
         public static void m_DescriptionStr(BlueprintItemEnchantment f, string str)
         {
             BlueprintItemEnchantment_Description(f) = HelperEA.CreateString(f.name + ".Description", str);
         }
-        public static readonly FieldRef<BlueprintItemEnchantment, LocalizedString> m_EnchantName = FieldRefAccess<BlueprintItemEnchantment, LocalizedString>("m_EnchantName");
+        public static readonly FieldRef<BlueprintItemEnchantment, LocalizedString> m_EnchantName;
         public static void m_EnchantNameStr(BlueprintItemEnchantment f, string str)
         {
             m_EnchantName(f) = HelperEA.CreateString(f.name + ".Description", str);
         }
-        public static readonly FieldRef<BlueprintItemEnchantment, int> m_EnchantmentCost = FieldRefAccess<BlueprintItemEnchantment, int>("m_EnchantmentCost");
+        public static readonly FieldRef<BlueprintItemEnchantment, int> m_EnchantmentCost;
+        #endregion
 
+        #region BlueprintItem
+        public static readonly FieldRef<BlueprintItem, LocalizedString> BlueprintItem_DisplayNameText;
+        public static void BlueprintItem_DisplayNameTextStr(BlueprintItem f, string str)
+        {
+            BlueprintItem_DisplayNameText(f) = HelperEA.CreateString(f.name + ".ItemDisplayName", str);
+        }
+        public static readonly FieldRef<BlueprintItem, LocalizedString> BlueprintItem_DescriptionText;
+        public static void BlueprintItem_DescriptionTextStr(BlueprintItem f, string str)
+        {
+            BlueprintItem_DescriptionText(f) = HelperEA.CreateString(f.name + ".ItemDescription", str);
+        }
+        public static readonly FieldRef<BlueprintItem, LocalizedString> BlueprintItem_FlavorText;
+        public static void BlueprintItem_FlavorTextStr(BlueprintItem f, string str)
+        {
+            BlueprintItem_FlavorText(f) = HelperEA.CreateString(f.name + ".ItemFlavorText", str);
+        }
+        public static readonly FieldRef<BlueprintItem, Sprite> BlueprintItem_Icon;
+        public static readonly FieldRef<BlueprintItem, float> BlueprintItem_Weight;
+        public static readonly FieldRef<BlueprintItem, int> m_Cost;
+        #endregion
 
-        public static readonly FieldRef<BlueprintBuff, int> m_Flags;
-        public static readonly FieldRef<BlueprintUnitFact, Sprite> m_Icon = FieldRefAccess<BlueprintUnitFact, Sprite>("m_Icon");
-        public static readonly FieldRef<LocalizedString, string> m_Key = FieldRefAccess<LocalizedString, string>("m_Key");
-        public static readonly FieldRef<ContextRankConfig, ContextRankBaseValueType> m_BaseValueType = FieldRefAccess<ContextRankConfig, ContextRankBaseValueType>("m_BaseValueType");
-        public static readonly FieldRef<ContextRankConfig, AbilityRankType> m_Type_ContextRankConfig = FieldRefAccess<ContextRankConfig, AbilityRankType>("m_Type");
-        public static readonly FieldRef<ContextRankConfig, ContextRankProgression> m_Progression = FieldRefAccess<ContextRankConfig, ContextRankProgression>("m_Progression");
-        public static readonly FieldRef<ContextRankConfig, bool> m_UseMin = FieldRefAccess<ContextRankConfig, bool>("m_UseMin");
-        public static readonly FieldRef<ContextRankConfig, int> m_Min = FieldRefAccess<ContextRankConfig, int>("m_Min");
-        public static readonly FieldRef<ContextRankConfig, bool> m_UseMax = FieldRefAccess<ContextRankConfig, bool>("m_UseMax");
-        public static readonly FieldRef<ContextRankConfig, int> m_Max = FieldRefAccess<ContextRankConfig, int>("m_Max");
-        public static readonly FieldRef<ContextRankConfig, int> m_StartLevel = FieldRefAccess<ContextRankConfig, int>("m_StartLevel");
-        public static readonly FieldRef<ContextRankConfig, int> m_StepLevel = FieldRefAccess<ContextRankConfig, int>("m_StepLevel");
-        public static readonly FieldRef<ContextRankConfig, BlueprintFeature> m_Feature = FieldRefAccess<ContextRankConfig, BlueprintFeature>("m_Feature");
-        public static readonly FieldRef<ContextRankConfig, bool> m_ExceptClasses = FieldRefAccess<ContextRankConfig, bool>("m_ExceptClasses");
-        public static readonly FieldRef<ContextRankConfig, BlueprintUnitProperty> m_CustomProperty = FieldRefAccess<ContextRankConfig, BlueprintUnitProperty>("m_CustomProperty");
-        public static readonly FieldRef<ContextRankConfig, StatType> m_Stat = FieldRefAccess<ContextRankConfig, StatType>("m_Stat");
-        public static readonly FieldRef<ContextRankConfig, BlueprintCharacterClass[]> m_Class = FieldRefAccess<ContextRankConfig, BlueprintCharacterClass[]>("m_Class");
-        public static readonly FieldRef<ContextRankConfig, BlueprintArchetype> Archetype = FieldRefAccess<ContextRankConfig, BlueprintArchetype>("Archetype");
-        public static readonly FieldRef<ContextRankConfig, BlueprintFeature[]> m_FeatureList = FieldRefAccess<ContextRankConfig, BlueprintFeature[]>("m_FeatureList");
-        public static readonly Type typeof_CustomProgressionItem = typeof(ContextRankConfig).GetNestedType("CustomProgressionItem", BindingFlags.NonPublic);
+        #region ContextRank
+        public static readonly FieldRef<ContextRankConfig, ContextRankBaseValueType> m_BaseValueType;
+        public static readonly FieldRef<ContextRankConfig, AbilityRankType> ContextRankConfig_Type;
+        public static readonly FieldRef<ContextRankConfig, ContextRankProgression> m_Progression;
+        public static readonly FieldRef<ContextRankConfig, bool> m_UseMin;
+        public static readonly FieldRef<ContextRankConfig, int> m_Min;
+        public static readonly FieldRef<ContextRankConfig, bool> m_UseMax;
+        public static readonly FieldRef<ContextRankConfig, int> m_Max;
+        public static readonly FieldRef<ContextRankConfig, int> m_StartLevel;
+        public static readonly FieldRef<ContextRankConfig, int> m_StepLevel;
+        public static readonly FieldRef<ContextRankConfig, BlueprintFeature> m_Feature;
+        public static readonly FieldRef<ContextRankConfig, bool> m_ExceptClasses;
+        public static readonly FieldRef<ContextRankConfig, BlueprintUnitProperty> m_CustomProperty;
+        public static readonly FieldRef<ContextRankConfig, StatType> m_Stat;
+        public static readonly FieldRef<ContextRankConfig, BlueprintCharacterClass[]> m_Class;
+        public static readonly FieldRef<ContextRankConfig, BlueprintArchetype> Archetype;
+        public static readonly FieldRef<ContextRankConfig, BlueprintFeature[]> m_FeatureList;
+        //public static readonly Type typeof_CustomProgressionItem = typeof(ContextRankConfig).GetNestedType("CustomProgressionItem", BindingFlags.NonPublic);
         //public static readonly FieldRef<object, int> BaseValue = FieldRefAccess<object, int>("BaseValue");
         //public static readonly FieldRef<object, int> ProgressionValue = FieldRefAccess<object, int>("ProgressionValue");
-        public static readonly FieldRef<ContextRankConfig, object> m_CustomProgression = FieldRefAccess<ContextRankConfig, object>("m_CustomProgression");
-        public static readonly FieldRef<BlueprintActivatableAbility, CommandType> m_ActivateWithUnitCommand = FieldRefAccess<BlueprintActivatableAbility, CommandType>("m_ActivateWithUnitCommand");
-        public static readonly FieldRef<BlueprintArchetype, BlueprintCharacterClass> m_ParentClass = FieldRefAccess<BlueprintArchetype, BlueprintCharacterClass>("m_ParentClass");
-        //public static readonly FieldRef<ContextActionDealDamage, int> m_Type_ContextActionDealDamage = FieldRefAccess<ContextActionDealDamage, int>("m_Type");
-        public static readonly FieldRef<AbilityAoERadius, Feet> m_Radius = FieldRefAccess<AbilityAoERadius, Feet>("m_Radius");
-        public static readonly FieldRef<AbilityAoERadius, TargetType> m_TargetType = FieldRefAccess<AbilityAoERadius, TargetType>("m_TargetType");
-        public static readonly FieldRef<BlueprintScriptableObject, string> m_AssetGuid = FieldRefAccess<BlueprintScriptableObject, string>("m_AssetGuid");
+        public static readonly FieldRef<ContextRankConfig, object> m_CustomProgression;
+        #endregion
 
+        #region LootItem
+        public static readonly FieldRef<LootItem, BlueprintItem> LootItem_Item;
+        public static readonly FieldRef<LootItemsPackFixed, LootItem> LootItemsPackFixed_Item;
+        public static readonly FieldRef<LootItemsPackFixed, int> LootItemsPackFixed_Count;
+        #endregion
+
+        #region other
+
+        public static readonly FieldRef<BlueprintActivatableAbility, CommandType> m_ActivateWithUnitCommand;
+        public static readonly FieldRef<BlueprintArchetype, BlueprintCharacterClass> m_ParentClass;
+        public static readonly FieldRef<AbilityAoERadius, Feet> m_Radius;
+        public static readonly FieldRef<AbilityAoERadius, TargetType> m_TargetType;
+
+        #endregion
+
+        //public static readonly FieldRef<BlueprintBuff, int> m_Flags;
+        //public static readonly FieldRef<ContextActionDealDamage, int> m_Type_ContextActionDealDamage = FieldRefAccess<ContextActionDealDamage, int>("m_Type");
         //public static readonly FieldRef<> m_ = FieldRefAccess<>("");
 
         static Access()
         {
-            // TODO: improve error logging by handling static constructor manually
+            // no inline definitions, so we get more meaningful debug expections
             try
             {
-                Main.DebugLog("Access.m_Flags");
-                var mflag_info = HarmonyLib.AccessTools.Field(typeof(BlueprintBuff), "m_Flags");
-                Main.DebugLog($"m_Flag is Enum {mflag_info.FieldType.IsEnum} and underlying: " + Enum.GetUnderlyingType(mflag_info.FieldType).ToString());
+                Main.DebugLog("Access.m_Key");
+                m_Key = FieldRefAccess<LocalizedString, string>("m_Key");
+
+                Main.DebugLog("Access.m_AssetGuid");
+                m_AssetGuid = FieldRefAccess<BlueprintScriptableObject, string>("m_AssetGuid");
+
+                Main.DebugLog("Access.BlueprintUnitFact");
+                m_DisplayName = FieldRefAccess<BlueprintUnitFact, LocalizedString>("m_DisplayName");
+                m_Description = FieldRefAccess<BlueprintUnitFact, LocalizedString>("m_Description");
+                m_Icon = FieldRefAccess<BlueprintUnitFact, Sprite>("m_Icon");
+
+                Main.DebugLog("Access.BlueprintItemWeapon");
+                m_Enchantments = FieldRefAccess<BlueprintItemWeapon, BlueprintWeaponEnchantment[]>("m_Enchantments");
+
+                Main.DebugLog("Access.BlueprintItemEnchantment");
+                BlueprintItemEnchantment_Description = FieldRefAccess<BlueprintItemEnchantment, LocalizedString>("m_Description");
+                m_EnchantName = FieldRefAccess<BlueprintItemEnchantment, LocalizedString>("m_EnchantName");
+                m_EnchantmentCost = FieldRefAccess<BlueprintItemEnchantment, int>("m_EnchantmentCost");
+
+                Main.DebugLog("Access.BlueprintItem");
+                BlueprintItem_DisplayNameText = FieldRefAccess<BlueprintItem, LocalizedString>("m_DisplayNameText");
+                BlueprintItem_DescriptionText = FieldRefAccess<BlueprintItem, LocalizedString>("m_DescriptionText");
+                BlueprintItem_FlavorText = FieldRefAccess<BlueprintItem, LocalizedString>("m_FlavorText");
+                BlueprintItem_Icon = FieldRefAccess<BlueprintItem, Sprite>("m_Icon");
+                BlueprintItem_Weight = FieldRefAccess<BlueprintItem, float>("m_Weight");
+                m_Cost = FieldRefAccess<BlueprintItem, int>("m_Cost");
+
+                Main.DebugLog("Access.ContextRankConfig");
+                m_BaseValueType = FieldRefAccess<ContextRankConfig, ContextRankBaseValueType>("m_BaseValueType");
+                ContextRankConfig_Type = FieldRefAccess<ContextRankConfig, AbilityRankType>("m_Type");
+                m_Progression = FieldRefAccess<ContextRankConfig, ContextRankProgression>("m_Progression");
+                m_UseMin = FieldRefAccess<ContextRankConfig, bool>("m_UseMin");
+                m_Min = FieldRefAccess<ContextRankConfig, int>("m_Min");
+                m_UseMax = FieldRefAccess<ContextRankConfig, bool>("m_UseMax");
+                m_Max = FieldRefAccess<ContextRankConfig, int>("m_Max");
+                m_StartLevel = FieldRefAccess<ContextRankConfig, int>("m_StartLevel");
+                m_StepLevel = FieldRefAccess<ContextRankConfig, int>("m_StepLevel");
+                m_Feature = FieldRefAccess<ContextRankConfig, BlueprintFeature>("m_Feature");
+                m_ExceptClasses = FieldRefAccess<ContextRankConfig, bool>("m_ExceptClasses");
+                m_CustomProperty = FieldRefAccess<ContextRankConfig, BlueprintUnitProperty>("m_CustomProperty");
+                m_Stat = FieldRefAccess<ContextRankConfig, StatType>("m_Stat");
+                m_Class = FieldRefAccess<ContextRankConfig, BlueprintCharacterClass[]>("m_Class");
+                Archetype = FieldRefAccess<ContextRankConfig, BlueprintArchetype>("Archetype");
+                m_FeatureList = FieldRefAccess<ContextRankConfig, BlueprintFeature[]>("m_FeatureList");
+                m_CustomProgression = FieldRefAccess<ContextRankConfig, object>("m_CustomProgression");
+
+                Main.DebugLog("Access.LootItem");
+                LootItem_Item = FieldRefAccess<LootItem, BlueprintItem>("m_Item");
+                LootItemsPackFixed_Item = FieldRefAccess<LootItemsPackFixed, LootItem>("m_Item");
+                LootItemsPackFixed_Count = FieldRefAccess<LootItemsPackFixed, int>("m_Count");
+
+                Main.DebugLog("Access.other");
+                m_ActivateWithUnitCommand = FieldRefAccess<BlueprintActivatableAbility, CommandType>("m_ActivateWithUnitCommand");
+                m_ParentClass = FieldRefAccess<BlueprintArchetype, BlueprintCharacterClass>("m_ParentClass");
+                m_Radius = FieldRefAccess<AbilityAoERadius, Feet>("m_Radius");
+                m_TargetType = FieldRefAccess<AbilityAoERadius, TargetType>("m_TargetType");
+
+                //Main.DebugLog("Access.new");
+                //var mflag_info = HarmonyLib.AccessTools.Field(typeof(BlueprintBuff), "m_Flags");
+                //Main.DebugLog($"m_Flag is Enum {mflag_info.FieldType.IsEnum} and underlying: " + Enum.GetUnderlyingType(mflag_info.FieldType).ToString());
                 //m_Flags = FieldRefAccess<BlueprintBuff, System.Int32>("m_Flags");
+
                 Main.DebugLog("Access done");
             }
             catch (Exception e)
@@ -346,10 +469,13 @@ namespace FumisCodex
 
         public static BlueprintSummonPool SummonPool = Main.library.Get<BlueprintSummonPool>("d94c93e7240f10e41ae41db4c83d1cbe");
         public static ActionList AfterSpawnAction = Helper.CreateActionList(HelperEA.CreateApplyBuff(Main.library.Get<BlueprintBuff>("0dff842f06edace43baf8a2f44207045"), DurationZero, false, false, false, false, true));
+
+        public static Sprite IconPlaceHolder = Helper.Image2Sprite.Create("PlaceHolderIcon.png");
     }
 
     public static class Strings
     {
+        public static LocalizedString Empty = new LocalizedString();
         public static LocalizedString SavingThrowNone = Main.library.Get<BlueprintAbility>("b6010dda6333bcf4093ce20f0063cd41").LocalizedSavingThrow;
         public static LocalizedString RoundsPerLevelDuration = Main.library.Get<BlueprintAbility>("486eaff58293f6441a5c2759c4872f98").LocalizedDuration;
         public static LocalizedString HourPerLevelDuration = Main.library.Get<BlueprintAbility>("9e1ad5d6f87d19e4d8883d63a6e35568").LocalizedDuration;
@@ -580,7 +706,7 @@ namespace FumisCodex
             // (It's common for many features to use the same localized text.
             // In that case, we reuse the old entry instead of making a new one.)
             LocalizedString localized;
-            if (textToLocalizedString.TryGetValue(value, out localized))
+            if (_textToLocalizedString.TryGetValue(value, out localized))
             {
                 return localized;
             }
@@ -595,12 +721,12 @@ namespace FumisCodex
             strings[key] = value;
             localized = new LocalizedString();
             Access.m_Key(localized) = key;
-            textToLocalizedString[value] = localized;
+            _textToLocalizedString[value] = localized;
             return localized;
         }
 
         // All localized strings created in this mod, mapped to their localized key. Populated by CreateString.
-        static Dictionary<String, LocalizedString> textToLocalizedString = new Dictionary<string, LocalizedString>();
+        public static Dictionary<String, LocalizedString> _textToLocalizedString = new Dictionary<string, LocalizedString>();
 
         public static PrerequisiteFeature PrerequisiteFeature(this BlueprintFeature feat, bool any = false)
         {
@@ -649,7 +775,7 @@ namespace FumisCodex
         public static ContextRankConfig CreateContextRankConfig(ContextRankBaseValueType baseValueType = ContextRankBaseValueType.CasterLevel, ContextRankProgression progression = ContextRankProgression.AsIs, AbilityRankType type = AbilityRankType.Default, int? min = null, int? max = null, int startLevel = 0, int stepLevel = 0, bool exceptClasses = false, StatType stat = StatType.Unknown, BlueprintUnitProperty customProperty = null, BlueprintCharacterClass[] classes = null, BlueprintArchetype archetype = null, BlueprintFeature feature = null, BlueprintFeature[] featureList = null/*, (int, int)[] customProgression = null*/)
         {
             var config = Helper.Create<ContextRankConfig>();
-            Access.m_Type_ContextRankConfig(config) = type;
+            Access.ContextRankConfig_Type(config) = type;
             Access.m_BaseValueType(config) = baseValueType;
             Access.m_Progression(config) = progression;
             Access.m_UseMin(config) = min.HasValue;
@@ -873,7 +999,10 @@ namespace FumisCodex
                 low ^= ParseGuidLow(guid3);
                 high ^= ParseGuidHigh(guid3);
             }
-            return high.ToString("x16") + low.ToString("x16");
+
+            var result = high.ToString("x16") + low.ToString("x16");
+            Main.DebugLog($"MergeIds {guid1} + {guid2} + {guid3} = {result}");
+            return result;
         }
         static ulong ParseGuidLow(String id) => ulong.Parse(id.Substring(id.Length - 16), System.Globalization.NumberStyles.HexNumber);
         static ulong ParseGuidHigh(String id) => ulong.Parse(id.Substring(0, id.Length - 16), System.Globalization.NumberStyles.HexNumber);
@@ -956,6 +1085,18 @@ namespace FumisCodex
             ability.CanTargetPoint = false;
             ability.EffectOnEnemy = AbilityEffectOnUnit.Harmful;
             ability.EffectOnAlly = works_on_allies ? AbilityEffectOnUnit.Harmful : AbilityEffectOnUnit.None;
+            ability.Animation = animation;
+            //ability.AnimationStyle = animation_style;
+        }
+
+        public static void SetMiscAbilityParametersSelfOnly(this BlueprintAbility ability, Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCastSpell.CastAnimationStyle animation = Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCastSpell.CastAnimationStyle.Self, Kingmaker.View.Animation.CastAnimationStyle animation_style = Kingmaker.View.Animation.CastAnimationStyle.CastActionSelf)
+        {
+            ability.CanTargetFriends = false;
+            ability.CanTargetEnemies = false;
+            ability.CanTargetSelf = true;
+            ability.CanTargetPoint = false;
+            ability.EffectOnEnemy = AbilityEffectOnUnit.None;
+            ability.EffectOnAlly = AbilityEffectOnUnit.Helpful;
             ability.Animation = animation;
             //ability.AnimationStyle = animation_style;
         }
@@ -1813,7 +1954,7 @@ namespace FumisCodex
 
         public static WeaponEnhancementScaling CreateWeaponEnhancementScaling(BlueprintCharacterClass[] Class, BlueprintArchetype[] Archetype, int StartingLevel, int StartValue, int LevelStep, int PerStepIncrease)
         {
-            var result = Helper.Create<WeaponEnhancementScaling>();
+            var result = Create<WeaponEnhancementScaling>();
             result.Class = Class ?? new BlueprintCharacterClass[0];
             result.Archetype = Archetype ?? new BlueprintArchetype[0];
             result.StartingLevel = StartingLevel;
@@ -1823,22 +1964,24 @@ namespace FumisCodex
             return result;
         }
 
-        public static BlueprintWeaponEnchantment CreateBlueprintWeaponEnchantment(string Name, string Desc, int Cost, params BlueprintComponent[] components)
+        public static BlueprintWeaponEnchantment CreateBlueprintWeaponEnchantment(string name, string guid, string displayName, string Desc, int Cost, params BlueprintComponent[] components)
         {
-            var result = Helper.Create<BlueprintWeaponEnchantment>();
-            Access.m_EnchantNameStr(result, Name);
+            var result = Create<BlueprintWeaponEnchantment>();
+            result.name = name;
+            Access.m_EnchantNameStr(result, displayName);
             Access.m_DescriptionStr(result, Desc);
             Access.m_EnchantmentCost(result) = Cost;
 
             if (components != null)
                 result.SetComponents(components);
 
+            Main.library.AddAsset(result, guid);
             return result;
         }
 
         public static ContextActionTryCastSpell CreateContextActionTryCastSpell(BlueprintAbility Spell, GameAction[] Succeed = null, GameAction[] Failed = null)
         {
-            var result = Helper.Create<ContextActionTryCastSpell>();
+            var result = Create<ContextActionTryCastSpell>();
 
             result.Spell = Spell;
             result.Succeed = CreateActionList(Succeed);
@@ -1847,14 +1990,166 @@ namespace FumisCodex
             return result;
         }
 
+        public static AbilityRestoreSpellSlot CreateAbilityRestoreSpellSlot(int SpellLevel = 0)
+        {
+            var result = Create<AbilityRestoreSpellSlot>();
+
+            result.AnySpellLevel = SpellLevel <= 0;
+            result.SpellLevel = SpellLevel;
+
+            return result;
+        }
+
+        public static AbilityRestoreSpontaneousSpell CreateAbilityRestoreSpontaneousSpell(int SpellLevel = 9)
+        {
+            var result = Create<AbilityRestoreSpontaneousSpell>();
+
+            result.SpellLevel = SpellLevel;
+
+            return result;
+        }
+
+        public static LootItemsPackFixed CreateLootItemsPackFixed(BlueprintItem item, int amount = 1)
+        {
+            var result_item = new LootItem();
+            Access.LootItem_Item(result_item) = item;
+
+            var result = Create<LootItemsPackFixed>();
+            Access.LootItemsPackFixed_Item(result) = result_item;
+            Access.LootItemsPackFixed_Count(result) = amount;
+
+            return result;
+        }
+
+        public static BlueprintAbilityResource CreateBlueprintAbilityResource()
+        {
+            var result = Create<BlueprintAbilityResource>();
+            return result;
+        }
+
+        public static BlueprintAbilityResource Set_BlueprintAbilityResource_MaxAmount(BlueprintAbilityResource blueprintAbilityResource,
+            int? BaseValue = null, bool? IncreasedByLevel = null, BlueprintCharacterClass[] Class = null,
+            BlueprintArchetype[] Archetypes = null, int? LevelIncrease = null,
+            bool? IncreasedByLevelStartPlusDivStep = null, int? StartingLevel = null, int? StartingIncrease = null,
+            int? LevelStep = null, int? PerStepIncrease = null, int? MinClassLevelIncrease = null,
+            BlueprintCharacterClass[] ClassDiv = null, BlueprintArchetype[] ArchetypesDiv = null,
+            float? OtherClassesModifier = null, bool? IncreasedByStat = null, StatType? ResourceBonusStat = null)
+        {
+            var fi_amount = AccessTools.Field(typeof(BlueprintAbilityResource), "m_MaxAmount");
+            object amount = fi_amount.GetValue(blueprintAbilityResource);
+
+            foreach (var field in AccessTools.GetDeclaredFields(fi_amount.FieldType))
+            {
+                switch (field.Name)
+                {
+                    case nameof(BaseValue):
+                        if (BaseValue != null)
+                            field.SetValue(amount, BaseValue.Value);
+                        break;
+                    case nameof(IncreasedByLevel):
+                        if (IncreasedByLevel != null)
+                            field.SetValue(amount, IncreasedByLevel.Value);
+                        break;
+                    case nameof(Class):
+                        if (Class != null)
+                            field.SetValue(amount, Class);
+                        break;
+                    case nameof(Archetypes):
+                        if (Archetypes != null)
+                            field.SetValue(amount, Archetypes);
+                        break;
+                    case nameof(LevelIncrease):
+                        if (LevelIncrease != null)
+                            field.SetValue(amount, LevelIncrease.Value);
+                        break;
+                    case nameof(IncreasedByLevelStartPlusDivStep):
+                        if (IncreasedByLevelStartPlusDivStep != null)
+                            field.SetValue(amount, IncreasedByLevelStartPlusDivStep.Value);
+                        break;
+                    case nameof(StartingLevel):
+                        if (StartingLevel != null)
+                            field.SetValue(amount, StartingLevel.Value);
+                        break;
+                    case nameof(StartingIncrease):
+                        if (StartingIncrease != null)
+                            field.SetValue(amount, StartingIncrease.Value);
+                        break;
+                    case nameof(LevelStep):
+                        if (LevelStep != null)
+                            field.SetValue(amount, LevelStep.Value);
+                        break;
+                    case nameof(PerStepIncrease):
+                        if (PerStepIncrease != null)
+                            field.SetValue(amount, PerStepIncrease.Value);
+                        break;
+                    case nameof(MinClassLevelIncrease):
+                        if (MinClassLevelIncrease != null)
+                            field.SetValue(amount, MinClassLevelIncrease.Value);
+                        break;
+                    case nameof(ClassDiv):
+                        if (ClassDiv != null)
+                            field.SetValue(amount, ClassDiv);
+                        break;
+                    case nameof(ArchetypesDiv):
+                        if (ArchetypesDiv != null)
+                            field.SetValue(amount, ArchetypesDiv);
+                        break;
+                    case nameof(OtherClassesModifier):
+                        if (OtherClassesModifier != null)
+                            field.SetValue(amount, OtherClassesModifier.Value);
+                        break;
+                    case nameof(IncreasedByStat):
+                        if (IncreasedByStat != null)
+                            field.SetValue(amount, IncreasedByStat.Value);
+                        break;
+                    case nameof(ResourceBonusStat):
+                        if (ResourceBonusStat != null)
+                            field.SetValue(amount, ResourceBonusStat.Value);
+                        break;
+                    default:
+                        Main.DebugLogAlways("Error: Unkown field in m_MaxAmount" + field.Name);
+                        break;
+                }
+            }
+            
+            return blueprintAbilityResource;
+        }
+
+        public static AddAbilityResources CreateAddAbilityResources(BlueprintAbilityResource Resource, bool RestoreAmount = true, bool RestoreOnLevelUp = false)
+        {
+            var result = Create<AddAbilityResources>();
+            result.RestoreAmount = RestoreAmount;
+            result.RestoreOnLevelUp = RestoreOnLevelUp;
+            return result;
+        }
+
+        public static IncreaseResourceCustom CreateIncreaseResourceCustom(BlueprintAbilityResource Resource, BlueprintCharacterClass[] Classes, BlueprintArchetype[] Archetypes = null, bool Invert = false, params int[] Bonus)
+        {
+            var result = Create<IncreaseResourceCustom>();
+            result.Resource = Resource;
+            result.Classes = Classes ?? Array.Empty<BlueprintCharacterClass>();
+            result.Archetypes = Archetypes ?? Array.Empty<BlueprintArchetype>();
+            result.Invert = Invert;
+            result.Bonus = Bonus ?? Array.Empty<int>();
+            return result;
+        }
+
+        public static PrerequisiteExactClassLevel CreatePrerequisiteExactClassLevel(BlueprintCharacterClass CharacterClass, int Level)
+        {
+            var result = Create<PrerequisiteExactClassLevel>();
+            result.CharacterClass = CharacterClass;
+            result.Level = Level;
+            return result;
+        }
+
         public static class Image2Sprite
         {
-            public static Sprite Create(string filename)
+            public static Sprite Create(string filename, int width = 64, int height = 64)
             {
                 try
                 {
                     var bytes = File.ReadAllBytes(Path.Combine(Main.ModPath, "Icons", filename));
-                    var texture = new Texture2D(64, 64);
+                    var texture = new Texture2D(width, height);
                     texture.LoadImage(bytes);
                     return Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0, 0));
                 }

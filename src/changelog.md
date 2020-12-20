@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.11]
+
+### Added
+- added Pearl of Powers
+- added Runestone of Powers
+- added Ascetic Style
+
+### Changed
+- Snake Sidewind works with Feral Combat Training
+- Boar Style works with Feral Combat Training
+- Medusa's Wrath works with Feral Combat Training
+- improved some style feat descriptions
+
+### Fixed
+- Medusa's Wrath sometimes triggering too many AoO
+
 ## [1.0.10]
 
 ### Fixed

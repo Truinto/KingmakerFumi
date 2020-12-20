@@ -22,6 +22,12 @@ namespace FumisCodex
         public bool eidolonLifeLink = true;
 
         [JsonProperty]
+        public int magicItemBaseCost = 1000;
+        [JsonProperty]
+        public int pearlRunestoneDailyUses = 2;
+
+
+        [JsonProperty]
         public bool extendSprayInfusion = true;
         [JsonProperty]
         public bool extraWildTalentFeat = true;

@@ -1,47 +1,30 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Reflection;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using UnityEngine;
-using UnityModManagerNet;
-using Kingmaker;
-using Kingmaker.Enums;
+﻿using CallOfTheWild;
+using FumisCodex.NewComponents;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
-using Kingmaker.UnitLogic.FactLogic;
-using Kingmaker.UnitLogic.Abilities.Blueprints;
-using Kingmaker.UnitLogic.Mechanics.Components;
-using Kingmaker.UnitLogic.Buffs.Blueprints;
-using Kingmaker.Designers.Mechanics.Buffs;
-using Kingmaker.Blueprints.Items;
-using Kingmaker.UnitLogic.Buffs.Components;
-using Kingmaker.Items;
-using Kingmaker.Blueprints.Items.Ecnchantments;
-using Kingmaker.UnitLogic.Mechanics;
-using Kingmaker.Utility;
-using Kingmaker.Blueprints.Classes.Selection;
-using Kingmaker.UnitLogic.ActivatableAbilities;
-using Kingmaker.Blueprints.Facts;
 using Kingmaker.Blueprints.Classes.Prerequisites;
-using Kingmaker.EntitySystem.Stats;
-using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
-using FumisCodex.NewComponents;
+using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.Blueprints.Classes.Spells;
-using Kingmaker.UnitLogic.Parts;
+using Kingmaker.Blueprints.Items.Weapons;
+using Kingmaker.EntitySystem.Stats;
+using Kingmaker.Enums;
+using Kingmaker.Enums.Damage;
+using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
+using Kingmaker.UnitLogic.Abilities.Blueprints;
 using Kingmaker.UnitLogic.Abilities.Components;
+using Kingmaker.UnitLogic.Abilities.Components.Base;
+using Kingmaker.UnitLogic.Buffs.Blueprints;
+using Kingmaker.UnitLogic.FactLogic;
+using Kingmaker.UnitLogic.Mechanics.Components;
+using Kingmaker.UnitLogic.Parts;
+using Kingmaker.Utility;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
 using static Kingmaker.Visual.Animation.Kingmaker.Actions.UnitAnimationActionCastSpell;
 using Guid = FumisCodex.GuidManager;
-using Kingmaker.UnitLogic.Abilities.Components.Base;
-using Kingmaker.ElementsSystem;
-using CallOfTheWild;
-using Kingmaker.UnitLogic;
-using Kingmaker.UnitLogic.Mechanics.Actions;
 
 namespace FumisCodex
 {
@@ -562,6 +545,9 @@ namespace FumisCodex
     {
         static LibraryScriptableObject library => Main.library;
         public static BlueprintCharacterClass magus = library.Get<BlueprintCharacterClass>("45a4607686d96a1498891b3286121780"); //magus class
+        public static BlueprintFeatureSelection magus_arcana_selection = library.Get<BlueprintFeatureSelection>("e9dc4dfc73eaaf94aae27e0ed6cc9ada");
+
+        public static BlueprintFeature bladebound_arcana;
 
         //https://www.d20pfsrd.com/classes/base-classes/magus/archetypes/paizo-magus-archetypes/bladebound
         /*
@@ -634,25 +620,69 @@ namespace FumisCodex
 
         public void createBlade()
         {
-            //BlueprintBuff
-            //AddKineticistBlade -> custom? it should not prevent AoO and if possible should be a one time thing (instead of an activatable)
-            Helper.Create<AddConditionImmunity>(a => a.Condition = UnitCondition.DisableAttacksOfOpportunity);
+            var pool = library.Get<BlueprintAbilityResource>("effc3e386331f864e9e06d19dc218b37"); //ArcanePoolResourse
+            var enduring = library.Get<BlueprintBuff>("3c2fe8e0374d28d4185355121f4c4544"); //EnduringBladeBuff
 
-            // ** AddPermanentWeapon
-            Helper.CreateBlueprintWeaponEnchantment("Black Blade", "A black blade has an enhancement bonus of +1. This bonus increases at level 4 and every 4 level thereafter.", 0,
+            // add black blade's arcane pool resource
+            var pool_blade = library.CopyAndAdd<BlueprintAbilityResource>(pool, "ArcanePoolResourseBlackBlade", "4293125339b14d57aec9cf237737e36e");
+            Helper.Set_BlueprintAbilityResource_MaxAmount(pool_blade, StartingLevel: 1, LevelStep: 4);
+
+            // reduce the magus' arcane pool
+            var pool_reduce = Helper.CreateIncreaseResourceCustom(pool, magus.ObjToArray(), null, false, 0, 0, -1, 0, -1, -1, -1, -1, -2, -1, -2, -2, -2, -2, -3, -2, -3, -3, -3, -3, -4);
+
+            // add a permanent unremovable black blade
+            var add_black_blade = Helper.Create<AddPermanentWeaponFact>();
+            add_black_blade.Weapon = library.CopyAndAdd<BlueprintItemWeapon>("0e2b2a13f286c10499921633a557388c", "BlackBladeRapier", "5373ed7ee8c946aab4e45e478e187972"); //RapierPlus5
+            Access.m_Enchantments(add_black_blade.Weapon) = Helper.CreateBlueprintWeaponEnchantment(
+                "BlackBladeEnchantment",
+                Guid.i.Reg("d5bb5794430d4917984d597ab08532c5"),
+                "Black Blade",
+                "A black blade has an enhancement bonus of +1. This bonus increases at level 4 and every 4 level thereafter.",
+                0,
                 Helper.CreateWeaponEnhancementScaling(magus.ObjToArray(), null, 1, 1, 4, 1)
+            ).ObjToArray();
+
+            // create an Arcana as a substitute to the archetype; this is OK, since this archetype simply costs a single arcana; must be restricted to exactly level 3
+            bladebound_arcana = HelperEA.CreateFeature(
+                "BladeboundArcana",
+                "Blade Bound (Archetype)",
+                "DESC",
+                Guid.i.Get("62014d882b1a4c41abfcc1a03c45711c"),
+                Contexts.IconPlaceHolder,
+                FeatureGroup.MagusArcana,
+                Helper.CreatePrerequisiteExactClassLevel(magus, 3),
+                Helper.CreateAddAbilityResources(pool_blade),
+                pool_reduce,
+                add_black_blade,
+                HelperEA.CreateAddFacts(
+                    library.Get<BlueprintFeature>("1c04fe9a13a22bc499ffac03e6f79153") //Alertness
+                    )
             );
 
-            //Blade's abilities
-            //Alertness: bonus feat
-            //Black Blade Arcane Pool (equal to enhancement bonus)
-            //Black Blade Strike
-            //Unbreakable: sunder immune; does not exist anyway
-            //Energy Attunement: already implemented?
-            //Teleport Blade: standard action to recover from disarmed
-            //Transfer Arcana
-            //Spell Defense
-            //Life Drinker
+            // 1: Black Blade Strike
+            HelperEA.CreateBuff(
+                "BlackBladeStrikeBuff",
+                "Black Blade Strike",
+                "As a free action, the magus can spend a point from the black blade’s arcane pool to grant the black blade a +1 bonus on damage rolls for 1 minute. For every four levels beyond 1st, this ability gives the black blade another +1 on damage rolls.",
+                Guid.i.Reg("18c40e95da5b4e9084c7b45c394a5c27"),
+                Contexts.IconPlaceHolder,
+                Contexts.NullPrefabLink,
+                HelperEA.CreateContextRankConfig(baseValueType: ContextRankBaseValueType.ClassLevel, classes: magus.ObjToArray(), progression: ContextRankProgression.StartPlusDivStep, startLevel: 1, stepLevel: 4),
+                HelperEA.CreateAddContextStatBonus(StatType.AdditionalDamage, ModifierDescriptor.None)
+            );
+
+            // 5: Energy Attunement
+            // foreach -> create ability -> ContextActionAddBuff -> Buff: WeaponAlterDamageType
+            Helper.Create<WeaponAlterDamageType>(a => { a.Weapon = add_black_blade.Weapon; a.EnergyType = DamageEnergyType.Fire; });
+            Helper.Create<WeaponAlterDamageType>(a => { a.Weapon = add_black_blade.Weapon; a.EnergyType = DamageEnergyType.Electricity; });
+            Helper.Create<WeaponAlterDamageType>(a => { a.Weapon = add_black_blade.Weapon; a.EnergyType = DamageEnergyType.Cold; });
+            Helper.Create<WeaponAlterDamageType>(a => { a.Weapon = add_black_blade.Weapon; a.EnergyType = DamageEnergyType.Sonic; });
+            Helper.Create<WeaponAlterDamageType>(a => { a.Weapon = add_black_blade.Weapon; a.IsForceDamage = true; });
+
+            // TODO:    AddFeatureOnClassLevel
+            // 13: Transfer Arcana
+            // 17: Spell Defense
+            // 19: Life Drinker
         }
 
     }

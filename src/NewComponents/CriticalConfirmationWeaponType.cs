@@ -31,7 +31,9 @@ namespace FumisCodex.NewComponents
 
         public override void OnEventAboutToTrigger(RuleAttackRoll evt)
         {
-            if (evt.Weapon.Blueprint.Category == Type)
+            //if (evt.Weapon.Blueprint.Category == Type)
+            //    evt.CriticalConfirmationBonus += this.Value.Calculate(this.Context);
+            if (COM.CheckWeaponOverride(evt.Initiator, evt.Weapon, Type))
                 evt.CriticalConfirmationBonus += this.Value.Calculate(this.Context);
         }
 

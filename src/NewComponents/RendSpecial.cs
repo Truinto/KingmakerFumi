@@ -44,7 +44,7 @@ namespace FumisCodex.NewComponents
                 this.count = 0;
             }
 
-            if (evt.AttackRoll.IsHit && evt.Initiator.Commands.Attack != null && (!CheckWeaponCategory || this.WeaponCategory == evt.Weapon.Blueprint.Category))
+            if (evt.AttackRoll.IsHit && evt.Initiator.Commands.Attack != null && (!CheckWeaponCategory || COM.CheckWeaponOverride(evt.Initiator, evt.Weapon, this.WeaponCategory)))
             {
                 this.count++;
 

@@ -169,7 +169,7 @@ namespace FumisCodex
             var snakestyle_buff = HelperEA.CreateBuff(
                 "SnakeStyleBuff",
                 "Snake Style",
-                "Snake style emphasizes quick, shifting movements. Its practitioners normally hold their hands flat with the fingers together to mimic the head of a snake. Able to strike when least expected, snake stylists are known for opportunism and blinding speed.",
+                "Snake Style: While using the Snake Style feat, you receive a +2 dodge bonus on your AC.\nSnake Sidewind: While using the Snake Style feat, whenever you score a critical threat with your unarmed strike, you receive a +4 circumstance bonus on attack rolls made to confirm critical hits.\nSnake Fang: While using the Snake Style feat, when an opponent’s attack misses you, you can make an attack of opportunity against that opponent.",
                 Guid.i.Reg("da3d0cebc1884779a70d3223a68d2317"),
                 icon,
                 Contexts.NullPrefabLink,
@@ -205,7 +205,7 @@ namespace FumisCodex
             var snakesidewind_buff = HelperEA.CreateBuff(
                 "SnakeSidewindBuff",
                 "Snake Sidewind",
-                "",
+                "DESC",
                 Guid.i.Reg("47aba9b9c2e34d62b1fc619659c2df95"),
                 icon,
                 Contexts.NullPrefabLink,
@@ -229,7 +229,7 @@ namespace FumisCodex
             var snakefang_buff = HelperEA.CreateBuff(
                 "SnakeFangBuff",
                 "Snake Fang",
-                "",
+                "DESC",
                 Guid.i.Reg("2cda60f8e18742569eadbd870b10ba79"),
                 icon,
                 Contexts.NullPrefabLink,
@@ -291,7 +291,7 @@ namespace FumisCodex
             var boar_ferocity = HelperEA.CreateFeature(
                 "BoarFerocity",
                 "Boar Ferocity",
-                "You add piercing damage to the damage types you can deal with your unarmed strikes. Further, you gain a +2 bonus on Intimidate checks to demoralize opponents. While using Boar Style, whenever you tear an opponent’s flesh, you can spend a free action to make an Intimidate check to demoralize that opponent.",
+                "Your flesh-ripping unarmed strikes terrify your victims. You add piercing damage to the damage types you can deal with your unarmed strikes. Further, you gain a +2 bonus on Intimidate checks to demoralize opponents. While using Boar Style, whenever you tear an opponent’s flesh, you can spend a free action to make an Intimidate check to demoralize that opponent.",
                 Guid.i.Reg("51241be4957847c6ba737bb3aaa0e402"),
                 icon,
                 FeatureGroup.CombatFeat,
@@ -300,16 +300,16 @@ namespace FumisCodex
                 preq_IUS,
                 HelperEA.PrerequisiteStatValue(StatType.CheckIntimidate, 6)
             );
-            var ferocity_conditional = HelperEA.CreateConditional(HelperEA.CreateConditionCasterHasFact(boar_ferocity), 
+            var ferocity_conditional = HelperEA.CreateConditional(HelperEA.CreateConditionCasterHasFact(boar_ferocity),
                 ifTrue: library.Get<BlueprintAbility>("7d2233c3b7a0b984ba058a83b736e6ac").GetComponent<AbilityEffectRunAction>().Actions.Actions[0]
             );//we need this for boar style, since it's called from RendSpecial
-            
+
             var intimidate_ab = library.CopyAndAdd<BlueprintAbility>("7d2233c3b7a0b984ba058a83b736e6ac", "IntimidateAsMoveAbility", Guid.i.Reg("d3fe9ad8af284f29b3bb7384e9249b9a"));//PersuasionUseAbility
             intimidate_ab.ActionType = CommandType.Move;
             var boar_shred = HelperEA.CreateFeature(
                 "BoarShred",
                 "Boar Shred",
-                "You can make an Intimidate check to demoralize an opponent as a move action. While using Boar Style, whenever you tear an opponent’s flesh, once per round at the start of that opponent’s turn he takes 1d6 bleed damage. The bleed damage dealt while using Boar Style persist even if you later switch to a different style.",
+                "The wounds you inflict with your unarmed strikes bleed, giving you renewed vigor. You can make an Intimidate check to demoralize an opponent as a move action. While using Boar Style, whenever you tear an opponent’s flesh, once per round at the start of that opponent’s turn he takes 1d6 bleed damage. The bleed damage dealt while using Boar Style persist even if you later switch to a different style.",
                 Guid.i.Reg("fe358f6c01724011ae848daf71db7fe2"),
                 icon,
                 FeatureGroup.CombatFeat,
@@ -324,7 +324,7 @@ namespace FumisCodex
             var boar_style_buff = HelperEA.CreateBuff(
                 "BoarStyleBuff",
                 "Boar Style",
-                "The objective of the Boar Style is to attack with as much viciousness and cruelty as possible in order to break enemy morale. Fanatical followers of the style use herbal and alchemical reagents to harden their nails and teeth, sometimes performing self-mutilating procedures that result in claw-like nails and sharpened teeth.",
+                "Boar Style: While using this style, once per round when you hit a single foe with two or more unarmed strikes, you can tear flesh. When you do, you deal 2d6 extra points of damage with the attack.\nBoar Ferocity: While using Boar Style, whenever you tear an opponent’s flesh, you can spend a free action to make an Intimidate check to demoralize that opponent.\nBoar Shred: While using Boar Style, whenever you tear an opponent’s flesh, once per round at the start of that opponent’s turn he takes 1d6 bleed damage.",
                 Guid.i.Reg("c09127b74e2e441f83dec13a3c045ee8"),
                 icon,
                 Contexts.NullPrefabLink,
@@ -345,7 +345,7 @@ namespace FumisCodex
             var boar_style = HelperEA.CreateFeature(
                 "BoarStyle",
                 "Boar Style",
-                "You can deal bludgeoning and slashing damage with your unarmed strikes. While using this style, once per round when you hit a single foe with two or more unarmed strikes, you can tear flesh. When you do, you deal 2d6 extra points of damage with the attack.",
+                "Your sharp teeth and nails rip your foes open. You can deal bludgeoning and slashing damage with your unarmed strikes. While using this style, once per round when you hit a single foe with two or more unarmed strikes, you can tear flesh. When you do, you deal 2d6 extra points of damage with the attack.",
                 Guid.i.Reg("7b9502f170c549b3a198058f3c1fecea"),
                 icon,
                 FeatureGroup.CombatFeat,
@@ -398,14 +398,16 @@ namespace FumisCodex
                 Guid.i.Reg("89564ba513894e57b845307f8e62844d"),
                 null,
                 Contexts.NullPrefabLink,
-                Helper.Create<BuffMovementSpeed>( a => {
+                Helper.Create<BuffMovementSpeed>(a =>
+                {
                     a.Descriptor = ModifierDescriptor.UntypedStackable;
                     a.Value = -5;
                 })
             );
             speed_debuff.Stacking = StackingType.Stack;
             speed_debuff.m_Flags(HiddenInUi: true);
-            var add_initiatorattack = Helper.Create<AddInitiatorAttackDamageThreshold>( a => {
+            var add_initiatorattack = Helper.Create<AddInitiatorAttackDamageThreshold>(a =>
+            {
                 a.CheckCategory = true;
                 a.CheckForNaturalWeapon = true;
                 a.DamageThreshold = 10;
@@ -414,7 +416,7 @@ namespace FumisCodex
                 a.Action = Helper.CreateActionList(
                     HelperEA.CreateApplyBuff(speed_debuff, Contexts.Duration1Round, false, false),
                     HelperEA.CreateConditional(Helper.ToArray<Condition>(Helper.Create<ContextConditionMovespeed>(b => b.Speed = GameConsts.MinUnitSpeedMps),
-                                                                         Helper.Create<ContextConditionHasUnitCondition>(c => {c.Condition = UnitCondition.Prone; c.Not = true;})),
+                                                                         Helper.Create<ContextConditionHasUnitCondition>(c => { c.Condition = UnitCondition.Prone; c.Not = true; })),
                                        ifTrue: Helper.CreateContextActionCombatManeuver(CombatManeuver.Trip).ObjToArray())
                 );
             });
@@ -422,7 +424,7 @@ namespace FumisCodex
             var wolfstyle_buff = HelperEA.CreateBuff(
                 "WolfStyleBuff",
                 "Wolf Style",
-                "While in this style, you hamper foes that turn their backs on you.",
+                "Wolf Style: While using this style, whenever you deal at least 10 points of damage to a foe with an attack of opportunity, that foe’s base speed decreases by 5 feet until the end of its next turn. For every 10 points of damage your attack deals beyond 10, the foe’s base speed decreases by an additional 5 feet. If the penalty meets or exceeds the total base speed of the foe, you can attempt to trip the foe as a free action after the attack of opportunity is resolved.\nWolf Trip: While using Wolf Style, you gain a +2 bonus when you attempt a trip combat maneuver.\nWolf Savage: While using Wolf Style, once per round, when you deal at least 10 points of damage to a prone opponent with a natural weapon or an unarmed strike, you can savage that creature. When you do, your opponent must succeed at a Fortitude save (DC = 10 + half your character level + your Wisdom modifier). If the target fails the saving throw, it takes 1d4 Constitution damage.",
                 Guid.i.Reg("86a19898ef7f4df8b9bf94414f90e55c"),
                 icon,
                 Contexts.NullPrefabLink,
@@ -443,7 +445,7 @@ namespace FumisCodex
             var wolf_style = HelperEA.CreateFeature(
                 "WolfStyle",
                 "Wolf Style",
-                "While using this style, whenever you deal at least 10 points of damage to a foe with an attack of opportunity, that foe’s base speed decreases by 5 feet until the end of its next turn. For every 10 points of damage your attack deals beyond 10, the foe’s base speed decreases by an additional 5 feet. If the penalty meets or exceeds the total base speed of the foe, you can attempt to trip the foe as a free action after the attack of opportunity is resolved.",
+                "While in this style, you hamper foes that turn their backs on you. While using this style, whenever you deal at least 10 points of damage to a foe with an attack of opportunity, that foe’s base speed decreases by 5 feet until the end of its next turn. For every 10 points of damage your attack deals beyond 10, the foe’s base speed decreases by an additional 5 feet. If the penalty meets or exceeds the total base speed of the foe, you can attempt to trip the foe as a free action after the attack of opportunity is resolved.",
                 Guid.i.Reg("3e744fbe64dd4d45ad137820ccfd5b87"),
                 icon,
                 FeatureGroup.Feat,
@@ -466,7 +468,7 @@ namespace FumisCodex
             var wolf_trip = HelperEA.CreateFeature(
                 "WolfTrip",
                 "Wolf Trip",
-                "While using Wolf Style, you gain a +2 bonus when you attempt a trip combat maneuver.",
+                "You have studied the manner in which wolves bring down their prey. While using Wolf Style, you gain a +2 bonus when you attempt a trip combat maneuver.",
                 Guid.i.Reg("445e5601d4b44da482284785d93e8a84"),
                 icon,
                 FeatureGroup.Feat,
@@ -489,7 +491,7 @@ namespace FumisCodex
             var wolf_savage = HelperEA.CreateFeature(
                 "WolfSavage",
                 "Wolf Savage",
-                "While using Wolf Style, once per round, when you deal at least 10 points of damage to a prone opponent with a natural weapon or an unarmed strike, you can savage that creature. When you do, your opponent must succeed at a Fortitude save (DC = 10 + half your character level + your Wisdom modifier). If the target fails the saving throw, it takes 1d4 Constitution damage.",
+                "You savage your foes so badly that they can become supernaturally disfigured. While using Wolf Style, once per round, when you deal at least 10 points of damage to a prone opponent with a natural weapon or an unarmed strike, you can savage that creature. When you do, your opponent must succeed at a Fortitude save (DC = 10 + half your character level + your Wisdom modifier). If the target fails the saving throw, it takes 1d4 Constitution damage.",
                 Guid.i.Reg("f2d8d4adc18343b68713cbadca94f5af"),
                 icon,
                 FeatureGroup.Feat,
@@ -515,6 +517,115 @@ namespace FumisCodex
             combat_styles.Add(wolf_savage);
         }
 
+        public static void createAsceticStyle()
+        {
+            /*
+            Ascetic Style (Combat, Style)
+            You blend arms and martial arts, using weapons with the same ease as unarmed strikes.
+            Prerequisite(s): Weapon Focus, Improved Unarmed Strike; base attack bonus +1.
+            Benefit(s): While using this style and wielding a weapon with the monk special feature, you can apply the effects of feats that have Improved Unarmed Strike as a prerequisite, as well as any class ability that can be used with an unarmed strike, as if attacks with the weapon were unarmed attacks.
+            
+            Ascetic Form (Combat, Style)
+            You have mastered the ability to blend the use of arms with martial arts.
+            Prerequisite(s): Ascetic Style; base attack bonus +5.
+            Benefit(s): You are treated as a monk with a level equal to your character level for the purpose of determining the number of times per day that you can use feats with uses per day that depend upon your monk level, such as the Stunning Fist or Perfect Strike.
+            
+            Ascetic Strike (Combat, Style)
+            Your weapon strikes deal more damage than usual.
+            Prerequisite(s): Ascetic Form; Ascetic Style; base attack bonus +7.
+            Benefit(s): You can use the unarmed strike damage of a monk 4 levels lower than your character level (minimum 1st) instead of the base damage for the chosen weapon.
+            */
+
+            var icon = Helper.Image2Sprite.Create("asceticstyle.png");
+
+            var asceticstyle_buff = HelperEA.CreateBuff(
+                "AsceticStyleBuff",
+                "Ascetic Style",
+                "Ascetic Style: While using this style and wielding a weapon with the monk special feature, you can apply the effects of feats that have Improved Unarmed Strike as a prerequisite, as well as any class ability that can be used with an unarmed strike, as if attacks with the weapon were unarmed attacks.",
+                Guid.i.Reg("37763b6b250a45d6a49a0253f0018596"),
+                icon,
+                Contexts.NullPrefabLink
+            );
+            var asceticstyle_activatable = HelperEA.CreateActivatableAbility(
+                "AsceticStyleActivatable",
+                "Ascetic Style",
+                asceticstyle_buff.Description,
+                Guid.i.Reg("db414243b2f848ba9bb01ea8269f65f7"),
+                icon,
+                asceticstyle_buff,
+                AbilityActivationType.Immediately,
+                CommandType.Swift,
+                null
+            );
+            asceticstyle_activatable.Group = ActivatableAbilityGroup.CombatStyle;
+            var ascetic_style = HelperEA.CreateFeature(
+                "AsceticStyle",
+                "Ascetic Style",
+                "You blend arms and martial arts, using weapons with the same ease as unarmed strikes. While using this style and wielding a weapon with the monk special feature, you can apply the effects of feats that have Improved Unarmed Strike as a prerequisite, as well as any class ability that can be used with an unarmed strike, as if attacks with the weapon were unarmed attacks.",
+                Guid.i.Reg("de29bedc1bba45c3a2dad96992dd0e07"),
+                icon,
+                FeatureGroup.Feat,
+                preq_IUS,
+                HelperEA.PrerequisiteFeature(library.Get<BlueprintParametrizedFeature>("1e1f627d26ad36f43bbd26cc2bf8ac7e")), //any WeaponFocus
+                HelperEA.PrerequisiteStatValue(StatType.BaseAttackBonus, 1),
+                HelperEA.CreateAddFact(asceticstyle_activatable)
+            );
+
+
+            var stunningfist = library.Get<BlueprintAbilityResource>("d2bae584db4bf4f4f86dd9d15ae56558"); //StunningFistResource
+            Helper.Set_BlueprintAbilityResource_MaxAmount(stunningfist, IncreasedByLevel: true, Class: monk_class.ObjToArray(), LevelIncrease: -1, OtherClassesModifier: 1f);
+            var ascetic_form = HelperEA.CreateFeature(
+                "AsceticForm",
+                "Ascetic Form",
+                "You have mastered the ability to blend the use of arms with martial arts. You are treated as a monk with a level equal to your character level for the purpose of determining the number of times per day that you can use feats with uses per day that depend upon your monk level, such as the Stunning Fist.",
+                Guid.i.Reg("916384f6f35f435f99accd68a62d1ff6"),
+                icon,
+                FeatureGroup.Feat,
+                HelperEA.PrerequisiteFeature(ascetic_style),
+                HelperEA.PrerequisiteStatValue(StatType.BaseAttackBonus, 5),
+                Helper.CreateIncreaseResourceCustom(stunningfist, monk_class.ObjToArray(), null, true, 0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15, 15)
+            );
+
+
+            var ascetic_strike = HelperEA.CreateFeature(
+                "AsceticStrike",
+                "Ascetic Strike",
+                "Your weapon strikes deal more damage than usual. You can use the unarmed strike damage of a monk 4 levels lower than your character level (minimum 1st) instead of the base damage for weapons with the monk special feature.",
+                Guid.i.Reg("894d2dadf4de411c9950abfd68d3e548"),
+                icon,
+                FeatureGroup.Feat,
+                HelperEA.PrerequisiteFeature(ascetic_style),
+                HelperEA.PrerequisiteFeature(ascetic_form),
+                HelperEA.PrerequisiteStatValue(StatType.BaseAttackBonus, 7),
+                Helper.Create<WeaponEmptyHandOverride>()
+            );
+
+
+            ascetic_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat };
+            ascetic_form.Groups = ascetic_style.Groups;
+            ascetic_strike.Groups = ascetic_style.Groups;
+
+            HelperEA.AddFeats(library, ascetic_style, ascetic_form, ascetic_strike);
+            combat_styles.Add(ascetic_style);
+            combat_styles.Add(ascetic_form);
+            combat_styles.Add(ascetic_strike);
+
+            // add all the monk weapons to CotW's list, with ascetic style as prerequisite
+            if (COM.natural_weapon_type_fact_map == null)
+            {
+                Main.DebugLogAlways("AsceticStyle won't work because CotW is missing");
+            }
+            else
+            {
+                foreach (var weapontype in library.GetAllBlueprints().OfType<BlueprintWeaponType>())
+                {
+                    if (weapontype.IsMonk && !weapontype.IsUnarmed && !weapontype.IsNatural)
+                        COM.natural_weapon_type_fact_map.Add(weapontype.Category, asceticstyle_buff);
+                }
+            }
+        }
+
+
         //Deadhand Style: shaken; HP; inflict negative levels
 
         private static void loadStyles()
@@ -532,7 +643,7 @@ namespace FumisCodex
             combat_styles.Add(library.Get<BlueprintFeature>("d3b85be5b7d340b8ab41a6aff9c0fd62"));//LinnormStyleToggleAbilityFeature
             combat_styles.Add(library.Get<BlueprintFeature>("cac51abfb9b142cba0c21feb53ff38ff"));//LinnormVengeanceFeature
             combat_styles.Add(library.Get<BlueprintFeature>("20ac5f7149d642e9be1f0d85ba84194f"));//LinnormWrathFeature
-            
+
             combat_styles.Add(library.Get<BlueprintFeature>("a3899fa598a7454d981cc0486280d855"));//JabbingStyleToggleAbilityFeature
             combat_styles.Add(library.Get<BlueprintFeature>("7acfde42495e42dfbeeb3a54b459f36f"));//JabbingDancerFeature
             combat_styles.Add(library.Get<BlueprintFeature>("6bf8dd704c104f7fb55ca8405a7ac0cf"));//JabbingMasterFeature
@@ -596,9 +707,9 @@ namespace FumisCodex
             // - activatable is non-active, if prerequisite are not met
             // - since the selection ignores prerequisites, the expand to the activatable group may be picked early; not good
             List<BlueprintActivatableAbility> wildcardlist = new List<BlueprintActivatableAbility>();
-            for (int i=0; i < combat_styles.Count; i++)
+            for (int i = 0; i < combat_styles.Count; i++)
             {
-                if (i%3 == 0) continue;
+                if (i % 3 == 0) continue;
                 var ab = wildcardslots(combat_styles[i]);
                 if (ab != null) wildcardlist.Add(ab);
             }
@@ -606,7 +717,7 @@ namespace FumisCodex
             var wildcard = HelperEA.CreateFeature(
                 "MasterOfManyStylesWildCardSlot",
                 "Wildcard Slot",
-                "Pick this before you expand your Wildcard Slots!\n"+description_wildcard,
+                "Pick this before you expand your Wildcard Slots!\n" + description_wildcard,
                 Guid.i.Reg("f2f97aa042a0445e94aca7257368d3e5"),
                 null,
                 FeatureGroup.None,
@@ -620,7 +731,7 @@ namespace FumisCodex
                 null,
                 FeatureGroup.None,
                 HelperEA.CreateIncreaseActivatableAbilityGroupSize(MOMS_wildcardgroup)
-            ); 
+            );
             var wildcard_extra2 = library.CopyAndAdd(wildcard_extra1, "MasterOfManyStylesWildCardSlotExtra2", "116af8c506094038bdf6df92722eadc1");
             var wildcard_extra3 = library.CopyAndAdd(wildcard_extra1, "MasterOfManyStylesWildCardSlotExtra3", "dbe3668786484dfd9a1030536e97084d");
 
@@ -673,8 +784,8 @@ namespace FumisCodex
                 Guid.i.Get(name),
                 style.Icon,
                 Contexts.NullPrefabLink
-                //,Helpers.Create<AddFactsFromCaster>(a => a.Facts = style.ToArray())
-                //Helpers.CreateAddFact(style),
+            //,Helpers.Create<AddFactsFromCaster>(a => a.Facts = style.ToArray())
+            //Helpers.CreateAddFact(style),
             );
 
             string name2 = "Wildcard" + style.name;
@@ -688,13 +799,13 @@ namespace FumisCodex
                 AbilityActivationType.Immediately,
                 CommandType.Free,
                 null,
-                Helper.Create<ActivatableRestrictionPrerequisite>( a => a.Feature = style)
-                //,Helpers.Create<Kingmaker.UnitLogic.ActivatableAbilities.Restrictions.RestrictionHasFact>( a => { a.Feature = style; a.Not = true; } )
+                Helper.Create<ActivatableRestrictionPrerequisite>(a => a.Feature = style)
+            //,Helpers.Create<Kingmaker.UnitLogic.ActivatableAbilities.Restrictions.RestrictionHasFact>( a => { a.Feature = style; a.Not = true; } )
             );
             activatable.Group = MOMS_wildcardgroup;
             activatable.DeactivateImmediately = true;
 
-            buff.AddComponent(Helper.Create<AddFactsSafe>( a => { a.Facts = style.ObjToArray(); a.Activatable = activatable; }));
+            buff.AddComponent(Helper.Create<AddFactsSafe>(a => { a.Facts = style.ObjToArray(); a.Activatable = activatable; }));
 
             return activatable;
         }
@@ -745,7 +856,7 @@ namespace FumisCodex
             var one_touch_buff = HelperEA.CreateBuff(
                 "OneTouchKiPowerBuff",
                 "One Touch Buff",
-                "DESC",
+                "",
                 Guid.i.Reg("fded2446731e4079bf26b1262ab1d2d2"),
                 icon,
                 Contexts.NullPrefabLink,
@@ -909,7 +1020,7 @@ namespace FumisCodex
             {
             }
         }
-        
+
         #endregion
 
         #region Patches
@@ -968,7 +1079,7 @@ namespace FumisCodex
                 //MethodBase original = typeof(BlueprintItemWeapon).GetMethod(nameof(BlueprintItemWeapon.IsUnarmed));
 
                 MethodInfo replacement = typeof(TWF2_Patch).GetMethod(nameof(NullReplacement), BindingFlags.Static | BindingFlags.NonPublic);
-                
+
                 for (int i = 0; i < list.Count; i++)
                 {
                     if (list[i].operand != null)

@@ -1,22 +1,12 @@
 ﻿using Kingmaker.Blueprints;
-using Kingmaker.Blueprints.Classes;
-using Kingmaker.Blueprints.Facts;
-using Kingmaker.EntitySystem.Stats;
-using Kingmaker.Enums;
-using Kingmaker.Localization;
-using Kingmaker.UnitLogic.Abilities.Components;
 using Kingmaker.UnitLogic.ActivatableAbilities;
-using Kingmaker.UnitLogic.Mechanics.Actions;
-using Kingmaker.UnitLogic.Mechanics.Components;
-using Kingmaker.UnitLogic.Mechanics.Properties;
 using Kingmaker.Utility;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using UnityModManagerNet;
-using static HarmonyLib.AccessTools;
-using static Kingmaker.UnitLogic.Commands.Base.UnitCommand;
 using Guid = FumisCodex.GuidManager;
 
 namespace FumisCodex
@@ -55,7 +45,7 @@ namespace FumisCodex
         }
 
         #endregion
-        
+
         #region GUI
 
         /// <summary>Called when the mod is turned to on/off.
@@ -70,44 +60,49 @@ namespace FumisCodex
 
         private static bool bExpand = false;
         private static string[] loadSaveOptions = new string[] {
-            "Hexcrafter.*", 
-            "Hexcrafter.createHexcrafter", 
-            "Hexcrafter.createExtraArcanaFeat", 
-            "Hexcrafter.createHexStrikeFeat", 
-            "Rogue.createFlensingStrike", 
-            "Kineticist.*", 
-            "Kineticist.init", 
-            "Kineticist.createImpaleInfusion", 
-            "Kineticist.extendSprayInfusion", 
-            "Kineticist.createPreciseBlastTalent", 
-            "Kineticist.createMobileGatheringFeat", 
-            "Kineticist.createHurricaneQueen", 
-            "Kineticist.createMindShield", 
-            "Kineticist.createFlight", 
-            "Kineticist.createShiftEarth", 
-            "Kineticist.createSparkofLife", 
-            "Kineticist.fixWallInfusion", 
-            "Kineticist.createMobileBlast", 
-            "Kineticist.createWoodSoldiers", 
-            "Kineticist.createExtraWildTalentFeat", 
-            "Kineticist.fixExpandElement", 
-            "Monk.*", 
-            "Monk.allowTWFwithFists", 
-            "Monk.createMedusasWrath", 
-            "Monk.createStyleMaster", 
-            "Monk.createSnakeStyle", 
-            "Monk.createBoarStyle", 
-            "Monk.createWolfStyle", 
-            "Monk.modKiPowers", 
-            "Monk.createKiLeech", 
-            "Monk.createOneTouch", 
-            "Monk.createMasterOfManyStyles", 
-            "Fixes.*", 
-            "Fixes.fixShamblingMoundGrapple", 
-            "CotW.*", 
-            "CotW.modSlumber", 
-            "CotW.modAuraOfDoomToogle", 
-            "CotW.modDazeToogle"
+            "Hexcrafter.*",
+            "Hexcrafter.createHexcrafter",
+            "Hexcrafter.createExtraArcanaFeat",
+            "Hexcrafter.createHexStrikeFeat",
+            "Rogue.createFlensingStrike",
+            "Kineticist.*",
+            "Kineticist.init",
+            "Kineticist.createImpaleInfusion",
+            "Kineticist.extendSprayInfusion",
+            "Kineticist.createPreciseBlastTalent",
+            "Kineticist.createMobileGatheringFeat",
+            "Kineticist.createHurricaneQueen",
+            "Kineticist.createMindShield",
+            "Kineticist.createFlight",
+            "Kineticist.createShiftEarth",
+            "Kineticist.createSparkofLife",
+            "Kineticist.fixWallInfusion",
+            "Kineticist.createMobileBlast",
+            "Kineticist.createWoodSoldiers",
+            "Kineticist.createExtraWildTalentFeat",
+            "Kineticist.fixExpandElement",
+            "Monk.*",
+            "Monk.allowTWFwithFists",
+            "Monk.createMedusasWrath",
+            "Monk.createStyleMaster",
+            "Monk.createSnakeStyle",
+            "Monk.createBoarStyle",
+            "Monk.createWolfStyle",
+            "Monk.createAsceticStyle",
+            "Monk.modKiPowers",
+            "Monk.createKiLeech",
+            "Monk.createOneTouch",
+            "Monk.createMasterOfManyStyles",
+            "Items.*",
+            "Items.createPearlOfPower",
+            "Items.createRuneStoneOfPower",
+            "Fixes.*",
+            "Fixes.fixShamblingMoundGrapple",
+            "CotW.*",
+            "CotW.modSlumber",
+            "CotW.modAuraOfDoomToogle",
+            "CotW.modDazeToogle",
+            "CotW.modEidolonLifeLinkToogle",
         };
 
         /// <summary>Draws the GUI</summary>
@@ -128,7 +123,12 @@ namespace FumisCodex
             Checkbox(ref Settings.StateManager.State.mindShieldTalent, "Kineticist [F] - Mind Shield: Utility talent to reduce Mind Burn's effect on Psychokineticist");
             Checkbox(ref Settings.StateManager.State.fixShamblingMoundGrapple, "Fix - Shambling Mound can act while grappling");
             Checkbox(ref Settings.StateManager.State.cheatCombineParametrizedFeats, "Cheat [*] - picking Weapon Focus (Greater etc.) will grant all in the same group");
-            
+
+            GUILayout.Label("");
+
+            NumberField(nameof(Settings.magicItemBaseCost), "Cost of magic items (default: 1000)");
+            NumberField(nameof(Settings.pearlRunestoneDailyUses), "Charges of Runestones and Pearls of Power");
+
             GUILayout.Label("");
 
             if (!bExpand)
@@ -145,7 +145,7 @@ namespace FumisCodex
                     bool enabled = !Settings.StateManager.State.doNotLoad.Contains(str);
                     if (GUILayout.Button($"{(enabled ? "<color=green><b>✔</b></color>" : "<color=red><b>✖</b></color>")} {str}", GUILayout.ExpandWidth(false)))
                     {
-                        if (enabled) 
+                        if (enabled)
                             Settings.StateManager.State.doNotLoad.Add(str);
                         else
                             Settings.StateManager.State.doNotLoad.Remove(str);
@@ -157,9 +157,37 @@ namespace FumisCodex
 
             if (GUILayout.Button("Save settings!"))
             {
-                Settings.StateManager.TrySaveConfigurationState();
+                OnSaveGUI(modEntry);
             }
-            
+
+        }
+
+        private static void OnSaveGUI(UnityModManager.ModEntry modEntry)
+        {
+            foreach (var entry in NumberTable)
+            {
+                try
+                {
+                    var field = typeof(Settings).GetField(entry.Key);
+
+                    if (field.FieldType == typeof(int))
+                    {
+                        if (int.TryParse(entry.Value, out int num))
+                            field.SetValue(Settings.StateManager.State, num);
+                    }
+                    else
+                    {
+                        if (float.TryParse(entry.Value, out float num))
+                            field.SetValue(Settings.StateManager.State, num);
+                    }
+                }
+                catch (Exception)
+                {
+                    Main.DebugLogAlways($"Error while parsing number '{entry.Value}' for '{entry.Key}'");
+                }
+            }
+
+            Settings.StateManager.TrySaveConfigurationState();
         }
 
         private static void Checkbox(ref bool value, string label, Action<bool> action = null)
@@ -175,15 +203,36 @@ namespace FumisCodex
             GUILayout.EndHorizontal();
         }
 
+        private static void NumberFieldFast(ref float value, string label)
+        {
+            GUILayout.BeginHorizontal();
+
+            GUILayout.Label(label + ": ", GUILayout.ExpandWidth(false));
+            if (float.TryParse(GUILayout.TextField(value.ToString(), GUILayout.Width(230f)), out float newvalue))
+                value = newvalue;
+
+            GUILayout.EndHorizontal();
+        }
+
+        private static Dictionary<string, string> NumberTable = new Dictionary<string, string>();
+        private static void NumberField(string key, string label)
+        {
+            NumberTable.TryGetValue(key, out string str);
+            if (str == null) try { str = typeof(Settings).GetField(key).GetValue(Settings.StateManager.State).ToString(); } catch (Exception) { }
+            if (str == null) str = "couldn't read";
+
+            GUILayout.BeginHorizontal();
+
+            GUILayout.Label(label + ": ", GUILayout.ExpandWidth(false));
+            NumberTable[key] = GUILayout.TextField(str, GUILayout.Width(230f));
+
+            GUILayout.EndHorizontal();
+        }
+
         /// <summary>Unused example.</summary>
         private static void OnUpdate(UnityModManager.ModEntry modEntry, float dt)
         {
             if (Input.GetKeyDown(KeyCode.F1)) { }
-        }
-
-        private static void OnSaveGUI(UnityModManager.ModEntry modEntry)
-        {
-            Settings.StateManager.TrySaveConfigurationState();
         }
 
         #endregion
@@ -209,7 +258,7 @@ namespace FumisCodex
             modEntry.OnToggle = OnToggle;
             modEntry.OnGUI = OnGUI;
             modEntry.OnSaveGUI = OnSaveGUI;
-            
+
             try
             {
                 harmony = new HarmonyLib.Harmony(modEntry.Info.Id);
@@ -311,10 +360,14 @@ namespace FumisCodex
                     LoadSafe(Monk.createSnakeStyle);
                     LoadSafe(Monk.createBoarStyle);
                     LoadSafe(Monk.createWolfStyle);
+                    LoadSafe(Monk.createAsceticStyle);
                     LoadSafe(Monk.modKiPowers, true);
                     LoadSafe(Monk.createKiLeech);
                     LoadSafe(Monk.createOneTouch);
                     LoadSafe(Monk.createMasterOfManyStyles);//must be after new styles
+
+                    LoadSafe(Items.createPearlOfPower, true);
+                    LoadSafe(Items.createRuneStoneOfPower, true);
 
                     LoadSafe(Fixes.fixShamblingMoundGrapple);
 
@@ -329,6 +382,9 @@ namespace FumisCodex
 #if DEBUG
                     Main.DebugLog("Running in debug.");
                     Guid.i.WriteAll();
+
+                    Main.DebugLog("CotW ActivatableAbilityGroup first: " + (int)CallOfTheWild.Extensions.ToActivatableAbilityGroup(CallOfTheWild.ActivatableAbilityGroupExtension.None));
+                    Main.DebugLog("CotW ActivatableAbilityGroup last:  " + (int)CallOfTheWild.Extensions.ToActivatableAbilityGroup(CallOfTheWild.ActivatableAbilityGroupExtension.ExtraGroup20));
 #endif
                 }
                 catch (Exception ex)
@@ -348,7 +404,7 @@ namespace FumisCodex
                 return true;
             if (Settings.StateManager.State.CallOfTheWild == "OFF")
                 return false;
-            
+
             if (CallOfTheWild.Helpers.classes == null) // TODO: This check doesn't work.
             {
             }
@@ -362,6 +418,9 @@ namespace FumisCodex
 
         public static bool LoadSafe(Action action)
         {
+#if DEBUG
+            var watch = Stopwatch.StartNew();
+#endif
             string name = action.Method.DeclaringType.Name + "." + action.Method.Name;
 
             if (CheckSetting(name))
@@ -369,15 +428,22 @@ namespace FumisCodex
                 Main.DebugLogAlways($"Skipped loading {name}");
                 return false;
             }
-               
+
             try
             {
                 Main.DebugLogAlways($"Loading {name}");
                 action();
+#if DEBUG
+                watch.Stop();
+                Main.DebugLog("Loaded in milliseconds: " + watch.ElapsedMilliseconds);
+#endif
                 return true;
             }
             catch (System.Exception e)
             {
+#if DEBUG
+                watch.Stop();
+#endif
                 Main.DebugError(e);
                 return false;
             }
@@ -385,6 +451,9 @@ namespace FumisCodex
 
         public static bool LoadSafe(Action<bool> action, bool flag)
         {
+#if DEBUG
+            var watch = Stopwatch.StartNew();
+#endif
             string name = action.Method.DeclaringType.Name + "." + action.Method.Name;
 
             if (CheckSetting(name))
@@ -392,15 +461,22 @@ namespace FumisCodex
                 Main.DebugLogAlways($"Skipped loading {name}");
                 return false;
             }
-            
+
             try
             {
                 Main.DebugLogAlways($"Loading {name}:{flag}");
                 action(flag);
+#if DEBUG
+                watch.Stop();
+                Main.DebugLog("Loaded in milliseconds: " + watch.ElapsedMilliseconds);
+#endif
                 return true;
             }
             catch (System.Exception e)
             {
+#if DEBUG
+                watch.Stop();
+#endif
                 Main.DebugError(e);
                 return false;
             }
@@ -412,8 +488,8 @@ namespace FumisCodex
             {
                 if (str == name)
                     return true;
-                
-                if (str.EndsWith(".*", StringComparison.Ordinal) && name.StartsWith(str.Substring(0, str.Length-1), StringComparison.Ordinal))
+
+                if (str.EndsWith(".*", StringComparison.Ordinal) && name.StartsWith(str.Substring(0, str.Length - 1), StringComparison.Ordinal))
                     return true;
             }
 
@@ -437,10 +513,10 @@ namespace FumisCodex
             {
                 if (GameAlreadyRunning)
                     return 0;
-                
+
                 ExtraGroups++;
                 Main.DebugLog("GetNewGroup new: " + (Enum.GetValues(typeof(ActivatableAbilityGroup)).Cast<int>().Max() + ExtraGroups).ToString());
-                return (ActivatableAbilityGroup) (Enum.GetValues(typeof(ActivatableAbilityGroup)).Cast<int>().Max() + ExtraGroups);
+                return (ActivatableAbilityGroup)(Enum.GetValues(typeof(ActivatableAbilityGroup)).Cast<int>().Max() + ExtraGroups);
             }
 
             public static void Postfix(ref int __result)
