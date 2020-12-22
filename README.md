@@ -14,6 +14,10 @@ Installation
 * This mod requires [Call of the Wild](https://www.nexusmods.com/pathfinderkingmaker/mods/112) to be installed and enabled.
 * Simply drop the zip file from the download section into the manager.
 
+Contact
+-----------
+@Fumihiko me on the Owlcat Pathfinder discord: [https://discord.com/invite/wotr]
+
 Content
 -----------
 * Extra Arcana Feat [Link](https://www.d20pfsrd.com/feats/general-feats/extra-arcana/)
