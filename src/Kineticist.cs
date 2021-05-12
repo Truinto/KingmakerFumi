@@ -1,5 +1,6 @@
 ﻿//using CallOfTheWild;
 using FumisCodex.NewComponents;
+using JetBrains.Annotations;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Prerequisites;
@@ -7,6 +8,9 @@ using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Facts;
 using Kingmaker.Blueprints.Items.Weapons;
+using Kingmaker.Designers.EventConditionActionSystem.Actions;
+using Kingmaker.Designers.EventConditionActionSystem.Conditions;
+using Kingmaker.Designers.EventConditionActionSystem.Events;
 using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
@@ -14,8 +18,10 @@ using Kingmaker.Enums;
 using Kingmaker.Enums.Damage;
 using Kingmaker.Items;
 using Kingmaker.Localization;
+using Kingmaker.PubSubSystem;
 using Kingmaker.RuleSystem;
 using Kingmaker.RuleSystem.Rules;
+using Kingmaker.RuleSystem.Rules.Damage;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Abilities;
 using Kingmaker.UnitLogic.Abilities.Blueprints;
@@ -26,11 +32,13 @@ using Kingmaker.UnitLogic.Abilities.Components.CasterCheckers;
 using Kingmaker.UnitLogic.ActivatableAbilities;
 using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Class.Kineticist;
+using Kingmaker.UnitLogic.Class.Kineticist.ActivatableAbility;
 using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.UnitLogic.FactLogic;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
 using Kingmaker.UnitLogic.Mechanics.Components;
+using Kingmaker.UnitLogic.Mechanics.Conditions;
 using Kingmaker.UnitLogic.Mechanics.Properties;
 using Kingmaker.Utility;
 using Kingmaker.View.Animation;
@@ -46,12 +54,11 @@ namespace FumisCodex
 {
     /*
      * Notes:
-     * Game.Instance.State.AreaEffects[areaEffectListEntry.AreaId];
-	 * 
-	 * 
      */
     public class Kineticist
     {
+        #region References
+
         static LibraryScriptableObject library => Main.library;
 
         //base game stuff
@@ -73,6 +80,9 @@ namespace FumisCodex
         public static ContextDiceValue physical_dice = Helper.CreateContextDiceValue(DiceType.D6, diceType: ContextValueType.Rank, diceRank: AbilityRankType.DamageDice, bonusType: ContextValueType.Shared);
         public static ContextDiceValue energy_dice = Helper.CreateContextDiceValue(DiceType.D6, diceType: ContextValueType.Rank, diceRank: AbilityRankType.DamageDice, bonusType: ContextValueType.Rank, bonusRank: AbilityRankType.DamageDice);
 
+        public static ContextCalculateAbilityParamsBasedOnClass calcParamsBasedOnDex = Helper.Create<ContextCalculateAbilityParamsBasedOnClass>(a => { a.CharacterClass = kineticist_class; a.StatType = StatType.Dexterity; });
+        public static ContextCalculateAbilityParamsBasedOnClass calcParamsBasedOnMainStat = Helper.Create<ContextCalculateAbilityParamsBasedOnClass>(a => { a.CharacterClass = kineticist_class; a.UseKineticistMainStat = true; });
+
         public static PrerequisiteFeaturesFromList prerequisite_air = library.Get<BlueprintFeature>("c8719b3c5c0d4694cb13abcc3b7e893b").GetComponent<PrerequisiteFeaturesFromList>();
         public static PrerequisiteFeature prerequisite_fire = HelperEA.PrerequisiteFeature(library.Get<BlueprintFeature>("cbc88c4c166a0ce4a95375a0a721bd01"));
         public static PrerequisiteFeature prerequisite_earth = HelperEA.PrerequisiteFeature(library.Get<BlueprintFeature>("7f5f82c1108b961459c9884a0fa0f5c4"));
@@ -83,6 +93,10 @@ namespace FumisCodex
         //public static Dictionary<string, BlueprintAbility[]> blasts_byelement = new Dictionary<string, BlueprintAbility[]>();
         public static Dictionary<string, BlueprintAbility> base_byname = new Dictionary<string, BlueprintAbility>();
         public static Dictionary<string, List<BlueprintAbility>> blast_variants = new Dictionary<string, List<BlueprintAbility>>();
+
+        #endregion
+
+        #region Helper
 
         public static void init() // TODO: extend blast_variants (e.g. Impale) 
         {
@@ -121,6 +135,182 @@ namespace FumisCodex
             blasts_byelement["Fire"] = new BlueprintAbility[] { base_byname["Fire"] };
             blasts_byelement["Water"] = new BlueprintAbility[] { base_byname["Water"], base_byname["Cold"] };
         }
+
+        public static void routineNewElement(string name, string displayName, string desc, string guid = null)
+        {
+            guid = guid ?? Guid.i.Get(name);
+
+            throw new NotImplementedException();
+        }
+
+        public static void routineNewVariant(string name, string displayName, string desc, BlueprintFeature[] infusions_form, BlueprintFeature[] infusions_substance, bool isComposite = false, string guid = null)
+        {
+            guid = guid ?? Guid.i.Get(name);
+
+            // create new feature (as SandstormBlastFeature)
+
+            // create new base blast (as SandstormBlastBase)
+
+            // add form infusions
+
+            // add substance infusions
+
+            throw new NotImplementedException();
+        }
+
+        public static void routineExpandVariant()
+        {
+            throw new NotImplementedException();
+        }
+
+        public static void routineNewFormInfusion(string name, string displayName, string desc, Sprite icon, Kin_Element[] elements, int class_level, int burn, 
+            AbilityRange range, string duration, string SavingThrow, BlueprintComponent[] components, string guid = null)
+        {
+            bool isAoE = false, isSpawnArea = false, isAttackRoll = false;
+            bool physicalHalfed, halfed;
+
+            AbilityEffectRunAction abilityEffectRunAction = null;  //"Half": true if physical
+            AbilityDeliverProjectile abilityDeliverProjectile = null;
+            BlueprintAbilityAreaEffect abilityAreaEffect = null;
+
+            // create new feature
+            guid = guid ?? Guid.i.Get(name);
+            var infusion_feature = HelperEA.CreateFeature(name, displayName, desc, guid, icon, FeatureGroup.KineticBlastInfusion,
+                HelperEA.PrerequisiteClassLevel(kineticist_class, class_level, true),
+                HelperEA.PrerequisiteFeaturesFromList(elements.Select(s => s.BlastFeature).ToArray()),
+                HelperEA.PrerequisiteFeature(elemental_focus)
+            );
+
+            if (isAoE)
+            {
+                Helper.AppendAndReplace(ref components,
+                    Contexts.CalculateRankDamageBonus);
+            }
+            else if (isSpawnArea)
+            {
+                Helper.AppendAndReplace(ref components,
+                    calcParamsBasedOnMainStat);
+
+                abilityAreaEffect.AddComponents(
+                    Contexts.CalculateRankDamageBonus);
+            }
+            else if (isAttackRoll)
+            {
+                Helper.AppendAndReplace(ref components,
+                    calcParamsBasedOnDex);
+            }
+
+            // add universal components (regardless of element)
+            var cache = Helper.CreateAbilityKineticist(burn);   // TODO: cached
+            Helper.AppendAndReplace(ref components,
+                cache,
+                Helper.CreateAbilityCasterHasFacts(infusion_feature),       // feature required to cast
+                Helper.CreateAbilityShowIfCasterHasFact(infusion_feature)); // feature required to see
+
+
+            foreach (var element in elements)
+            {
+                // create new variants
+                string ab_name = name + element.Name + "BlastAbility";
+                var ability = HelperEA.CreateAbility(
+                    ab_name,
+                    displayName,
+                    desc,
+                    Guid.i.Get(ab_name),
+                    icon,
+                    AbilityType.SpellLike,
+                    UnitCommand.CommandType.Standard,
+                    range,
+                    duration,
+                    SavingThrow,
+                    components
+                );
+                ability.AddComponents(element.BasicRank);
+                ability.AddComponents(element.BasicSFX);
+
+                ability.SpellResistance = element.BasicVariant.IsEnergy;
+                ability.Parent = element.BaseBlast;
+                element.BaseBlast.AddToAbilityVariants(ability);
+
+                var variant = new Kin_Variant()
+                {
+                    Parent = element,
+                    InfusionAbility = ability,
+                    InfusionFeature = infusion_feature,
+                    //DamageDice,
+                    //DamageBonus,
+                    //Duration,
+                    //AllActions,
+                    //DamageActions,
+                    //AreaAction,
+                    BlastBurnCost = element.BasicVariant.BlastBurnCost,
+                    InfusionBurnCost = burn,
+                    PForm = 0,
+                    EForm = (DamageEnergyType)(-1)
+                };
+            }
+
+            Helper.AppendAndReplace(ref infusion_selection.AllFeatures, infusion_feature);
+            throw new NotImplementedException();
+        }
+
+        public static void routineNewSubstanceInfusion()
+        {
+            throw new NotImplementedException();
+        }
+
+        public static void routineExpandSubstanceInfusion(BlueprintFeature substance, params BlueprintAbility[] baseAbility)
+        {
+            var fact = substance.GetComponent<AddFacts>()?.Facts;
+            var activatable = fact != null && fact.Length == 1 ? fact[0] as BlueprintActivatableAbility : null;
+
+            if (activatable != null)
+                routineExpandSubstanceInfusion(activatable.Buff, baseAbility);
+            else
+                Main.DebugLogAlways("error: routineExpandSubstanceInfusion activatable is null " + substance.name);
+        }
+        public static void routineExpandSubstanceInfusion(BlueprintBuff substance, params BlueprintAbility[] baseAbility)
+        {
+            var trigger = substance.GetComponent<AddAreaDamageTrigger>();
+            var burn = substance.GetComponent<AddKineticistBurnModifier>();
+
+            if (trigger == null || burn == null)
+            {
+                Main.DebugLogAlways("error: routineExpandSubstanceInfusion couldn't process " + substance.name);
+                return;
+            }
+
+            Helper.AppendAndReplace(ref trigger.AbilityList, baseAbility);
+            Helper.AppendAndReplace(ref burn.AppliableTo, baseAbility);
+        }
+
+        public static bool isFeatureTouch(BlueprintFeature blast)
+        {
+            var variants = blast.GetComponent<AddFeatureIfHasFact>()?.Feature?.GetComponent<AbilityVariants>()?.Variants;
+
+            if (variants == null)
+            {
+                Main.DebugLogAlways("isFeatureTouch error: variants is null");
+                return false;
+            }
+
+            foreach (var variant in variants)
+            {
+                var weapon = variant.GetComponent<AbilityDeliverProjectile>()?.Weapon;
+
+                if (weapon != null)
+                {
+                    if (weapon.DamageType.Type == DamageType.Physical)
+                        return false;
+                    return true;
+                }
+            }
+
+            Main.DebugLogAlways("isFeatureTouch error: no match");
+            return false;
+        }
+
+        #endregion
 
         // known issues:
         // - composite blasts consisting of two elements (ice) count as two attacks and will roll concealment/mirror-image individually. also true for crit and crit confirm
@@ -378,9 +568,7 @@ namespace FumisCodex
         }
 
         // known issue:
-        // - does not restrict your move action to be used for moving (won't fix)
-        // - gathering long should not slow you, since it already consumes a standard action (won't fix)
-        // - the slow effect is ignored, if applied while moving. the ability should interrupt movement shortly
+        // - gathering long consumes the remaining move range (cannot fix)
         // - gathering long works while weapon is equiped
         public static void createMobileGatheringFeat()
         {
@@ -389,26 +577,26 @@ namespace FumisCodex
             var buff2 = library.Get<BlueprintBuff>("3a2bfdc8bf74c5c4aafb97591f6e4282");   //GatherPowerBuffII
             var buff3 = library.Get<BlueprintBuff>("82eb0c274eddd8849bb89a8e6dbc65f8");   //GatherPowerBuffIII
             var gather_original_ab = library.Get<BlueprintAbility>("6dcbffb8012ba2a4cb4ac374a33e2d9a");    //GatherPower
-            //var slowed_debuff = library.Get<BlueprintBuff>("488e53ede2802ff4da9372c6a494fb66");    //Slowed
             // ---------------
-            
+
             Access.m_Icon(buff1) = gather_original_ab.Icon;
             Access.m_DisplayNameStr(buff1, buff1.Name + " Lv1");
-            
+
             Access.m_Icon(buff2) = gather_original_ab.Icon;
             Access.m_DisplayNameStr(buff2, buff2.Name + " Lv2");
-            
+
             Access.m_Icon(buff3) = gather_original_ab.Icon;
             Access.m_DisplayNameStr(buff3, buff3.Name + " Lv3");
 
-            // new buff that halves movement speed, disallows normal gathering, penalty on concentration?
+            // new buff that halves movement speed, disallows normal gathering
             mobile_debuff = ScriptableObject.CreateInstance<BlueprintBuff>();
             mobile_debuff.name = "MobileGatheringDebuff";
             mobile_debuff.SetNameDescriptionIcon("Mobile Gathering Debuff", "Your movement speed is halved after gathering power.", Helper.Image2Sprite.Create("GatherMobileHigh.png"));
             mobile_debuff.IsClassFeature = true;
-            mobile_debuff.SetComponents(HelperEA.CreateAddCondition(UnitCondition.Slowed));
+            mobile_debuff.SetComponents(Helper.Create<TurnBasedBuffMovementSpeed>(a => a.Multiplier = 0.5f));// HelperEA.CreateAddCondition(UnitCondition.Slowed));
             library.AddAsset(mobile_debuff, Guid.i.Reg("ffd79fee05bf4e6dad7156e895f3cf27"));
-            var can_gather = Helper.CreateAbilidtyRequirementHasBuffTimed(CompareType.LessOrEqual, 1.Rounds().Seconds, buff1, buff2, buff3);
+            var apply_debuff = Helper.CreateActionApplyBuff(mobile_debuff, 1);
+            var can_gather = Helper.CreateAbilityRequirementHasBuffTimed(CompareType.LessOrEqual, 1.Rounds().Seconds, buff1, buff2, buff3);
 
             // cannot use usual gathering after used mobile gathering
             gather_original_ab.AddComponent(Helper.CreateAbilityRequirementHasBuffs(true, mobile_debuff));
@@ -425,7 +613,7 @@ namespace FumisCodex
                 Guid.i.Reg("a482da35c21a4a0e801849610e03df87"),
                 Helper.Image2Sprite.Create("GatherMobileLow.png"),
                 AbilityType.Special,
-                UnitCommand.CommandType.Free,
+                UnitCommand.CommandType.Move,
                 AbilityRange.Personal,
                 "",
                 ""
@@ -433,20 +621,21 @@ namespace FumisCodex
             mobile_gathering_short_ab.CanTargetSelf = true;
             mobile_gathering_short_ab.Animation = UnitAnimationActionCastSpell.CastAnimationStyle.Self;//UnitAnimationActionCastSpell.CastAnimationStyle.Kineticist;
             mobile_gathering_short_ab.HasFastAnimation = true;
-            //HelperEA.CreateApplyBuff(mobile_debuff, HelperEA.CreateContextDuration(1), false, false, true);
-            var apply_debuff = Helper.CreateActionApplyBuff(mobile_debuff, 1);
             var three2three = HelperEA.CreateConditional(HelperEA.CreateConditionHasBuff(buff3), Helper.CreateActionApplyBuff(buff3, 2));
             var two2three = HelperEA.CreateConditional(HelperEA.CreateConditionHasBuff(buff2).ObjToArray(), new GameAction[] { Helper.CreateActionRemoveBuff(buff2), Helper.CreateActionApplyBuff(buff3, 2) });
             var one2two = HelperEA.CreateConditional(HelperEA.CreateConditionHasBuff(buff1).ObjToArray(), new GameAction[] { Helper.CreateActionRemoveBuff(buff1), Helper.CreateActionApplyBuff(buff2, 2) });
             var zero2one = HelperEA.CreateConditional(Helper.CreateConditionHasNoBuff(buff1, buff2, buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff1, 2) });
-            var hasMoveAction = Helper.CreateRequirementActionAvailable(false, ActionType.Move);
-            mobile_gathering_short_ab.SetComponents(can_gather, hasMoveAction, Helper.CreateAbilityEffectRunAction(0, apply_debuff, three2three, two2three, one2two, zero2one));
+            //var hasMoveAction = Helper.CreateRequirementActionAvailable(false, ActionType.Move);
+            var regain_halfmove = Helper.Create<ContextActionUndoAction>(a => a.Command = UnitCommand.CommandType.Move);
+            //mobile_gathering_short_ab.SetComponents(can_gather, hasMoveAction, Helper.CreateAbilityEffectRunAction(0, apply_debuff, three2three, two2three, one2two, zero2one));
+            mobile_gathering_short_ab.SetComponents(can_gather, Helper.CreateAbilityEffectRunAction(0, regain_halfmove, apply_debuff, three2three, two2three, one2two, zero2one));
+
 
             // same as above but standard action and 2 levels of gatherpower
             var mobile_gathering_long_ab = HelperEA.CreateAbility(
                 "MobileGatheringLong",
                 "Mobile Gathering (Full Round)",
-                "You may move up to half your normal speed while gathering power.\nTip for Turn-Based Combat: Move before using this ability.",
+                "You may move up to half your normal speed while gathering power.\nNote: Use half your speed before using this.",
                 Guid.i.Reg("e7cd3a8200f04c8fae099d5d2f4afa0b"),
                 Helper.Image2Sprite.Create("GatherMobileMedium.png"),
                 AbilityType.Special,
@@ -460,7 +649,9 @@ namespace FumisCodex
             mobile_gathering_long_ab.HasFastAnimation = true;
             var one2three = HelperEA.CreateConditional(HelperEA.CreateConditionHasBuff(buff1).ObjToArray(), new GameAction[] { Helper.CreateActionRemoveBuff(buff1), Helper.CreateActionApplyBuff(buff3, 2) });
             var zero2two = HelperEA.CreateConditional(Helper.CreateConditionHasNoBuff(buff1, buff2, buff3), new GameAction[] { Helper.CreateActionApplyBuff(buff2, 2) });
-            mobile_gathering_long_ab.SetComponents(can_gather, Helper.CreateAbilityEffectRunAction(0, apply_debuff, three2three, two2three, one2three, zero2two));
+            var hasMoveAction = Helper.CreateAbilityRequirementActionAvailable(false, ActionType.Move, 4.5f);
+            var lose_halfmove = Helper.Create<ContextActionUndoAction>(a => { a.Command = UnitCommand.CommandType.Move; a.Amount = -1.5f; });
+            mobile_gathering_long_ab.SetComponents(can_gather, hasMoveAction, Helper.CreateAbilityEffectRunAction(0, lose_halfmove, apply_debuff, three2three, two2three, one2three, zero2two));
 
             var mobile_gathering_feat = HelperEA.CreateFeature(
                 "MobileGatheringFeat",
@@ -1099,6 +1290,60 @@ namespace FumisCodex
 
         }
 
+        // known issues:
+        // - in turn-combat, you can switch weapons and benefit from reach until you next turn (won't fix)
+        // - for AoO, you can disable/enable metakinesis and infusions you didn't pay the burn cost for (won't fix)
+        public static void addKineticWhipActivatable()
+        {
+            //var blade_enabled_buff = library.Get<BlueprintBuff>("426a9c079ee7ac34aa8e0054f2218074");
+            //var apply_buff = Helper.CreateActionApplyBuff(blade_enabled_buff, permanent: true);
+            //var kinetic_whip_buff = library.TryGet<BlueprintBuff>("46b25924ea144661b965fcf60c166f72");      //KineticWhipBuff
+
+            var kinetic_whip_ab = library.TryGet<BlueprintAbility>("4c97c30bfda44b619e9053e9a7200493");     //KineticWhipAbility
+            var kinetic_whip_feat = library.TryGet<BlueprintFeature>("0c18f66288764d8ca7bbc322c078bda3");   //KineticWhipAbilityFeature
+
+            if (kinetic_whip_ab == null || kinetic_whip_feat == null)
+                return;
+
+            var whip_buff = HelperEA.CreateBuff(
+                "KineticWhipActivatableBuff",
+                kinetic_whip_ab.Name,
+                kinetic_whip_ab.Description,
+                "7c75d69432c749feb52e7cecc0e37419",
+                kinetic_whip_ab.Icon,
+                Contexts.NullPrefabLink
+            );
+
+             var whip_activatable = HelperEA.CreateActivatableAbility(
+                "KineticWhipActivatable",
+                whip_buff.Name,
+                "Upgrades Kinetic Blade to Kinetic Whip.\n" + whip_buff.Description,
+                "7a3e642ca3cd4d04afc176d6e9cc3546",
+                whip_buff.Icon,
+                whip_buff,
+                AbilityActivationType.Immediately,
+                UnitCommand.CommandType.Free,
+                null,
+                Helper.Create<ActivatableRestrictionKineticWhip>()
+                //,Helper.Create<ActivatableRestrictionBurnCost>(a => a.Blueprint = kinetic_whip_ab.ObjToArray())
+            );
+            whip_activatable.IsOnByDefault = true;
+            whip_activatable.DeactivateImmediately = true;
+
+            var weapons = library.GetAllBlueprints().Where(w => w.GetComponent<WeaponKineticBlade>()).OfType<BlueprintItemWeapon>();
+            var target_burn = weapons.Select(s => s.GetComponent<WeaponKineticBlade>().ActivationAbility).ToArray();
+
+            // increase burn cost of kinetic blades by 1
+            // increase reach by 4
+            // allow Attack of Opportunity
+            var inc_burn = Helper.CreateAddKineticistBurnModifier(1, KineticistBurnType.Infusion, null, target_burn);
+            var reach_comp = HelperEA.CreateAddStatBonus(StatType.Reach, 4, ModifierDescriptor.Enhancement);
+            var can_AoO = Helper.Create<AddConditionImmunity>(a => a.Condition = UnitCondition.DisableAttacksOfOpportunity);
+            whip_buff.AddComponents(inc_burn, reach_comp, can_AoO);
+
+            kinetic_whip_feat.AddComponent(HelperEA.CreateAddFact(whip_activatable));
+        }
+
         //future
         public static void createaForestSiege()
         {
@@ -1223,7 +1468,7 @@ namespace FumisCodex
         [HarmonyLib.HarmonyPatch(typeof(RuleAttackRoll), "IncreaseMissChance")]
         public class RemoveMissChanceLimitPatch
         {
-            static bool Prefix(RuleAttackRoll __instance, int value)
+            public static bool Prefix(RuleAttackRoll __instance, int value)
             {
                 if (value > 0
                     && __instance.Target.IsPlayerFaction
@@ -1240,7 +1485,7 @@ namespace FumisCodex
         [HarmonyLib.HarmonyPatch(typeof(BuffSubstitutionOnApply), "OnEventAboutToTrigger")]
         public class FixBuffSubstitutionDCLossPatch
         {
-            static bool Prefix(BuffSubstitutionOnApply __instance, RuleApplyBuff evt)
+            public static bool Prefix(BuffSubstitutionOnApply __instance, RuleApplyBuff evt)
             {
                 if (evt.Blueprint == __instance.GainedFact)
                 {
@@ -1253,7 +1498,408 @@ namespace FumisCodex
             }
         }
 
+        [HarmonyLib.HarmonyPatch(typeof(AbilityKineticist), nameof(AbilityKineticist.CalculateBurnCost), typeof(UnitDescriptor), typeof(BlueprintAbility))]
+        public class Patch_CalculateBurnCostFinal
+        {
+            public static void Postfix(UnitDescriptor caster, BlueprintAbility abilityBlueprint, ref KineticistAbilityBurnCost __result)
+            {
+                try
+                {
+                    KineticistAbilityBurnCost cost = __result;
+                    EventBus.RaiseEvent<IKineticistFinalAbilityCostHandler>(h => h.HandleKineticistFinalAbilityCost(caster, abilityBlueprint, ref cost));
+                    __result = cost;
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
         #endregion
 
+    }
+
+    public class Kin_Element
+    {
+        public string Name; //like Cold
+        public Sprite Icon;
+        [CanBeNull] public BlueprintProgression ElementalSelection; //found in 1f3a15a3ae8a5524ab8b97f469bf4e3d.AllFeatures
+        [CanBeNull] public BlueprintFeatureSelection BlastSelection;
+        [CanBeNull] public BlueprintProgression BlastProgression;       //like ColdBlastProgression
+        [CanBeNull] public BlueprintProgression SecondaryProgression;   //only for composite blasts
+        [CanBeNull] public BlueprintProgression ThirdProgression;       //only for composite blasts
+        public BlueprintFeature BlastFeature;   //like ColdBlastFeature
+        public BlueprintAbility BaseBlast;  //like ColdBlastBase
+        public AbilitySpawnFx[] BasicSFX;
+        public ContextRankConfig[] BasicRank;
+        public SpellDescriptorComponent SpellDescriptor;
+        public Kin_Variant BasicVariant;
+        public List<Kin_Variant> Variants;
+
+        public bool Validate()
+        {
+            return Name != null
+                && (ElementalSelection || SecondaryProgression)
+                && (BlastProgression || ThirdProgression)
+                && BlastFeature
+                && BaseBlast
+                && BasicSFX != null
+                && BasicRank != null
+                && BasicRank[0]
+                && BasicRank[1]
+                && SpellDescriptor
+                && BasicVariant != null
+                && Variants != null
+                && Variants.Count > 0;
+        }
+
+        public static List<Kin_Element> All = new List<Kin_Element>();
+        public static List<BlueprintFeature> AllFormInfusions = new List<BlueprintFeature>();
+        public static List<BlueprintFeature> AllSubstanceInfusions = new List<BlueprintFeature>();
+
+        public static void Load(BlueprintProgression prog, BlueprintFeature focus, BlueprintFeatureBase fact)
+        {
+            if (prog.LevelEntries == null
+                || prog.LevelEntries.Length < 1
+                || prog.LevelEntries[0].Features == null
+                || prog.LevelEntries[0].Features.Count < 1)
+                Main.DebugLogAlways("error: prog in progressions is empty " + prog.name);
+            else
+            {
+                var kin = new Kin_Element();
+                kin.Name = prog.name; //this gets overwritten, just for debug
+                kin.ElementalSelection = (BlueprintProgression)focus;   //cannot be null
+                kin.BlastSelection = fact as BlueprintFeatureSelection; //can be null
+                kin.BlastProgression = prog;
+                kin.BlastFeature = prog.LevelEntries[0].Features[0] as BlueprintFeature;
+
+                All.Add(kin);
+            }
+        }
+
+        public static void LoadAll()
+        {
+            // this algorithm should be future prove
+            // we start with the first selection, which are Air, Earth, Fire, Water
+            var master_selection = Main.library.Get<BlueprintFeatureSelection>("1f3a15a3ae8a5524ab8b97f469bf4e3d"); //ElementalFocusSelection
+            var composite_buff = Main.library.Get<BlueprintBuff>("cb30a291c75def84090430fbf2b5c05e");               //CompositeBlastBuff
+            var second_selection = Main.library.Get<BlueprintFeatureSelection>("e2c1718828fc843479f18ab4d75ded86"); //SecondatyElementalFocusSelection
+            var third_selection = Main.library.Get<BlueprintFeatureSelection>("4204bc10b3d5db440b1f52f0c375848b");  //ThirdElementalFocusSelection
+
+            // adds Kin_Elements from lv1 selections
+            foreach (var focus in master_selection.AllFeatures)
+            {
+                // then we are looking for all the facts we get at level 1
+                // usually we should get class skills and either an element (fire, earth)
+                // or another selection (air, water => air/electric, water/cold)
+                var lv1_facts = (focus as BlueprintProgression)?.LevelEntries?.FirstOrDefault(s => s.Level == 1)?.Features;
+                if (lv1_facts == null)
+                {
+                    Main.DebugLogAlways("error: lv1_facts is not BlueprintProgression " + focus.name);
+                    continue;
+                }
+
+                List<BlueprintProgression> progressions = new List<BlueprintProgression>();
+                foreach (var fact in lv1_facts) // this includes ClassSkills (BlueprintFeature)
+                {
+                    // we extract the blueprint, if it is indeed a selection (air, water)
+                    progressions.Clear();
+                    if (fact is BlueprintProgression)
+                        progressions.Add(fact as BlueprintProgression);
+                    else if (fact is BlueprintFeatureSelection)
+                    {
+                        //progressions.AddRange((fact as BlueprintFeatureSelection).AllFeatures.OfType<BlueprintProgression>());
+                        foreach (var f in (fact as BlueprintFeatureSelection).AllFeatures)
+                        {
+                            if (f is BlueprintProgression)
+                                progressions.Add(f as BlueprintProgression);
+                            else
+                                Main.DebugLogAlways("error: unexpected type in progselection " + f.name + " of " + f.GetType());
+                        }
+                    }
+
+                    // now we can get the basic blueprints for each of the blast types
+                    foreach (var prog in progressions)
+                    {
+                        if (prog.LevelEntries == null
+                            || prog.LevelEntries.Length < 1
+                            || prog.LevelEntries[0].Features == null
+                            || prog.LevelEntries[0].Features.Count < 1)
+                            Main.DebugLogAlways("error: prog in progressions is empty " + prog.name);
+                        else
+                        {
+                            var kin = new Kin_Element();
+                            kin.Name = prog.name; //this gets overwritten, just for debug
+                            kin.ElementalSelection = focus as BlueprintProgression; //cannot be null here
+                            kin.BlastSelection = fact as BlueprintFeatureSelection; //can be null
+                            kin.BlastProgression = prog;
+                            kin.BlastFeature = prog.LevelEntries[0].Features[0] as BlueprintFeature;
+
+                            All.Add(kin);
+                        }
+                    }
+                }
+            }
+
+            // adds Kin_Elements from CompositeBlastBuff
+            // everytime an element is picked it also reapplies this buff, which checks for missing composite blasts
+            foreach (var actions in composite_buff.GetComponent<AddFactContextActions>().Activated.Actions)
+            {
+                var kin = new Kin_Element();
+
+                // the conditions are two blast progressions and NOT having the composite feature
+                var conditions = (actions as Conditional)?.ConditionsChecker?.Conditions;//?.Select(s => s as ContextConditionHasFact).Where(s => s != null);
+                foreach (var condition in conditions)
+                {
+                    if (condition is ContextConditionHasFact)
+                    {
+                        var fact = (condition as ContextConditionHasFact).Fact;
+                        if (condition.Not && fact is BlueprintFeature)
+                            kin.BlastFeature = fact as BlueprintFeature;
+                        else if (kin.BlastProgression == null && fact is BlueprintProgression)
+                            kin.BlastProgression = fact as BlueprintProgression;
+                        else if (fact is BlueprintProgression)
+                            kin.SecondaryProgression = fact as BlueprintProgression;
+                        else
+                            Main.DebugLogAlways("error: composite invalid condition fact " + fact.name);
+                    }
+                    else
+                        Main.DebugLogAlways($"error: composite invalid entry {condition.name}:{condition.GetType()}");
+                }
+
+                kin.Name = kin.BlastFeature?.name;
+
+                All.Add(kin);
+            }
+
+            foreach (var focus in second_selection.AllFeatures)
+            {
+                var trigger = focus.GetComponent<ActivateTrigger>();
+
+                var kin = new Kin_Element();
+                kin.Name = focus.name;
+                kin.ElementalSelection = (trigger?.Conditions?.Conditions?[0] as HasFact)?.Fact as BlueprintProgression;
+                kin.SecondaryProgression = focus as BlueprintProgression;
+                kin.ThirdProgression = third_selection.AllFeatures.FirstOrDefault(s => (s.GetComponent<ActivateTrigger>()?.Conditions?.Conditions?[0] as HasFact).Fact == kin.ElementalSelection) as BlueprintProgression;
+                kin.BlastFeature = (trigger?.Actions?.Actions?[0] as AddFact)?.Fact as BlueprintFeature;
+
+                All.Add(kin);
+            }
+
+
+            // adds new List<Kin_Variant> to Kin_Element
+            foreach (var kin in All)
+            {
+                // now that we have the basic blueprints, we break them apart
+                // to have a nice organized data structure
+
+                // composite blasts grant the base blast with AddFacts, so we check for that first
+                // all other blasts use AddFeatureIfHasFact, so we check if no AddFacts where present
+                // if the feature doesn't contain "BlastBase", then something is wrong and we stop
+                kin.Icon = kin.BlastFeature.Icon;
+                kin.BaseBlast = kin.BlastFeature?.GetComponent<AddFacts>()?.Facts?[0] as BlueprintAbility;
+                kin.BaseBlast = kin.BaseBlast ?? kin.BlastFeature?.GetComponent<AddFeatureIfHasFact>()?.Feature as BlueprintAbility;
+                if (kin.BaseBlast == null)
+                {
+                    Main.DebugLogAlways("error: blastbase is null " + kin.BlastFeature?.name);
+                    continue;
+                }
+                {
+                    int index = kin.BaseBlast.name.IndexOf("BlastBase");
+                    if (index > 0)
+                        kin.Name = kin.BaseBlast.name.Substring(0, index);
+                    else
+                    {
+                        Main.DebugLogAlways("error: kin.BaseBlast.name " + kin.BaseBlast.name);
+                        continue;
+                    }
+                }
+
+                // we extract all the variants; one basic blast and another for each form infusion
+                kin.Variants = new List<Kin_Variant>();
+                foreach (var variant in kin.BaseBlast.GetComponent<AbilityVariants>()?.Variants ?? Array.Empty<BlueprintAbility>())
+                {
+                    var kvar = new Kin_Variant();
+                    kvar.Parent = kin;  // might block the GC, but we never dispose this anyway
+                    kvar.InfusionAbility = variant;
+                    kvar.InfusionFeature = variant.GetComponent<AbilityShowIfCasterHasFact>()?.UnitFact as BlueprintFeature;
+
+                    // we are looking for the ranks
+                    // area duration (as for wall infusion) is usually AbilityRankType.Default
+                    // but sometimes AbilityRankType.DamageDice is used instead
+                    // technically duration could be any type, but we will assume good practise
+                    // as for blasts (non-area) DamageDice and DamageBonus is what we are looking for
+                    foreach (var rank in variant.GetComponents<ContextRankConfig>() ?? Array.Empty<ContextRankConfig>())
+                    {
+                        if (rank.Type == AbilityRankType.DamageDice)
+                            kvar.DamageDice = rank;
+                        else if (rank.Type == AbilityRankType.DamageBonus)
+                            kvar.DamageBonus = rank;
+                        else
+                            kvar.Duration = rank;
+                    }
+
+                    // we recursively look for all the GameActions
+                    // we should have 1, +1 if the element is split physical and energy
+                    // or 1 total if it's ContextActionSpawnAreaEffect
+                    kvar.AllActions = variant.GetActions();
+                    kvar.AreaAction = kvar.AllActions.FirstOrDefault(s => s is ContextActionSpawnAreaEffect) as ContextActionSpawnAreaEffect;
+
+                    if (kvar.AreaAction != null)
+                    {
+                        // if it indeed is an AreaEffect, then we should have gotten Duration
+                        // unless it was saved in either DamageDice or DamageBonus
+                        // so we fix Duration and look for DamageDice and DamageBonus again
+                        // this time in the AreaEffect
+                        if (kvar.Duration == null)
+                            kvar.Duration = kvar.DamageDice ?? kvar.DamageBonus;
+                        foreach (var rank in kvar.AreaAction.AreaEffect.GetComponents<ContextRankConfig>() ?? Array.Empty<ContextRankConfig>())
+                        {
+                            if (rank.Type == AbilityRankType.DamageDice)
+                                kvar.DamageDice = rank;
+                            else if (rank.Type == AbilityRankType.DamageBonus)
+                                kvar.DamageBonus = rank;
+                            else
+                                Main.DebugLog("AreaEffect has unknown ContextRankConfig " + kvar.AreaAction.AreaEffect.name);
+                        }
+
+                        // we will also need the actions of the AreaEffect
+                        // this adds 1 action, or 2 if it deals both physical and energy
+                        var area_run = kvar.AreaAction.AreaEffect.GetComponent<AbilityAreaEffectRunAction>();
+                        if (area_run == null)
+                            Main.DebugLogAlways("area_run is null " + kvar.AreaAction.AreaEffect.name);
+                        else
+                        {
+                            kvar.AllActions.AddRange(area_run.UnitEnter.Actions);
+                        }
+                    }
+
+                    kvar.DamageActions = kvar.AllActions.OfType<ContextActionDealDamage>().ToArray();
+
+#if DEBUG
+                    Main.DebugLog("Printout of ContextActionDealDamage " + kvar.InfusionAbility.name);
+                    for (int i = 0; i < kvar.DamageActions.Count(); i++)
+                    {
+                        var act = kvar.DamageActions[i];
+                        Main.DebugLog($" Type={act.DamageType} Value={act.Value} IsAoE={act.IsAoE} Half={act.Half} HalfIfSaved={act.HalfIfSaved}");
+                    }
+#endif
+
+                    // now that we have all the actions, we can look for the damage types
+                    // it can be any combination of physical and energy type
+                    foreach (var element in kvar.DamageActions)
+                    {
+                        if (element.DamageType.Type == DamageType.Physical)
+                            kvar.PForm = element.DamageType.Physical.Form;
+                        else if (element.DamageType.Type == DamageType.Energy)
+                            kvar.EForm = element.DamageType.Energy;
+                    }
+
+                    // burn cost should also be easy
+                    // WildTalentBurnCost should always be 0, so we ignore it
+                    var burn = variant.GetComponent<AbilityKineticist>();
+                    if (burn == null)
+                        Main.DebugLogAlways("error: AbilityKineticist is null " + variant.name);
+                    else
+                    {
+                        kvar.BlastBurnCost = burn.BlastBurnCost;
+                        kvar.InfusionBurnCost = burn.InfusionBurnCost;
+                    }
+
+                    if (kvar.Validate())
+                    {
+                        kin.Variants.Add(kvar);
+                        Main.DebugLog("Kin_Variant loaded: " + kvar.InfusionAbility.name);
+                    }
+                    else
+                        Main.DebugLogAlways("error: validate failed for " + kvar.InfusionAbility.name);
+
+                    // here we point to the basic blast, to have it easier
+                    // only the basic blast should not have AbilityShowIfCasterHasFact
+                    if (kvar.InfusionFeature == null)
+                    {
+                        // if we already have a basic blast registered, then something is wrong
+                        if (kin.BasicVariant == null)
+                        {
+                            kin.BasicVariant = kvar;
+                            kin.BasicRank = new ContextRankConfig[] { kvar.DamageDice, kvar.DamageBonus };
+                            kin.SpellDescriptor = kvar.InfusionAbility.GetComponent<SpellDescriptorComponent>();
+                            kin.BasicSFX = kvar.InfusionAbility.GetComponents<AbilitySpawnFx>().ToArray();
+                        }
+                        else
+                        {
+                            Main.DebugLogAlways("error: basic blast already defined " + variant.name);
+                        }
+                    }
+                }
+            }
+
+            var infusion_selection = Main.library.Get<BlueprintFeatureSelection>("58d6f8e9eea63f6418b107ce64f315ea");    //InfusionSelection
+            foreach (var infusion in infusion_selection.AllFeatures)
+            {
+                if (infusion.GetComponent<AddFacts>() && infusion.AssetGuid != "80fdf049d396c33408a805d9e21a42e1")
+                {
+                    AllSubstanceInfusions.Add(infusion);
+                    Main.DebugLog("listing as substance: " + infusion.name);
+                }
+                else
+                {
+                    AllFormInfusions.Add(infusion);
+                    Main.DebugLog("listing as form: " + infusion.name);
+                }
+            }
+
+            for (int i = All.Count - 1; i >= 0; i--)
+            {
+                if (All[i].Validate())
+                    Main.DebugLog("Kin_Element loaded: " + All[i].Name);
+                else
+                {
+                    Main.DebugLogAlways("error: validate failed for " + All[i].Name);
+                    All.RemoveAt(i);
+                }
+            }
+        }
+    }
+
+    public class Kin_Variant
+    {
+        public Kin_Element Parent;
+        public BlueprintAbility InfusionAbility; //like WallColdBlastAbility
+        [CanBeNull] public BlueprintFeature InfusionFeature; //like WallInfusion
+        public ContextRankConfig DamageDice;
+        public ContextRankConfig DamageBonus;
+        [CanBeNull] public ContextRankConfig Duration;
+        public List<GameAction> AllActions;
+        public ContextActionDealDamage[] DamageActions;
+        [CanBeNull] public ContextActionSpawnAreaEffect AreaAction;
+        public int BlastBurnCost;
+        public int InfusionBurnCost;
+        public PhysicalDamageForm PForm = 0;
+        public DamageEnergyType EForm = (DamageEnergyType)(-1);
+        public bool IsComposite { get { return BlastBurnCost > 0; } }
+        public bool IsPhysical { get { return PForm != 0; } }
+        public bool HasPhysical { get { return PForm != 0; } }
+        public bool IsEnergy { get { return PForm == 0; } }
+        public bool HasEnergy { get { return EForm >= 0; } }
+
+        public bool Validate()
+        {
+            return Parent != null
+                && InfusionAbility != null
+                && DamageDice != null
+                && DamageBonus != null
+                && AllActions != null
+                && DamageActions != null
+                && (HasPhysical || HasEnergy);
+        }
+
+        public void RecalculateDamage() // reapplies changes to PForm, EForm, and BlastBurnCost
+        {
+            foreach (var action in DamageActions)
+            {
+                //action.
+            }
+        }
     }
 }

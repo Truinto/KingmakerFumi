@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.12]
+
+### Added
+- added option to remove Craft Magic Item caster level prerequisite
+- added ability to toggle kinetic whip
+- added overpowered debug item (cannot be looted, only accessible with Bag of Tricks)
+- added style feats to Warpriest and Ninja selection
+
+### Fixed
+- mobile gathering (short) must be used for moving now
+- added missing style flag to style feats (this doesn't really do anything as far as I know)
+- Ascetic Strike will now use your unarmed strike damage or your character level -4 (instead of your monk level -4)
+
+### Dev
+- Kineticist abstraction
+
 ## [1.0.11]
 
 ### Added

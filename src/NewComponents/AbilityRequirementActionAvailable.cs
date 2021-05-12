@@ -8,24 +8,33 @@ using Kingmaker.Utility;
 
 namespace FumisCodex.NewComponents
 {
+    // only really useful for checking move action
     [AllowedOn(typeof(BlueprintAbility))]
     public class AbilityRequirementActionAvailable : BlueprintComponent, IAbilityAvailabilityProvider
     {
         public bool Not;
         public ActionType Action;
+        public float Amount = 3f;   // note: move action 3f = 1 move action, 6f = 2 move actions
 
         public bool IsAvailableFor(AbilityData ability)
         {
-            bool hasUsedAction;
-            //hasMoved = ability.Caster.Unit.CombatState.IsFullAttackRestrictedBecauseOfMoveAction;
-            //hasMoved = (Kingmaker.Game.Instance.TimeController.GameTime - ability.Caster.Unit.LastMoveTime) < Rounds.Rounds().Seconds;
+            var cooldown = ability.Caster.Unit.CombatState.Cooldown;
 
-            if (Action == ActionType.FullRound)
-                hasUsedAction = ability.Caster.Unit.CombatState.IsFullAttackRestrictedBecauseOfMoveAction;
-            else
-                hasUsedAction = ability.Caster.Unit.CombatState.HasCooldownForCommand((UnitCommand.CommandType)Action);
-            
-            return !hasUsedAction && !Not || hasUsedAction && Not;
+            switch (Action)
+            {
+                case ActionType.Free:
+                    return true ^ Not;
+                case ActionType.Swift:
+                    return (cooldown.SwiftAction + this.Amount <= 6f) ^ Not;
+                case ActionType.Move:
+                    return (cooldown.MoveAction + this.Amount <= 6f) ^ Not;
+                case ActionType.Standard:
+                    return (cooldown.StandardAction + this.Amount <= 6f) ^ Not;
+                case ActionType.FullRound:
+                    return (cooldown.SwiftAction + this.Amount <= 6f) ^ Not;
+                default:
+                    return true;
+            }
         }
 
         public string GetReason()

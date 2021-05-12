@@ -2,6 +2,7 @@
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Controllers.Units;
 using Kingmaker.EntitySystem.Entities;
+using Kingmaker.Globalmap.State;
 using Kingmaker.RuleSystem.Rules;
 using Kingmaker.UnitLogic;
 using Kingmaker.UnitLogic.Class.LevelUp;
@@ -49,6 +50,20 @@ namespace FumisCodex
         static void Postfix(LevelUpController __result)
         {
 
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(GlobalMapState), nameof(GlobalMapState.CurrentRegionCR), HarmonyLib.MethodType.Getter)]
+    class Test3
+    {
+        static void Postfix(ref int __result)
+        {
+#if DEBUG
+            Main.DebugLog("CurrentRegionCR=" + __result);
+            int level = Game.Instance.Player.MainCharacter.Value.Descriptor.Progression.CharacterLevel;
+            __result = Math.Max(__result, level);
+            Main.DebugLog("new CR=" + __result);
+#endif
         }
     }
 

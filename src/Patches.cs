@@ -309,20 +309,25 @@ namespace FumisCodex
     public class Patches_Rulebook
     {
 
-        //[HarmonyLib.HarmonyPatch(typeof(RuleAttackRoll), nameof(RuleAttackRoll.OnTrigger))]
-        public class RuleAttackRoll_OnTrigger_Patch
+        [HarmonyLib.HarmonyPatch(typeof(RuleAttackRoll), nameof(RuleAttackRoll.OnTrigger))]
+        public class AttackRoll
         {
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instr)
             {
                 var code = instr.ToList();
-                var d20 = typeof(RulebookEvent.Dice).GetProperty(nameof(RulebookEvent.Dice.D20));
+                var d20 = typeof(RulebookEvent.Dice).GetProperty(nameof(RulebookEvent.Dice.D20)).GetMethod;
+                int count = 0;
 
                 for (int i = 0; i < code.Count; i++)
                 {
-                    if (code[i].opcode == OpCodes.Call && (code[i].operand as PropertyInfo) == d20)
+                    if (code[i].opcode == OpCodes.Call && (code[i].operand as MethodInfo) == d20)
                     {
-                        code[i].operand = typeof(RuleAttackRoll_OnTrigger_Patch).GetMethod(nameof(D20));
                         Main.DebugLog("Patched D20 at line " + i);
+
+                        if (count++ == 1)
+                            code[i].operand = typeof(AttackRoll).GetMethod(nameof(D20Crit));
+                        else
+                            code[i].operand = typeof(AttackRoll).GetMethod(nameof(D20));
                     }
                 }
 
@@ -340,7 +345,19 @@ namespace FumisCodex
                 return result;
             }
 
+            public static RulebookEvent.RollEntry D20Crit()
+            {
+                var result = RulebookEvent.Dice.D20;
+                if (ForceCrit != 0)
+                {
+                    result.Value = ForceCrit;
+                    if (Reset) ForceCrit = 0;
+                }
+                return result;
+            }
+
             public static int ForceDice = 0;
+            public static int ForceCrit = 0;
             public static bool Reset = true;
         }
     }

@@ -31,7 +31,7 @@ namespace FumisCodex.NewComponents
 			
             foreach (UnitEntityData unit in pool.Units)
             {
-                if (this.Context.MaybeOwner.UniqueId == unit.Get<UnitPartSummonedMonster>().Summoner.UniqueId)
+                if (this.Context.MaybeOwner.UniqueId == unit.Get<UnitPartSummonedMonster>()?.Summoner?.UniqueId)
                 {
 					list.Add(unit);
                 }

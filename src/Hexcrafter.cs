@@ -633,7 +633,7 @@ namespace FumisCodex
             // add a permanent unremovable black blade
             var add_black_blade = Helper.Create<AddPermanentWeaponFact>();
             add_black_blade.Weapon = library.CopyAndAdd<BlueprintItemWeapon>("0e2b2a13f286c10499921633a557388c", "BlackBladeRapier", "5373ed7ee8c946aab4e45e478e187972"); //RapierPlus5
-            Access.m_Enchantments(add_black_blade.Weapon) = Helper.CreateBlueprintWeaponEnchantment(
+            Access.BlueprintItemWeapon_Enchantments(add_black_blade.Weapon) = Helper.CreateBlueprintWeaponEnchantment(
                 "BlackBladeEnchantment",
                 Guid.i.Reg("d5bb5794430d4917984d597ab08532c5"),
                 "Black Blade",

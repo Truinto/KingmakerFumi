@@ -255,7 +255,7 @@ namespace FumisCodex
                 Helper.CombatStyleHelper(snake_fang, snakefang_buff)
             );
 
-            snake_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat };
+            snake_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat, FeatureGroup.StyleFeat };
             snake_sidewind.Groups = snake_style.Groups;
             snake_fang.Groups = snake_style.Groups;
 
@@ -358,7 +358,7 @@ namespace FumisCodex
             boar_ferocity.AddComponent(HelperEA.PrerequisiteFeature(boar_style));
             boar_shred.AddComponents(HelperEA.PrerequisiteFeature(boar_style), HelperEA.PrerequisiteFeature(boar_ferocity));
 
-            boar_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat };
+            boar_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat, FeatureGroup.StyleFeat };
             boar_ferocity.Groups = boar_style.Groups;
             boar_shred.Groups = boar_style.Groups;
 
@@ -507,7 +507,7 @@ namespace FumisCodex
                 Helper.CombatStyleHelper(wolf_savage, wolfsavage_buff)
             );
 
-            wolf_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat };
+            wolf_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat, FeatureGroup.StyleFeat };
             wolf_trip.Groups = wolf_style.Groups;
             wolf_savage.Groups = wolf_style.Groups;
 
@@ -573,7 +573,7 @@ namespace FumisCodex
 
 
             var stunningfist = library.Get<BlueprintAbilityResource>("d2bae584db4bf4f4f86dd9d15ae56558"); //StunningFistResource
-            Helper.Set_BlueprintAbilityResource_MaxAmount(stunningfist, IncreasedByLevel: true, Class: monk_class.ObjToArray(), LevelIncrease: -1, OtherClassesModifier: 1f);
+            //Helper.Set_BlueprintAbilityResource_MaxAmount(stunningfist, IncreasedByLevel: true, Class: monk_class.ObjToArray(), LevelIncrease: -1, OtherClassesModifier: 1f);
             var ascetic_form = HelperEA.CreateFeature(
                 "AsceticForm",
                 "Ascetic Form",
@@ -590,7 +590,7 @@ namespace FumisCodex
             var ascetic_strike = HelperEA.CreateFeature(
                 "AsceticStrike",
                 "Ascetic Strike",
-                "Your weapon strikes deal more damage than usual. You can use the unarmed strike damage of a monk 4 levels lower than your character level (minimum 1st) instead of the base damage for weapons with the monk special feature.",
+                "Your weapon strikes deal more damage than usual. While wielding a weapon with the monk special feature, you can use your unarmed strike damage or the unarmed strike damage of a monk 4 levels lower than your character level (whatever is higher).",
                 Guid.i.Reg("894d2dadf4de411c9950abfd68d3e548"),
                 icon,
                 FeatureGroup.Feat,
@@ -601,7 +601,7 @@ namespace FumisCodex
             );
 
 
-            ascetic_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat };
+            ascetic_style.Groups = new FeatureGroup[] { FeatureGroup.Feat, FeatureGroup.CombatFeat, FeatureGroup.StyleFeat };
             ascetic_form.Groups = ascetic_style.Groups;
             ascetic_strike.Groups = ascetic_style.Groups;
 
@@ -630,6 +630,13 @@ namespace FumisCodex
 
         private static void loadStyles()
         {
+            var warpriest = library.TryGet<BlueprintFeatureSelection>("d0ea78ea25ee46568010fe75941ed417"); //WarpriestSacredFist
+            var ninja = library.TryGet<BlueprintFeatureSelection>("32d7167bd6dd442b8530e4ff3600398d"); //NinjaStyleMasterFeatureSelection
+            if (warpriest != null)
+                Helper.AppendAndReplace(ref warpriest.AllFeatures, combat_styles);
+            if (ninja != null)
+                Helper.AppendAndReplace(ref ninja.AllFeatures, combat_styles);
+
             combat_styles.Add(library.Get<BlueprintFeature>("0c17102f650d9044290922b0fad9132f"));//CraneStyleFeat
             combat_styles.Add(library.Get<BlueprintFeature>("af0aae1b973114f47a19ea532237b5fc"));//CraneStyleWingFeat
             combat_styles.Add(library.Get<BlueprintFeature>("59eb2a5507975244c893402d582bf77b"));//CraneStyleRiposteFeat

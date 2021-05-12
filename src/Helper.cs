@@ -7,7 +7,9 @@ using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Facts;
 using Kingmaker.Blueprints.Items;
+using Kingmaker.Blueprints.Items.Components;
 using Kingmaker.Blueprints.Items.Ecnchantments;
+using Kingmaker.Blueprints.Items.Equipment;
 using Kingmaker.Blueprints.Items.Weapons;
 using Kingmaker.Blueprints.Loot;
 using Kingmaker.Designers.EventConditionActionSystem.Actions;
@@ -114,12 +116,18 @@ namespace FumisCodex
         }
 
         private static int getActions_counter;
-        public static List<GameAction> GetActions(this BlueprintAbility ability)
+        public static List<GameAction> GetActions(this BlueprintScriptableObject obj)
         {
-            return ability.GetComponent<AbilityEffectRunAction>()?.Actions?.Actions?.GetActions() ?? new List<GameAction>(0);
+            return obj.GetComponent<AbilityEffectRunAction>()?.Actions?.Actions?.GetActions() ?? new List<GameAction>(0);
+        }
+        public static List<GameAction> GetActions(this AbilityEffectRunAction runAction)
+        {
+            return runAction?.Actions?.Actions?.GetActions() ?? new List<GameAction>(0);
         }
         public static List<GameAction> GetActions(this GameAction[] actions)
         {
+            if (actions == null)
+                return new List<GameAction>(0);
             return GetActions(actions.ToList());
         }
         public static List<GameAction> GetActions(this List<GameAction> actions)
@@ -144,34 +152,45 @@ namespace FumisCodex
             {
                 //Main.DebugLog("getActions of type: " + action.GetType().ToString());
 
-                fields[0] = action.GetType().GetField("Actions");
-                fields[1] = action.GetType().GetField("Succeed");
-                fields[2] = action.GetType().GetField("Failed");
-
-                foreach (var field in fields)
+                if (action is Conditional)
                 {
-                    if (field != null)
+                    fields[0] = typeof(Conditional).GetField("IfTrue");
+                    fields[1] = typeof(Conditional).GetField("IfFalse");
+                    fields[2] = null;
+                }
+                else
+                {
+                    fields[0] = action.GetType().GetField("Actions");
+                    fields[1] = action.GetType().GetField("Succeed");
+                    fields[2] = action.GetType().GetField("Failed");
+                }
+
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    if (fields[i] != null)
                     {
-                        if (field.FieldType == typeof(GameAction[]))
+                        if (fields[i].FieldType == typeof(GameAction[]))
                         {
-                            var values = field.GetValue(action) as GameAction[];
+                            var values = fields[i].GetValue(action) as GameAction[];
                             if (values != null)
                                 result.AddRange(values);
                         }
-                        else if (field.FieldType == typeof(ActionList))
+                        else if (fields[i].FieldType == typeof(ActionList))
                         {
-                            var values = field.GetValue(action) as ActionList;
+                            var values = fields[i].GetValue(action) as ActionList;
                             if (values != null && values.HasActions)
                                 result.AddRange(values.Actions);
                         }
+                        fields[i] = null;
                     }
                 }
             }
 
             if (result.Count > 0)
-                result.AddRange(getActions(result));  //recursive search
+                actions.AddRange(getActions(result));  //recursive search
 
-            return result;
+            //actions.AddRange(result);
+            return actions;
         }
 
         /// <param name="savingThrow">SavingThrowType.Unknown means "None"</param>
@@ -286,7 +305,7 @@ namespace FumisCodex
         #endregion
 
         #region BlueprintItemWeapon
-        public static readonly FieldRef<BlueprintItemWeapon, BlueprintWeaponEnchantment[]> m_Enchantments;
+        public static readonly FieldRef<BlueprintItemWeapon, BlueprintWeaponEnchantment[]> BlueprintItemWeapon_Enchantments;
         #endregion
 
         #region BlueprintItemEnchantment
@@ -324,6 +343,10 @@ namespace FumisCodex
         public static readonly FieldRef<BlueprintItem, int> m_Cost;
         #endregion
 
+        #region BlueprintItemEquipmentSimple
+        public static readonly FieldRef<BlueprintItemEquipmentSimple, BlueprintEquipmentEnchantment[]> BlueprintItemEquipmentSimple_Enchantments;
+        #endregion
+
         #region ContextRank
         public static readonly FieldRef<ContextRankConfig, ContextRankBaseValueType> m_BaseValueType;
         public static readonly FieldRef<ContextRankConfig, AbilityRankType> ContextRankConfig_Type;
@@ -355,6 +378,7 @@ namespace FumisCodex
 
         #region other
 
+        public static readonly FieldRef<BlueprintItemEquipmentUsable, GameObject> m_BeltItemPrefab;
         public static readonly FieldRef<BlueprintActivatableAbility, CommandType> m_ActivateWithUnitCommand;
         public static readonly FieldRef<BlueprintArchetype, BlueprintCharacterClass> m_ParentClass;
         public static readonly FieldRef<AbilityAoERadius, Feet> m_Radius;
@@ -383,7 +407,7 @@ namespace FumisCodex
                 m_Icon = FieldRefAccess<BlueprintUnitFact, Sprite>("m_Icon");
 
                 Main.DebugLog("Access.BlueprintItemWeapon");
-                m_Enchantments = FieldRefAccess<BlueprintItemWeapon, BlueprintWeaponEnchantment[]>("m_Enchantments");
+                BlueprintItemWeapon_Enchantments = FieldRefAccess<BlueprintItemWeapon, BlueprintWeaponEnchantment[]>("m_Enchantments");
 
                 Main.DebugLog("Access.BlueprintItemEnchantment");
                 BlueprintItemEnchantment_Description = FieldRefAccess<BlueprintItemEnchantment, LocalizedString>("m_Description");
@@ -397,6 +421,9 @@ namespace FumisCodex
                 BlueprintItem_Icon = FieldRefAccess<BlueprintItem, Sprite>("m_Icon");
                 BlueprintItem_Weight = FieldRefAccess<BlueprintItem, float>("m_Weight");
                 m_Cost = FieldRefAccess<BlueprintItem, int>("m_Cost");
+
+                Main.DebugLog("Access.BlueprintItemEquipmentSimple");
+                BlueprintItemEquipmentSimple_Enchantments = FieldRefAccess<BlueprintItemEquipmentSimple, BlueprintEquipmentEnchantment[]>("m_Enchantments");
 
                 Main.DebugLog("Access.ContextRankConfig");
                 m_BaseValueType = FieldRefAccess<ContextRankConfig, ContextRankBaseValueType>("m_BaseValueType");
@@ -423,6 +450,7 @@ namespace FumisCodex
                 LootItemsPackFixed_Count = FieldRefAccess<LootItemsPackFixed, int>("m_Count");
 
                 Main.DebugLog("Access.other");
+                m_BeltItemPrefab = FieldRefAccess<BlueprintItemEquipmentUsable, GameObject>("m_BeltItemPrefab");
                 m_ActivateWithUnitCommand = FieldRefAccess<BlueprintActivatableAbility, CommandType>("m_ActivateWithUnitCommand");
                 m_ParentClass = FieldRefAccess<BlueprintArchetype, BlueprintCharacterClass>("m_ParentClass");
                 m_Radius = FieldRefAccess<AbilityAoERadius, Feet>("m_Radius");
@@ -448,7 +476,9 @@ namespace FumisCodex
         public static PrefabLink NullPrefabLink = new PrefabLink();
 
         public static ContextValue ValueRank = new ContextValue() { ValueType = ContextValueType.Rank, ValueRank = AbilityRankType.Default };
-        public static ContextValue ValueShared = new ContextValue() { ValueType = ContextValueType.Shared, ValueShared = AbilitySharedValue.Damage };
+        public static ContextValue ValueRankDamageDice = new ContextValue() { ValueType = ContextValueType.Rank, ValueRank = AbilityRankType.DamageDice };
+        public static ContextValue ValueRankDamageBonus = new ContextValue() { ValueType = ContextValueType.Rank, ValueRank = AbilityRankType.DamageBonus };
+        public static ContextValue ValueSharedDamage = new ContextValue() { ValueType = ContextValueType.Shared, ValueShared = AbilitySharedValue.Damage };
         public static ContextValue ValueZero = new ContextValue() { ValueType = ContextValueType.Simple, Value = 0 };
         public static ContextValue ValueOne = new ContextValue() { ValueType = ContextValueType.Simple, Value = 1 };
         public static ContextValue ValueTwo = new ContextValue() { ValueType = ContextValueType.Simple, Value = 2 };
@@ -460,6 +490,7 @@ namespace FumisCodex
         public static ContextDiceValue Dice1d4 = HelperEA.CreateContextDiceValue(DiceType.D4, ValueOne);
         public static ContextDiceValue Dice1d6 = HelperEA.CreateContextDiceValue(DiceType.D6, ValueOne);
         public static ContextDiceValue Dice1d8 = HelperEA.CreateContextDiceValue(DiceType.D8, ValueOne);
+        public static ContextDiceValue DiceRankDamageBonus = HelperEA.CreateContextDiceValue(DiceType.One, Contexts.ValueRankDamageDice, Contexts.ValueRankDamageBonus);
 
         public static ContextDurationValue DurationZero = HelperEA.CreateContextDuration(0);
         public static ContextDurationValue Duration1Round = HelperEA.CreateContextDuration(1);
@@ -467,10 +498,12 @@ namespace FumisCodex
         public static ContextDurationValue DurationRankInMinutes = HelperEA.CreateContextDuration(Contexts.ValueRank, DurationRate.Minutes);
         public static ContextDurationValue Duration24Hours = HelperEA.CreateContextDuration(1, DurationRate.Days);
 
+        public static ContextCalculateSharedValue CalculateRankDamageBonus = Helper.Create<ContextCalculateSharedValue>(a => a.Value = DiceRankDamageBonus);
         public static BlueprintSummonPool SummonPool = Main.library.Get<BlueprintSummonPool>("d94c93e7240f10e41ae41db4c83d1cbe");
         public static ActionList AfterSpawnAction = Helper.CreateActionList(HelperEA.CreateApplyBuff(Main.library.Get<BlueprintBuff>("0dff842f06edace43baf8a2f44207045"), DurationZero, false, false, false, false, true));
 
         public static Sprite IconPlaceHolder = Helper.Image2Sprite.Create("PlaceHolderIcon.png");
+        public static AbilitySpawnFx SFXTransmutationBuff00 = Main.library.Get<BlueprintAbility>("c60969e7f264e6d4b84a1499fdcf9039").GetComponent<AbilitySpawnFx>();//EnlargePerson
     }
 
     public static class Strings
@@ -1502,6 +1535,20 @@ namespace FumisCodex
             return result;
         }
 
+        public static T[] AppendAndReplace<T>(ref T[] orig, List<T> objs)
+        {
+            if (orig == null) orig = new T[0];
+
+            T[] result = new T[orig.Length + objs.Count];
+            int i;
+            for (i = 0; i < orig.Length; i++)
+                result[i] = orig[i];
+            foreach (var obj in objs)
+                result[i++] = obj;
+            orig = result;
+            return result;
+        }
+
         public static GameAction[] RecursiveReplace<T>(GameAction[] actions, Action<T> lambda) where T : GameAction
         {
             var result = new List<GameAction>();
@@ -1551,7 +1598,7 @@ namespace FumisCodex
 
         public static AddKineticistBurnValueChangedTrigger CreateAddKineticistBurnValueChangedTrigger(params GameAction[] actions)
         {
-            var result = Helper.Create<AddKineticistBurnValueChangedTrigger>();
+            var result = Create<AddKineticistBurnValueChangedTrigger>();
             result.Action = new ActionList() { Actions = actions };
             return result;
         }
@@ -1559,7 +1606,7 @@ namespace FumisCodex
         public static PrerequisiteFeaturesFromList CreatePrerequisiteFeaturesFromList(bool any, int amount, params BlueprintFeature[] features)
         {
             if (features == null || features[0] == null) throw new ArgumentNullException();
-            var result = Helper.Create<PrerequisiteFeaturesFromList>();
+            var result = Create<PrerequisiteFeaturesFromList>();
             result.Features = features;
             result.Amount = amount;
             result.Group = any ? Prerequisite.GroupType.Any : Prerequisite.GroupType.All;
@@ -1569,7 +1616,7 @@ namespace FumisCodex
         public static AbilityEffectRunAction CreateAbilityEffectRunAction(SavingThrowType save = SavingThrowType.Unknown, params GameAction[] actions)
         {
             if (actions == null || actions[0] == null) throw new ArgumentNullException();
-            var result = Helper.Create<AbilityEffectRunAction>();
+            var result = Create<AbilityEffectRunAction>();
             result.SavingThrowType = save;
             result.Actions = new ActionList() { Actions = actions };
             return result;
@@ -1582,7 +1629,7 @@ namespace FumisCodex
 
         public static BuffSubstitutionOnApply CreateBuffSubstitutionOnApply(BlueprintBuff GainedFact, BlueprintBuff SubstituteBuff)
         {
-            var result = Helper.Create<BuffSubstitutionOnApply>();
+            var result = Create<BuffSubstitutionOnApply>();
             result.GainedFact = GainedFact;
             result.SubstituteBuff = SubstituteBuff;
             return result;
@@ -1590,14 +1637,14 @@ namespace FumisCodex
 
         public static SpecificBuffImmunity CreateSpecificBuffImmunity(BlueprintBuff buff)
         {
-            var result = Helper.Create<SpecificBuffImmunity>();
+            var result = Create<SpecificBuffImmunity>();
             result.Buff = buff;
             return result;
         }
 
         public static ContextActionRemoveBuff CreateActionRemoveBuff(BlueprintBuff buff, bool toCaster = false)
         {
-            var result = Helper.Create<ContextActionRemoveBuff>();
+            var result = Create<ContextActionRemoveBuff>();
             result.Buff = buff;
             result.ToCaster = toCaster;
             return result;
@@ -1610,7 +1657,7 @@ namespace FumisCodex
 
             for (int i = 0; i < result.Length; i++)
             {
-                var buff = Helper.Create<ContextConditionHasBuff>();
+                var buff = Create<ContextConditionHasBuff>();
                 buff.Buff = buffs[i];
                 buff.Not = true;
                 result[i] = buff;
@@ -1619,25 +1666,26 @@ namespace FumisCodex
             return result;
         }
 
-        public static AbilityRequirementActionAvailable CreateRequirementActionAvailable(bool Not, ActionType Action)
+        public static AbilityRequirementActionAvailable CreateAbilityRequirementActionAvailable(bool Not, ActionType Action, float Amount = 3f)
         {
-            var result = Helper.Create<AbilityRequirementActionAvailable>();
+            var result = Create<AbilityRequirementActionAvailable>();
             result.Not = Not;
             result.Action = Action;
+            result.Amount = Amount;
             return result;
         }
 
         public static AbilityRequirementHasBuffs CreateAbilityRequirementHasBuffs(bool Not, params BlueprintBuff[] Buffs)
         {
-            var result = Helper.Create<AbilityRequirementHasBuffs>();
+            var result = Create<AbilityRequirementHasBuffs>();
             result.Not = Not;
             result.Buffs = Buffs;
             return result;
         }
 
-        public static AbilityRequirementHasBuffTimed CreateAbilidtyRequirementHasBuffTimed(CompareType Compare, TimeSpan TimeLeft, params BlueprintBuff[] Buffs)
+        public static AbilityRequirementHasBuffTimed CreateAbilityRequirementHasBuffTimed(CompareType Compare, TimeSpan TimeLeft, params BlueprintBuff[] Buffs)
         {
-            var result = Helper.Create<AbilityRequirementHasBuffTimed>();
+            var result = Create<AbilityRequirementHasBuffTimed>();
             result.Compare = Compare;
             result.Buffs = Buffs;
             result.TimeLeft = TimeLeft;
@@ -1665,7 +1713,7 @@ namespace FumisCodex
 
         public static AddContextStatBonusMinMax CreateAddContextStatBonusMin(ContextValue value, int multiplier, StatType stat, params ModifierDescriptor[] descriptor)
         {
-            var result = Helper.Create<AddContextStatBonusMinMax>();
+            var result = Create<AddContextStatBonusMinMax>();
             result.Multiplier = multiplier;
             result.Value = value;
             result.Stat = stat;
@@ -1676,7 +1724,7 @@ namespace FumisCodex
 
         public static HasFact CreateHasFact(BlueprintUnitFact fact, UnitEvaluator unit = null)
         {
-            var result = Helper.Create<HasFact>();
+            var result = Create<HasFact>();
             result.Fact = fact;
             result.Unit = unit;
             return result;
@@ -1684,7 +1732,7 @@ namespace FumisCodex
 
         public static AbilitySpawnFx CreateAbilitySpawnFx(string AssetId, AbilitySpawnFxTime spawnTime, AbilitySpawnFxAnchor position, AbilitySpawnFxAnchor orientation)
         {
-            var spawnFx = Helper.Create<AbilitySpawnFx>();
+            var spawnFx = Create<AbilitySpawnFx>();
             spawnFx.PrefabLink = new Kingmaker.ResourceLinks.PrefabLink();
             spawnFx.PrefabLink.AssetId = AssetId;
             spawnFx.Time = AbilitySpawnFxTime.OnPrecastStart;
@@ -1695,14 +1743,14 @@ namespace FumisCodex
 
         public static PrefabLink Resource(string AssetId)
         {
-            var result = new Kingmaker.ResourceLinks.PrefabLink();
+            var result = new PrefabLink();
             result.AssetId = AssetId;
             return result;
         }
 
         public static ContextActionSpawnMonster CreateContextActionSpawnMonster(BlueprintUnit unit, ContextDiceValue amount = null, ContextDurationValue duration = null, BlueprintSummonPool pool = null)
         {
-            var result = Helper.Create<ContextActionSpawnMonster>();
+            var result = Create<ContextActionSpawnMonster>();
             result.Blueprint = unit;
             result.SummonPool = pool ?? Contexts.SummonPool;
             result.DurationValue = duration ?? Contexts.DurationRankInRounds;
@@ -1714,7 +1762,7 @@ namespace FumisCodex
         public static ContextActionSpawnMonsterUnique CreateContextActionSpawnMonsterUnique(BlueprintUnit unit, BlueprintSummonPool pool, ContextDiceValue amount = null, ContextDurationValue duration = null)
         {
             if (pool == null) throw new ArgumentNullException();
-            var result = Helper.Create<ContextActionSpawnMonsterUnique>();
+            var result = Create<ContextActionSpawnMonsterUnique>();
             result.Blueprint = unit;
             result.SummonPool = pool;
             result.DurationValue = duration ?? Contexts.DurationRankInRounds;
@@ -1725,7 +1773,7 @@ namespace FumisCodex
 
         public static ContextActionSpawnMonsterLeveled CreateContextActionSpawnMonsterLeveled(int[] LevelThreshold, BlueprintUnit[] BlueprintPool)
         {
-            var result = Helper.Create<ContextActionSpawnMonsterLeveled>();
+            var result = Create<ContextActionSpawnMonsterLeveled>();
             result.LevelThreshold = LevelThreshold;
             result.BlueprintPool = BlueprintPool;
             return result;
@@ -1733,7 +1781,7 @@ namespace FumisCodex
 
         public static ContextActionToggleActivatable CreateContextActionToggleActivatable(bool TurnOn, BlueprintActivatableAbility Activatable, params GameAction[] OnFailure)
         {
-            var result = Helper.Create<ContextActionToggleActivatable>();
+            var result = Create<ContextActionToggleActivatable>();
             result.TurnOn = TurnOn;
             result.Activatable = Activatable;
             result.OnFailure = CreateActionList(OnFailure);
@@ -1742,7 +1790,7 @@ namespace FumisCodex
 
         public static ContextActionKillSummons CreateContextActionKillSummons(BlueprintSummonPool SummonPool, params BlueprintBuff[] Buffs)
         {
-            var result = Helper.Create<ContextActionKillSummons>();
+            var result = Create<ContextActionKillSummons>();
             result.SummonPool = SummonPool;
             result.Buffs = Buffs;
             return result;
@@ -1750,21 +1798,21 @@ namespace FumisCodex
 
         public static AbilityShowIfCasterHasAnyFacts CreateAbilityShowIfCasterHasAnyFacts(params BlueprintUnitFact[] facts)
         {
-            var result = Helper.Create<AbilityShowIfCasterHasAnyFacts>();
+            var result = Create<AbilityShowIfCasterHasAnyFacts>();
             result.UnitFacts = facts;
             return result;
         }
 
         public static AbilityCasterHasNoFacts CreateAbilityCasterHasNoFacts(params BlueprintUnitFact[] facts)
         {
-            var result = Helper.Create<AbilityCasterHasNoFacts>();
+            var result = Create<AbilityCasterHasNoFacts>();
             result.Facts = facts;
             return result;
         }
 
         public static ContextActionCastSpell CreateContextActionCastSpell(BlueprintAbility spell, ContextValue dc = null, ContextValue spellLevel = null)
         {
-            var result = Helper.Create<ContextActionCastSpell>();
+            var result = Create<ContextActionCastSpell>();
             result.Spell = spell;
             result.OverrideDC = dc != null;
             result.OverrideSpellLevel = spellLevel != null;
@@ -1775,7 +1823,7 @@ namespace FumisCodex
 
         public static AddSpellImmunity CreateAddSpellImmunity(int immunityType, SpellDescriptor descriptor, params BlueprintAbility[] exceptions)
         {
-            var result = Helper.Create<AddSpellImmunity>();
+            var result = Create<AddSpellImmunity>();
             result.SpellDescriptor = new SpellDescriptorWrapper(descriptor);
             result.Type = (SpellImmunityType)immunityType;
             if (exceptions != null) result.Exceptions = exceptions;
@@ -1784,25 +1832,25 @@ namespace FumisCodex
 
         public static AddKineticistBurnModifier CreateAddKineticistBurnModifier(int Value, KineticistBurnType BurnType = KineticistBurnType.Infusion, ContextValue BurnValue = null, params BlueprintAbility[] AppliableTo)
         {
-            var result = Helper.Create<AddKineticistBurnModifier>();
+            var result = Create<AddKineticistBurnModifier>();
             result.Value = Value;
             result.BurnType = BurnType;
             result.BurnValue = BurnValue;
             result.UseContextValue = BurnValue != null;
             result.RemoveBuffOnAcceptBurn = false;
-            result.AppliableTo = AppliableTo ?? new BlueprintAbility[0];
+            result.AppliableTo = AppliableTo;
             return result;
         }
 
         public static ContextActionRemoveSelf CreateContextActionRemoveSelf()
         {
-            var result = Helper.Create<ContextActionRemoveSelf>();
+            var result = Create<ContextActionRemoveSelf>();
             return result;
         }
 
         public static BuffMovementSpeed CreateBuffMovementSpeed(int Value, ModifierDescriptor Descriptor = ModifierDescriptor.None, int MinimumCap = 0, float MultiplierCap = 0f)
         {
-            var result = Helper.Create<BuffMovementSpeed>();
+            var result = Create<BuffMovementSpeed>();
             result.Value = Value;
             result.Descriptor = Descriptor;
             result.CappedOnMultiplier = (MultiplierCap != 0f);
@@ -1814,7 +1862,7 @@ namespace FumisCodex
 
         public static CriticalConfirmationWeaponType CreateCriticalConfirmationWeaponType(ContextValue Value, WeaponCategory Type)
         {
-            var result = Helper.Create<CriticalConfirmationWeaponType>();
+            var result = Create<CriticalConfirmationWeaponType>();
             result.Value = Value;
             result.Type = Type;
             return result;
@@ -1822,7 +1870,7 @@ namespace FumisCodex
 
         public static AddContextStatBonus CreateAddContextStatBonus(StatType Stat, ContextValue Value, ModifierDescriptor Descriptor = ModifierDescriptor.UntypedStackable)
         {
-            var result = Helper.Create<AddContextStatBonus>();
+            var result = Create<AddContextStatBonus>();
             result.Stat = Stat;
             result.Value = Value;
             result.Descriptor = Descriptor;
@@ -1832,22 +1880,22 @@ namespace FumisCodex
         ///<summary>SubFeature is the second or third feat of the style chain.</summary>
         public static AddFactContextActions CombatStyleHelper(BlueprintFeature SubFeature, BlueprintBuff Buff)
         {
-            var applyBuff = Helper.Create<ContextActionApplyBuff>();
+            var applyBuff = Create<ContextActionApplyBuff>();
             applyBuff.Buff = Buff;
             applyBuff.DurationValue = Contexts.DurationZero;
             applyBuff.IsFromSpell = false;
             applyBuff.IsNotDispelable = false;
             applyBuff.Permanent = true;
 
-            var has = Helper.Create<ContextConditionHasFact>();
+            var has = Create<ContextConditionHasFact>();
             has.Fact = SubFeature;
 
-            var c = Helper.Create<Conditional>();
+            var c = Create<Conditional>();
             c.ConditionsChecker = new ConditionsChecker() { Conditions = new Condition[] { has }, Operation = Operation.And };
             c.IfTrue = CreateActionList(applyBuff);
             c.IfFalse = CreateActionList();
 
-            var result = Helper.Create<AddFactContextActions>();
+            var result = Create<AddFactContextActions>();
             result.Activated = CreateActionList(c);
             result.Deactivated = CreateActionList();
             result.NewRound = CreateActionList();
@@ -1857,7 +1905,7 @@ namespace FumisCodex
 
         public static ContextActionRestoreResource CreateContextActionRestoreResource(BlueprintAbilityResource Resource, ContextValue Amount, bool ToCaster = false)
         {
-            var result = Helper.Create<ContextActionRestoreResource>();
+            var result = Create<ContextActionRestoreResource>();
             result.Resource = Resource;
             result.Amount = Amount;
             result.ToCaster = ToCaster;
@@ -1866,7 +1914,7 @@ namespace FumisCodex
 
         public static RendSpecial CreateRendSpecial(DiceFormula RendDamage, DamageTypeDescription RendType = null, WeaponCategory? Category = null, bool TargetSelf = false, params GameAction[] Actions)
         {
-            var result = Helper.Create<RendSpecial>();
+            var result = Create<RendSpecial>();
             result.RendType = RendType ?? CreateDamageTypeDescription();
             result.RendDamage = RendDamage;
             result.TargetSelf = TargetSelf;
@@ -1889,7 +1937,7 @@ namespace FumisCodex
 
         public static AddOutgoingPhysicalDamageProperty CreateAddOutgoingPhysicalDamageProperty(BlueprintWeaponType WeaponType = null, bool CheckRange = false, bool IsRanged = false, bool AddMagic = false, PhysicalDamageMaterial? Material = null, PhysicalDamageForm? Form = null, DamageAlignment? Alignment = null, bool MyAlignment = false, DamageRealityType? Reality = null)
         {
-            var result = Helper.Create<AddOutgoingPhysicalDamageProperty>();
+            var result = Create<AddOutgoingPhysicalDamageProperty>();
             result.CheckWeaponType = WeaponType != null;
             result.WeaponType = WeaponType;
             result.CheckRange = CheckRange;
@@ -1908,7 +1956,7 @@ namespace FumisCodex
 
         public static ContextActionCombatManeuver CreateContextActionCombatManeuver(CombatManeuver Type, params GameAction[] OnSuccess)
         {
-            var result = Helper.Create<ContextActionCombatManeuver>();
+            var result = Create<ContextActionCombatManeuver>();
             result.Type = Type;
             result.OnSuccess = CreateActionList(OnSuccess);
             return result;
@@ -2139,6 +2187,46 @@ namespace FumisCodex
             var result = Create<PrerequisiteExactClassLevel>();
             result.CharacterClass = CharacterClass;
             result.Level = Level;
+            return result;
+        }
+
+        public static AbilityCasterHasFacts CreateAbilityCasterHasFacts(bool NeedsAll = false, params BlueprintUnitFact[] Facts)
+        {
+            var result = Create<AbilityCasterHasFacts>();
+
+            result.Facts = Facts;
+            result.NeedsAll = NeedsAll;
+
+            return result;
+        }
+
+        public static AbilityShowIfCasterHasFact CreateAbilityShowIfCasterHasFact(BlueprintFeature UnitFact)
+        {
+            var result = Create<AbilityShowIfCasterHasFact>();
+
+            result.UnitFact = UnitFact;
+
+            return result;
+        }
+
+        public static AddFactToEquipmentWielder CreateAddFactToEquipmentWielder(BlueprintUnitFact Fact)
+        {
+            var result = Create<AddFactToEquipmentWielder>();
+
+            result.Fact = Fact;
+
+            return result;
+        }
+
+        public static AbilityKineticist CreateAbilityKineticist(int InfusionBurnCost = 0, int BlastBurnCost = 0, int WildTalentBurnCost = 0, List<AbilityKineticist.DamageInfo> CachedDamageInfo = null)
+        {
+            var result = Create<AbilityKineticist>();
+
+            result.BlastBurnCost = BlastBurnCost;
+            result.InfusionBurnCost = InfusionBurnCost;
+            result.WildTalentBurnCost = WildTalentBurnCost;
+            result.CachedDamageInfo = CachedDamageInfo ?? result.CachedDamageInfo;
+
             return result;
         }
 

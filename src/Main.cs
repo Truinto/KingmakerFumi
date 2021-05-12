@@ -81,6 +81,7 @@ namespace FumisCodex
             "Kineticist.createWoodSoldiers",
             "Kineticist.createExtraWildTalentFeat",
             "Kineticist.fixExpandElement",
+            "Kineticist.addKineticWhipActivatable",
             "Monk.*",
             "Monk.allowTWFwithFists",
             "Monk.createMedusasWrath",
@@ -94,8 +95,10 @@ namespace FumisCodex
             "Monk.createOneTouch",
             "Monk.createMasterOfManyStyles",
             "Items.*",
+            "Items.patchCraftMagicItemIgnoreCLToogle",
             "Items.createPearlOfPower",
             "Items.createRuneStoneOfPower",
+            "Items.createDebugItem",
             "Fixes.*",
             "Fixes.fixShamblingMoundGrapple",
             "CotW.*",
@@ -126,6 +129,7 @@ namespace FumisCodex
 
             GUILayout.Label("");
 
+            Checkbox(ref Settings.StateManager.State.CMIignoreCL, "CMI [*] - Ignore caster level when crafting magic items", Items.patchCraftMagicItemIgnoreCLToogle);
             NumberField(nameof(Settings.magicItemBaseCost), "Cost of magic items (default: 1000)");
             NumberField(nameof(Settings.pearlRunestoneDailyUses), "Charges of Runestones and Pearls of Power");
 
@@ -263,7 +267,7 @@ namespace FumisCodex
             {
                 harmony = new HarmonyLib.Harmony(modEntry.Info.Id);
                 harmony.PatchAll(typeof(Main).Assembly);
-                Main.harmony.Patch(HarmonyLib.AccessTools.Method(typeof(EnumUtils), nameof(EnumUtils.GetMaxValue), null, new Type[] { typeof(ActivatableAbilityGroup) }),
+                harmony.Patch(HarmonyLib.AccessTools.Method(typeof(EnumUtils), nameof(EnumUtils.GetMaxValue), null, new Type[] { typeof(ActivatableAbilityGroup) }),
                     postfix: new HarmonyLib.HarmonyMethod(typeof(Patch_ActivatableAbilityGroup).GetMethod("Postfix")));
             }
             catch (Exception ex)
@@ -353,6 +357,10 @@ namespace FumisCodex
                     LoadSafe(Kineticist.createWoodSoldiers);
                     LoadSafe(Kineticist.createExtraWildTalentFeat, Settings.StateManager.State.extraWildTalentFeat);//must be after new talents
                     LoadSafe(Kineticist.fixExpandElement);
+                    LoadSafe(Kineticist.addKineticWhipActivatable);
+
+                    //debug
+                    LoadSafe(Kin_Element.LoadAll);
 
                     LoadSafe(Monk.allowTWFwithFists);
                     LoadSafe(Monk.createMedusasWrath);
@@ -366,8 +374,10 @@ namespace FumisCodex
                     LoadSafe(Monk.createOneTouch);
                     LoadSafe(Monk.createMasterOfManyStyles);//must be after new styles
 
+                    LoadSafe(Items.patchCraftMagicItemIgnoreCLToogle, Settings.StateManager.State.CMIignoreCL);
                     LoadSafe(Items.createPearlOfPower, true);
                     LoadSafe(Items.createRuneStoneOfPower, true);
+                    LoadSafe(Items.createDebugItem);
 
                     LoadSafe(Fixes.fixShamblingMoundGrapple);
 
