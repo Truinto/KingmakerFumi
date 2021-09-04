@@ -812,7 +812,7 @@ namespace FumisCodex
             activatable.Group = MOMS_wildcardgroup;
             activatable.DeactivateImmediately = true;
 
-            buff.AddComponent(Helper.Create<AddFactsSafe>(a => { a.Facts = style.ObjToArray(); a.Activatable = activatable; }));
+            buff.AddComponent(Helper.Create<AddFactsSafe>(a => { a.Facts = style.ObjToArray(); a.Activatable = activatable; a.RestoreMissingFacts = true; }));
 
             return activatable;
         }

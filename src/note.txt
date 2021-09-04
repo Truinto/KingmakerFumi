@@ -1,0 +1,1 @@
+RecalculateOnFactsChange -> ReapplyOnFactsChange (OnFactActivate; OnFactDeactivate)

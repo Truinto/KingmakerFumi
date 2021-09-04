@@ -1877,8 +1877,8 @@ namespace FumisCodex
             return result;
         }
 
-        ///<summary>SubFeature is the second or third feat of the style chain.</summary>
-        public static AddFactContextActions CombatStyleHelper(BlueprintFeature SubFeature, BlueprintBuff Buff)
+        ///<summary>SubFeature is the second or third BlueprintFeature of the style chain.</summary>
+        public static AddFactContextActions CombatStyleHelper(BlueprintUnitFact SubFeature, BlueprintBuff Buff)
         {
             var applyBuff = Create<ContextActionApplyBuff>();
             applyBuff.Buff = Buff;
@@ -1886,6 +1886,7 @@ namespace FumisCodex
             applyBuff.IsFromSpell = false;
             applyBuff.IsNotDispelable = false;
             applyBuff.Permanent = true;
+            applyBuff.AsChild = true;
 
             var has = Create<ContextConditionHasFact>();
             has.Fact = SubFeature;
@@ -2053,6 +2054,15 @@ namespace FumisCodex
             var result = Create<AbilityRestoreSpontaneousSpell>();
 
             result.SpellLevel = SpellLevel;
+
+            return result;
+        }
+
+        public static RecalculateOnFactsChange CreateRecalculateOnFactsChange(params BlueprintUnitFact[] facts)
+        {
+            var result = Create<RecalculateOnFactsChange>();
+
+            result.CheckedFacts = facts;
 
             return result;
         }

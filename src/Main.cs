@@ -380,6 +380,7 @@ namespace FumisCodex
                     LoadSafe(Items.createDebugItem);
 
                     LoadSafe(Fixes.fixShamblingMoundGrapple);
+                    LoadSafe(Fixes.fixPummelingBully);
 
                     LoadSafe(CotW.modSlumber, Settings.StateManager.State.slumberHDrestriction);
                     LoadSafe(CotW.modAuraOfDoomToogle, Settings.StateManager.State.auraOfDoomFx);

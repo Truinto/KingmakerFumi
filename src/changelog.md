@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.13]
+
+### Fixed
+- added fixPummelingBully patch that changes the condition to "first hit" instead of "first attack"
+- fixed a potentially issue with lingering style buffs (e.g. snake sidewind)
+
 ## [1.0.12]
 
 ### Added
