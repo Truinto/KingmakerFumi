@@ -7,6 +7,6 @@
   "Requirements": [],
   "AssemblyName": "FumisCodex.dll",
   "HomePage": "https://github.com/Truinto/KingmakerFumi",
-  "Repository": "https://raw.githubusercontent.com/Truinto/KingmakerFumi/master/src/Settings/Repository.json",
+  "Repository": "https://raw.githubusercontent.com/Truinto/KingmakerFumi/master/KingmakerFumi/Settings/Repository.json",
   "EntryMethod": "FumisCodex.Main.Load"
 }

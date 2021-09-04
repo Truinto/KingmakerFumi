@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "versioncontrol": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\Fumihiko\\documents\\visual studio 2015\\Projects\\Kingmaker\\KingmakerFumi\\KingmakerFumi\\changelog.md\" \"C:\\Users\\Fumihiko\\Documents\\Visual Studio 2015\\Projects\\Kingmaker\\KingmakerFumi\\KingmakerFumi\\Properties\\AssemblyInfo.cs\" \"D:\\Programme\\GOG Galaxy\\Games\\Pathfinder Kingmaker\\Mods\\FumisCodex\\info.json\""
+    }
+  }
+}
