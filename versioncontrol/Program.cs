@@ -17,7 +17,7 @@ namespace versioncontrol
                     return 2;
                 }
 
-                var rxVersion = new Regex("(Version.*\\\"|\\/v)([\\d\\.\\*]{5,})(\\\"|\\/)");
+                var rxVersion = new Regex("(?<!Manager)(Version.*\\\"|\\/v)([\\d\\.\\*]{5,})(\\\"|\\/)");
 
                 string path_changelog = args[0];
                 string path_assembly = args[1];
