@@ -39,6 +39,7 @@
     <Reference Include="UnityEngine.JSONSerializeModule" HintPath="$(KMManaged)\UnityEngine.JSONSerializeModule.dll" />
     <Reference Include="UnityEngine.ParticleSystemModule" HintPath="$(KMManaged)\UnityEngine.ParticleSystemModule.dll" />
     <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(KMManaged)\UnityEngine.TextRenderingModule.dll" />
+    <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(KMManaged)\UnityEngine.InputLegacyModule.dll" />
   </ItemGroup>
   
   <PropertyGroup>
