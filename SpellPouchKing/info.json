@@ -1,0 +1,12 @@
+{
+  "Id": "SpellPouchKing",
+  "DisplayName": "Spell Pouch",
+  "Author": "Truinto",
+  "Version": "1.0.0",
+  "ManagerVersion": "0.23.0",
+  "Requirements": [],
+  "AssemblyName": "SpellPouchKing.dll",
+  "HomePage": "https://github.com/Truinto/KingmakerFumi",
+  "Repository": "https://raw.githubusercontent.com/Truinto/KingmakerFumi/master/SpellPouchKing/Settings/Repository.json",
+  "EntryMethod": "SpellPouchKing.Main.Load"
+}

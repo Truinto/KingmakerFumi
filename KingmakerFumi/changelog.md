@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.14]
+- fixed ranged weapons not triggering effects when reducing target to 0 HP or less
+
 ## [1.0.13]
 
 ### Fixed

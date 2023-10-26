@@ -1,9 +1,9 @@
 {
-  "Releases":
-  [
-    {
-      "Id": "FumisCodex",
-      "Version": "1.0.13"
-    }
-  ]
+    "Releases": [
+        {
+            "Id": "FumisCodex",
+            "Version": "1.0.14",
+            "DownloadUrl": "https://github.com/Truinto/FumisCodex/releases/download/v1.0.14/FumisCodex.zip"
+        }
+    ]
 }

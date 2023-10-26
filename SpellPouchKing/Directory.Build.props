@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ItemDefinitionGroup>
+    <Reference Private="false" />
+    <ProjectReference Private="false" />
+  </ItemDefinitionGroup>
+    
+  <!-- Source folders -->
+  <PropertyGroup>
+    <GOGFolder>D:\Programme\GOG Galaxy\Games\</GOGFolder>
+    <KMManaged Condition="Exists('$(GOGFolder)')">$(GOGFolder)Pathfinder Kingmaker\Kingmaker_Data\Managed</KMManaged>
+    <KMManaged Condition="!Exists('$(GOGFolder)')">..\..\..\$non-backup\KM sources</KMManaged>
+    <KMMods Condition="Exists('$(GOGFolder)')">$(GOGFolder)Pathfinder Kingmaker\Mods</KMMods>
+    <KMMods Condition="!Exists('$(GOGFolder)')">..\..\..\$non-backup\KM sources</KMMods>
+    <UnityModManager Condition="Exists('$(GOGFolder)')">D:\Programme\UnityModManager</UnityModManager>
+    <UnityModManager Condition="!Exists('$(GOGFolder)')">..\..\..\$non-backup\KM sources</UnityModManager>
+  </PropertyGroup>
+  
+  <!-- Common references -->
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="CallOfTheWild" HintPath="$(KMMods)\CallOfTheWild\CallOfTheWild.dll" />
+    <Reference Include="UnityModManager" HintPath="$(UnityModManager)\UnityModManager.dll" />
+    <Reference Include="0Harmony" HintPath="$(KMManaged)\0Harmony.dll" />
+    <Reference Include="Assembly-CSharp" HintPath="$(KMManaged)\Assembly-CSharp.dll" />
+    <Reference Include="Assembly-CSharp-firstpass" HintPath="$(KMManaged)\Assembly-CSharp-firstpass.dll" />
+    <Reference Include="Newtonsoft.Json" HintPath="$(KMManaged)\Newtonsoft.Json.dll" />
+    <Reference Include="UnityEngine" HintPath="$(KMManaged)\UnityEngine.dll" />
+    <Reference Include="UnityEngine.UI" HintPath="$(KMManaged)\UnityEngine.UI.dll" />
+    <Reference Include="UnityEngine.AnimationModule" HintPath="$(KMManaged)\UnityEngine.AnimationModule.dll" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(KMManaged)\UnityEngine.CoreModule.dll" />
+    <Reference Include="UnityEngine.ImageConversionModule" HintPath="$(KMManaged)\UnityEngine.ImageConversionModule.dll" />
+    <Reference Include="UnityEngine.IMGUIModule" HintPath="$(KMManaged)\UnityEngine.IMGUIModule.dll" />
+    <Reference Include="UnityEngine.JSONSerializeModule" HintPath="$(KMManaged)\UnityEngine.JSONSerializeModule.dll" />
+    <Reference Include="UnityEngine.ParticleSystemModule" HintPath="$(KMManaged)\UnityEngine.ParticleSystemModule.dll" />
+    <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(KMManaged)\UnityEngine.TextRenderingModule.dll" />
+    <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(KMManaged)\UnityEngine.InputLegacyModule.dll" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <Product>SpellPouchKing</Product>
+    <Authors>Truinto</Authors>
+    <Copyright>Copyright ©Truinto 2022</Copyright>
+  </PropertyGroup>
+</Project>
+

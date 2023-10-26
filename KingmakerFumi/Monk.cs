@@ -53,6 +53,10 @@ using Kingmaker.UI.ServiceWindow.CharacterScreen;
 using Kingmaker.UI.Common;
 using System.Reflection.Emit;
 using Kingmaker.Items.Slots;
+using HarmonyLib;
+using Shared;
+using Kingmaker.RuleSystem.Rules.Damage;
+using CallOfTheWild.FeralCombatTrainingPatches;
 //using CallOfTheWild;
 
 namespace FumisCodex
@@ -842,7 +846,7 @@ namespace FumisCodex
                 FeatureGroup.KiPowers,
                 HelperEA.PrerequisiteClassLevel(monk_class, 10),
                 HelperEA.CreateAddInitiatorAttackWithWeaponTrigger(Helper.CreateActionList(restore_ki), critical_hit: true),
-                HelperEA.CreateAddInitiatorAttackWithWeaponTrigger(Helper.CreateActionList(restore_ki), reduce_hp_to_zero: true)
+                HelperEA.CreateAddInitiatorAttackWithWeaponTrigger(Helper.CreateActionList(restore_ki), reduce_hp_to_zero: true, wait_for_attack_to_resolve: true)
             );
             ki_leech.Groups = new FeatureGroup[] { FeatureGroup.KiPowers, FeatureGroup.ScaledFistKiPowers };
             ki_leech.ReapplyOnLevelUp = true;
@@ -1031,6 +1035,40 @@ namespace FumisCodex
         #endregion
 
         #region Patches
+
+        [HarmonyPatch(typeof(AddInitiatorAttackWithWeaponTrigger), "CheckCondition")]
+        public static class FixReduceToZeroTrigger
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
+            {
+                var data = new TranspilerTool(instructions, generator, original);
+
+                //data.Seek(typeof(AddInitiatorAttackWithWeaponTrigger), nameof(AddInitiatorAttackWithWeaponTrigger.CheckDistance));
+                //data.Index--;
+                //var label_next = data.GetLabel(data.Current);
+
+                data.First().Seek(typeof(AddInitiatorAttackWithWeaponTrigger), nameof(AddInitiatorAttackWithWeaponTrigger.ReduceHPToZero));
+                data.Index++;
+
+                data.InsertReturn(patch, false);
+                //data.InsertAfter(OpCodes.Br_S, (Label)label_next);
+
+                return data;
+
+                bool patch(out bool __result, RuleAttackWithWeapon evt)
+                {
+                    __result = false;
+
+                    var damage = evt.MeleeDamage;
+                    if (damage == null && evt.Projectile?.OnHitTrigger is RuleAttackWithWeaponResolve resolve)
+                        damage = resolve.Damage;
+
+                    __result = damage != null && !damage.IsFake && evt.Target.HPLeft <= 0 && (evt.Target.HPLeft + damage.Damage > 0);
+
+                    return false;
+                }
+            }
+        }
 
         // TODO: Implement after beta
         // - Dual Wielding with Unarmed Strikes(activatable);
