@@ -7,12 +7,12 @@ namespace FumisCodex.NewComponents
 {
     public class ContextConditionCanTarget : ContextCondition
     {
-        protected override string GetConditionCaption()
+        public override string GetConditionCaption()
         {
             return "Check if the ability's target is valid";
         }
 
-        protected override bool CheckCondition()
+        public override bool CheckCondition()
         {
             return this.AbilityContext.Ability.CanTarget(this.Context.MainTarget);
         }

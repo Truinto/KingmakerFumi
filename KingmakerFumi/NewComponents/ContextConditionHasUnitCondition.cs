@@ -8,12 +8,12 @@ namespace FumisCodex.NewComponents
     {
         public UnitCondition Condition;
 
-		protected override string GetConditionCaption()
+        public override string GetConditionCaption()
 		{
 			return "Check target for condition";
 		}
 
-		protected override bool CheckCondition()
+        public override bool CheckCondition()
 		{
             if (this.Condition == UnitCondition.Prone)
                 return base.Target.Unit.Descriptor.State.Prone.ShouldBeActive || base.Target.Unit.Descriptor.State.Prone.Active;

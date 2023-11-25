@@ -312,24 +312,5 @@ namespace FumisCodex.NewComponents
             ruleDrainEnergy.SavingThrowType = (SavingThrowType)num;
             return this.Context.TriggerRule<RuleDrainEnergy>(rule).Count;
         }
-
-        public enum Type
-        {
-            Damage,
-            AbilityDamage,
-            EnergyDrain,
-        }
-
-        public struct DamageInfo
-        {
-            public DiceFormula Dices;
-            public int Bonus;
-            public int? PreRolledValue;
-            public bool HalfBecauseSavingThrow;
-            public bool Empower;
-            public bool Maximize;
-            public DamageCriticalModifierType? CriticalModifier;
-        }
-
     }
 }

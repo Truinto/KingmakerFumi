@@ -9,12 +9,12 @@ namespace FumisCodex.NewComponents
         public BlueprintBuff[] CheckedBuffs;
         public BlueprintBuff[] AlternativeBuffs;
 
-        protected override string GetConditionCaption()
+        public override string GetConditionCaption()
         {
             return "Check if target does not have buff OR has vulnerability debuff";
         }
 
-        protected override bool CheckCondition()
+        public override bool CheckCondition()
         {
             UnitEntityData caster = this.Context.MaybeCaster;
             UnitEntityData unit = this.Context.MainTarget?.Unit;

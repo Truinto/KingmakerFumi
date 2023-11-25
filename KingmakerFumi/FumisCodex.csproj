@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>1.0.14</Version>
+		<Version>1.0.15</Version>
 		<TargetFramework>net472</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<ImplicitUsings>disable</ImplicitUsings>
@@ -37,10 +37,9 @@
 	</ItemGroup>
 
 	<!-- Publicize -->
-	<Target Name="Publicize" BeforeTargets="BeforeBuild" AfterTargets="">
+	<Target Name="Publicize" BeforeTargets="BeforeBuild;Clean" AfterTargets="">
 		<ItemGroup>
 			<PublicizeInput Include="$(GameManaged)\Assembly-CSharp.dll" />
-			<PublicizeInput Include="$(GameManaged)\0Harmony.dll" />
 		</ItemGroup>
 		<PublicizeTask InputAssemblies="@(PublicizeInput)" OutputDir="$(GameManaged)\" />
 	</Target>

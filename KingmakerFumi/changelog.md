@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.15]
+- fixed effects when reducing target to 0 HP or less to work with any weapon damage (melee, ranged, or other)
+
 ## [1.0.14]
 - fixed ranged weapons not triggering effects when reducing target to 0 HP or less
 

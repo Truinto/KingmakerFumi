@@ -8,12 +8,12 @@ namespace FumisCodex.NewComponents
         public bool TargetFasterThan;
         public float Speed;
 
-		protected override string GetConditionCaption()
+        public override string GetConditionCaption()
 		{
 			return "Check target move speed";
 		}
 
-		protected override bool CheckCondition()
+        public override bool CheckCondition()
 		{
             return TargetFasterThan ? base.Target.Unit.CombatSpeedMps > Speed : base.Target.Unit.CombatSpeedMps <= Speed;
 		}

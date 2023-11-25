@@ -29,7 +29,7 @@
 		<Reference Include="CallOfTheWild" HintPath="$(ModFolder)\CallOfTheWild\CallOfTheWild.dll" />
 		<Reference Include="UnityModManager" HintPath="$(UnityModManager)\UnityModManager.dll" />
 		<Reference Include="0Harmony" HintPath="$(GameManaged)\0Harmony.dll" />
-		<Reference Include="Assembly-CSharp" HintPath="$(GameManaged)\Assembly-CSharp.dll" />
+		<Reference Include="Assembly-CSharp" HintPath="$(GameManaged)\Assembly-CSharp_public.dll" />
 		<Reference Include="Assembly-CSharp-firstpass" HintPath="$(GameManaged)\Assembly-CSharp-firstpass.dll" />
 		<Reference Include="Newtonsoft.Json" HintPath="$(GameManaged)\Newtonsoft.Json.dll" />
 		<Reference Include="UnityEngine" HintPath="$(GameManaged)\UnityEngine.dll" />

@@ -1036,7 +1036,7 @@ namespace FumisCodex
 
         #region Patches
 
-        [HarmonyPatch(typeof(AddInitiatorAttackWithWeaponTrigger), "CheckCondition")]
+        [HarmonyPatch(typeof(AddInitiatorAttackWithWeaponTrigger), nameof(AddInitiatorAttackWithWeaponTrigger.CheckCondition))]
         public static class FixReduceToZeroTrigger
         {
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
@@ -1057,14 +1057,29 @@ namespace FumisCodex
 
                 bool patch(out bool __result, RuleAttackWithWeapon evt)
                 {
+                    //__result = false;
+                    //var damage = evt.MeleeDamage;
+                    //if (damage == null && evt.Projectile?.OnHitTrigger is RuleAttackWithWeaponResolve resolve)
+                    //    damage = resolve.Damage;
+                    //__result = damage != null && !damage.IsFake && evt.Target.HPLeft <= 0 && (evt.Target.HPLeft + damage.Damage > 0);
+                    //return false;
+
                     __result = false;
+                    try
+                    {
+                        int sum = 0;
+                        foreach (var rule in Rulebook.CurrentContext.AllEvents) //evt.Reason.Context.SourceAbilityContext.RulebookContext.AllEvents;
+                        {
+                            if (rule is RuleDealDamage damageRule && !damageRule.IsFake)
+                                sum += damageRule.Damage;
+                        }
 
-                    var damage = evt.MeleeDamage;
-                    if (damage == null && evt.Projectile?.OnHitTrigger is RuleAttackWithWeaponResolve resolve)
-                        damage = resolve.Damage;
-
-                    __result = damage != null && !damage.IsFake && evt.Target.HPLeft <= 0 && (evt.Target.HPLeft + damage.Damage > 0);
-
+                        __result = evt.Target.HPLeft <= 0 && (evt.Target.HPLeft + sum > 0);
+                    }
+                    catch (Exception e)
+                    {
+                        Main.DebugLog("exception: " + e.ToString());
+                    }
                     return false;
                 }
             }
